@@ -245,7 +245,7 @@ export default function ChatWidget() {
         whileHover={{ scale: 1.06 }}
         whileTap={{ scale: 0.96 }}
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-5 right-5 z-50 group flex items-center gap-3 px-4 py-3
+        className="fixed right-5 bottom-[132px] sm:bottom-[72px] z-50 group flex items-center gap-3 px-4 py-3
                    bg-[#090e20]/95 backdrop-blur-md border border-neon-cyan/70
                    shadow-[0_0_24px_rgba(0,243,255,0.35)] hover:shadow-[0_0_34px_rgba(255,43,214,0.55)]
                    hover:border-neon-magenta transition-all"
@@ -281,10 +281,8 @@ export default function ChatWidget() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 24, scale: 0.96 }}
             transition={{ duration: 0.22 }}
-            className={`fixed right-5 bottom-24 z-50 drop-shadow-[0_0_24px_rgba(0,243,255,0.22)] ${
-              expanded
-                ? 'w-[calc(100vw-2.5rem)] max-w-2xl h-[calc(100dvh-11rem)] max-h-[720px]'
-                : 'w-[calc(100vw-2.5rem)] max-w-[430px] h-[calc(100dvh-11rem)] max-h-[560px]'
+            className={`fixed right-5 top-[76px] bottom-[198px] sm:bottom-[138px] z-50 drop-shadow-[0_0_24px_rgba(0,243,255,0.22)] ${
+              expanded ? 'w-[calc(100vw-2.5rem)] max-w-2xl' : 'w-[calc(100vw-2.5rem)] max-w-[430px]'
             }`}
           >
             <div className="cyber-frame h-full w-full">

@@ -3,13 +3,13 @@ import { Hexagon, Triangle, Circle } from 'lucide-react';
 
 /**
  * Глобальный футер — рендерится в layout на каждой странице.
- * Прижат к самому низу (sticky footer), а нижняя зона pb-24
- * отведена под плавающий HUD (музыкальный плеер слева / чат справа),
- * чтобы они не перекрывали строку контента футера.
+ * Тонкая полоса, прижатая к самому низу (sticky footer).
+ * Плеер и чат плавают ВЫШЕ футера (в отступе pb-24 обёртки
+ * контента в layout), не перекрывая ни футер, ни контент.
  */
 export default function Footer() {
   return (
-    <footer className="relative shrink-0 border-t border-cyber-border bg-[#050814]/85 backdrop-blur-md px-4 pt-6 pb-24">
+    <footer className="relative shrink-0 border-t border-cyber-border bg-[#050814]/85 backdrop-blur-md px-4 py-4">
       <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4 md:gap-5">
         <div className="text-[11px] text-zinc-400 font-mono tracking-wider text-center md:text-left">
           © {new Date().getFullYear()} FESTCHUK CORP. ALL RIGHTS RESERVED.

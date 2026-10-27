@@ -26,7 +26,7 @@ export default function RootLayout({
         <Cityscape />
         <div className="scanline-overlay" />
         <Header />
-        <div className="flex-1 pt-16">{children}</div>
+        <div className="flex-1 pt-16 pb-24">{children}</div>
         <Footer />
         <CyberMusicPlayer />
         <ChatWidget />
