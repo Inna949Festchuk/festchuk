@@ -4,6 +4,7 @@ import Header from '@/components/Header';
 import ChatWidget from '@/components/ChatWidget';
 import Cityscape from '@/components/Cityscape';
 import CyberMusicPlayer from '@/components/CyberMusicPlayer';
+import Footer from '@/components/Footer';
 
 export const metadata: Metadata = {
   title: 'Константин Фестчук — AI-Driven Fullstack Developer',
@@ -18,14 +19,15 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ru" className="dark">
-      <body className="antialiased">
+      <body className="antialiased flex min-h-screen flex-col">
         <div className="cyber-grid-bg" />
         <div className="bg-beams" />
         <div className="bg-horizon" />
         <Cityscape />
         <div className="scanline-overlay" />
         <Header />
-        <div className="pt-16 pb-24">{children}</div>
+        <div className="flex-1 pt-16">{children}</div>
+        <Footer />
         <CyberMusicPlayer />
         <ChatWidget />
       </body>

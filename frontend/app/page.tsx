@@ -10,9 +10,6 @@ import {
   Shield,
   Eye,
   Cpu,
-  Hexagon,
-  Triangle,
-  Circle,
   Sparkles,
   ArrowUpRight,
 } from 'lucide-react';
@@ -242,30 +239,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ============ FOOTER ============ */}
-      <footer className="relative px-4 py-8 mt-6 border-t border-cyber-border bg-[#050814]/80 backdrop-blur-md">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-5">
-          <div className="text-[11px] text-zinc-400 font-mono tracking-wider">
-            © {new Date().getFullYear()} FESTCHUK CORP. ALL RIGHTS RESERVED.
-          </div>
-          <div className="flex gap-7 text-xs font-display font-bold text-zinc-300 tracking-[0.2em]">
-            <Link href="/projects" className="hover:text-neon-cyan transition-colors">
-              PROJECTS
-            </Link>
-            <Link href="/blog" className="hover:text-neon-cyan transition-colors">
-              BLOG
-            </Link>
-            <Link href="/contacts" className="hover:text-neon-cyan transition-colors">
-              CONTACT
-            </Link>
-          </div>
-          <div className="flex gap-3 items-center">
-            <Hexagon className="w-4 h-4 text-neon-cyan" />
-            <Triangle className="w-4 h-4 text-neon-magenta" />
-            <Circle className="w-4 h-4 text-acid-yellow" />
-          </div>
-        </div>
-      </footer>
+      {/* Футер — глобальный (components/Footer.tsx в layout), на каждой странице */}
     </main>
   );
 }

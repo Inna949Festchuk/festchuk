@@ -281,13 +281,14 @@ export default function ChatWidget() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 24, scale: 0.96 }}
             transition={{ duration: 0.22 }}
-            className={`fixed right-5 bottom-24 z-50 cyber-frame shadow-[0_0_50px_rgba(0,243,255,0.22)] ${
+            className={`fixed right-5 bottom-24 z-50 drop-shadow-[0_0_24px_rgba(0,243,255,0.22)] ${
               expanded
-                ? 'w-[calc(100vw-2.5rem)] max-w-2xl h-[calc(100%-7.5rem)] max-h-[680px]'
-                : 'w-[calc(100vw-2.5rem)] max-w-[430px] h-[calc(100%-8.5rem)] max-h-[560px]'
+                ? 'w-[calc(100vw-2.5rem)] max-w-2xl h-[calc(100dvh-11rem)] max-h-[720px]'
+                : 'w-[calc(100vw-2.5rem)] max-w-[430px] h-[calc(100dvh-11rem)] max-h-[560px]'
             }`}
           >
-            <div className="cyber-frame-body flex flex-col h-full relative overflow-hidden">
+            <div className="cyber-frame h-full w-full">
+              <div className="cyber-frame-body flex flex-col h-full relative overflow-hidden">
               <span className="cb cb-tl" />
               <span className="cb cb-tr" />
               <span className="cb cb-bl" />
@@ -501,6 +502,7 @@ export default function ChatWidget() {
                   </button>
                 </div>
               </div>
+            </div>
             </div>
           </motion.div>
         )}
