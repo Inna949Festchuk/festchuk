@@ -183,8 +183,6 @@ export default function HomePage() {
               >
                 <div className="cyber-frame-body p-6 h-full flex flex-col">
                   <span className="cb cb-tl" />
-                  <span className="cb cb-tr" />
-                  <span className="cb cb-bl" />
                   <span className="cb cb-br" />
                   <div className="flex items-center justify-between mb-5">
                     <div className={`hex-icon ${m.hex}`}>
@@ -211,8 +209,6 @@ export default function HomePage() {
         <div className="max-w-6xl mx-auto cyber-frame">
           <div className="cyber-frame-body px-6 py-9">
             <span className="cb cb-tl" />
-            <span className="cb cb-tr" />
-            <span className="cb cb-bl" />
             <span className="cb cb-br" />
             <div className="grid grid-cols-2 md:grid-cols-4 gap-y-8">
               {stats.map((s, i) => (

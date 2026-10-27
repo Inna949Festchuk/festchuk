@@ -184,8 +184,6 @@ body {
   z-index: 2;
 }
 .cb-tl { top: 5px; left: 5px; border-top: 2px solid var(--neon-cyan); border-left: 2px solid var(--neon-cyan); }
-.cb-tr { top: 5px; right: 5px; border-top: 2px solid var(--neon-purple); border-right: 2px solid var(--neon-purple); }
-.cb-bl { bottom: 5px; left: 5px; border-bottom: 2px solid var(--neon-purple); border-left: 2px solid var(--neon-purple); }
 .cb-br { bottom: 5px; right: 5px; border-bottom: 2px solid var(--neon-cyan); border-right: 2px solid var(--neon-cyan); }
 
 /* ============================================================

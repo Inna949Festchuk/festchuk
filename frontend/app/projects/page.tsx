@@ -90,8 +90,6 @@ export default function ProjectsPage() {
               >
                 <div className="cyber-frame-body overflow-hidden flex flex-col h-full">
                   <span className="cb cb-tl" />
-                  <span className="cb cb-tr" />
-                  <span className="cb cb-bl" />
                   <span className="cb cb-br" />
 
                   {/* Cover */}

@@ -288,8 +288,6 @@ export default function ChatWidget() {
             <div className="cyber-frame h-full w-full">
               <div className="cyber-frame-body flex flex-col h-full relative overflow-hidden">
               <span className="cb cb-tl" />
-              <span className="cb cb-tr" />
-              <span className="cb cb-bl" />
               <span className="cb cb-br" />
 
               {/* Top HUD Header */}

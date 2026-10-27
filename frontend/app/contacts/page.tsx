@@ -86,8 +86,6 @@ export default function ContactsPage() {
             >
               <div className="cyber-frame-body p-6 flex flex-col sm:flex-row sm:items-center gap-5 relative">
                 <span className="cb cb-tl" />
-                <span className="cb cb-tr" />
-                <span className="cb cb-bl" />
                 <span className="cb cb-br" />
 
                 <div className={`hex-icon ${card.hex} shrink-0`}>
@@ -148,8 +146,6 @@ export default function ContactsPage() {
         <div className="mt-10 cyber-frame">
           <div className="cyber-frame-body p-6 md:p-8 relative">
             <span className="cb cb-tl" />
-            <span className="cb cb-tr" />
-            <span className="cb cb-bl" />
             <span className="cb cb-br" />
             <div className="font-mono text-xs tracking-[0.24em] text-neon-magenta mb-2">
               // PROTOCOL GUIDELINES

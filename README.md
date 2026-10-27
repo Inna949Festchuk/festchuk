@@ -1,4 +1,4 @@
-# 🌃 Festchuk — AI-Driven Cyberpunk Portfolio
+# Festchuk — AI-Driven Cyberpunk Portfolio
 
 Персональный сайт-портфолио уровня Middle+/Senior Fullstack-разработчика с интегрированным AI-ассистентом. Строго тёмная киберпанк-тема.
 

@@ -118,8 +118,6 @@ export default function BlogPage() {
             >
               <div className="cyber-frame-body relative overflow-hidden">
                 <span className="cb cb-tl" />
-                <span className="cb cb-tr" />
-                <span className="cb cb-bl" />
                 <span className="cb cb-br" />
 
                 <Link href={`/blog/${post.slug}`} className="block">

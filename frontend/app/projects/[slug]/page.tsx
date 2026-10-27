@@ -102,8 +102,6 @@ export default function ProjectDetailPage() {
         >
           <div className="cyber-frame-body p-6 md:p-8 relative">
             <span className="cb cb-tl" />
-            <span className="cb cb-tr" />
-            <span className="cb cb-bl" />
             <span className="cb cb-br" />
 
             <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
@@ -197,8 +195,6 @@ export default function ProjectDetailPage() {
           >
             <div className="cyber-frame-body p-6 md:p-9 prose-cyber relative">
               <span className="cb cb-tl" />
-              <span className="cb cb-tr" />
-              <span className="cb cb-bl" />
               <span className="cb cb-br" />
               <ReactMarkdown
                 remarkPlugins={[remarkGfm]}
