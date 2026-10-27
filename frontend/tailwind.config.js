@@ -8,24 +8,26 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        'cyber-black': '#0A0A0F',
-        'cyber-dark': '#12121A',
-        'cyber-card': '#1A1A2E',
+        'cyber-black': '#060812',
+        'cyber-dark': '#0D1021',
+        'cyber-card': '#12172E',
         'neon-cyan': '#00F3FF',
         'neon-purple': '#BC13FE',
+        'neon-magenta': '#FF2BD6',
         'acid-yellow': '#FCEE0A',
-        'cyber-border': '#2A2A3E',
+        'cyber-border': '#232F4E',
       },
       fontFamily: {
-        'display': ['Orbitron', 'Rajdhani', 'sans-serif'],
+        'display': ['Orbitron', 'Unbounded', 'Rajdhani', 'sans-serif'],
         'body': ['Inter', 'system-ui', 'sans-serif'],
-        'mono': ['Geist Mono', 'Fira Code', 'monospace'],
+        'mono': ['JetBrains Mono', 'Fira Code', 'monospace'],
       },
       boxShadow: {
-        'neon-cyan': '0 0 15px rgba(0, 243, 255, 0.3)',
-        'neon-cyan-lg': '0 0 30px rgba(0, 243, 255, 0.5)',
-        'neon-purple': '0 0 15px rgba(188, 19, 254, 0.3)',
-        'card-hover': '0 0 20px rgba(0, 243, 255, 0.2), 0 4px 20px rgba(0, 0, 0, 0.4)',
+        'neon-cyan': '0 0 18px rgba(0, 243, 255, 0.35)',
+        'neon-cyan-lg': '0 0 34px rgba(0, 243, 255, 0.55)',
+        'neon-purple': '0 0 18px rgba(188, 19, 254, 0.35)',
+        'neon-magenta': '0 0 22px rgba(255, 43, 214, 0.45)',
+        'card-hover': '0 0 25px rgba(0, 243, 255, 0.22), 0 8px 30px rgba(0, 0, 0, 0.55)',
       },
       animation: {
         'glitch': 'glitch 0.3s cubic-bezier(0.36, 0.07, 0.19, 0.97) both',
@@ -44,7 +46,7 @@ module.exports = {
         },
         'neon-pulse': {
           '0%, 100%': { opacity: '1' },
-          '50%': { opacity: '0.7' },
+          '50%': { opacity: '0.65' },
         },
         float: {
           '0%, 100%': { transform: 'translateY(0)' },
@@ -52,12 +54,12 @@ module.exports = {
         },
         scanline: {
           '0%': { transform: 'translateY(-100%)' },
-          '100%': { transform: 'translateY(100%)"' },
+          '100%': { transform: 'translateY(100%)' },
         },
       },
       clipPath: {
-        'cyber-corner': 'polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px))',
-        'cyber-btn': 'polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px)',
+        'cyber-corner': 'polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 14px 100%, 0 calc(100% - 14px))',
+        'cyber-btn': 'polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px)',
       },
     },
   },

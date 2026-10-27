@@ -3,6 +3,7 @@ import './globals.css';
 import Header from '@/components/Header';
 import ChatWidget from '@/components/ChatWidget';
 import Cityscape from '@/components/Cityscape';
+import CyberMusicPlayer from '@/components/CyberMusicPlayer';
 
 export const metadata: Metadata = {
   title: 'Константин Фестчук — AI-Driven Fullstack Developer',
@@ -24,7 +25,8 @@ export default function RootLayout({
         <Cityscape />
         <div className="scanline-overlay" />
         <Header />
-        <div className="pt-16">{children}</div>
+        <div className="pt-16 pb-24">{children}</div>
+        <CyberMusicPlayer />
         <ChatWidget />
       </body>
     </html>

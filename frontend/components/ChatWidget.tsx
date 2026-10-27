@@ -11,6 +11,11 @@ import {
   Loader2,
   Volume2,
   VolumeX,
+  Sparkles,
+  Trash2,
+  Maximize2,
+  Minimize2,
+  Terminal,
 } from 'lucide-react';
 
 interface Message {
@@ -20,14 +25,23 @@ interface Message {
   timestamp: Date;
 }
 
+const QUICK_PROMPTS = [
+  'Расскажи про проекты',
+  'Какой стек технологий?',
+  'О чём статьи в блоге?',
+  'Как связаться с Константином?',
+];
+
 export default function ChatWidget() {
   const [isOpen, setIsOpen] = useState(false);
+  const [expanded, setExpanded] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [speaking, setSpeaking] = useState(false);
+  const [ttsEnabled, setTtsEnabled] = useState(true);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -37,8 +51,8 @@ export default function ChatWidget() {
   // Initialize session
   useEffect(() => {
     fetch('/api/chat/session/')
-      .then(r => r.json())
-      .then(data => setSessionId(data.session_id))
+      .then((r) => r.json())
+      .then((data) => setSessionId(data.session_id))
       .catch(() => {});
 
     return () => {
@@ -49,7 +63,7 @@ export default function ChatWidget() {
   // Auto-scroll to bottom
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  }, [messages, loading]);
 
   const stopSpeaking = useCallback(() => {
     if (audioRef.current) {
@@ -59,76 +73,85 @@ export default function ChatWidget() {
     setSpeaking(false);
   }, []);
 
-  const playResponse = useCallback((text: string) => {
-    // Use TTS endpoint to get audio
-    stopSpeaking();
-    fetch(`/api/chat/tts/?text=${encodeURIComponent(text.slice(0, 500))}`)
-      .then(r => r.ok ? r.blob() : null)
-      .then(blob => {
-        if (!blob) return;
-        const url = URL.createObjectURL(blob);
-        const audio = new Audio(url);
-        audioRef.current = audio;
-        audio.onended = () => {
-          setSpeaking(false);
-          URL.revokeObjectURL(url);
-        };
-        audio.play().then(() => setSpeaking(true)).catch(() => setSpeaking(false));
-      })
-      .catch(() => setSpeaking(false));
-  }, [stopSpeaking]);
+  const playResponse = useCallback(
+    (text: string) => {
+      if (!ttsEnabled) return;
+      stopSpeaking();
+      fetch(`/api/chat/tts/?text=${encodeURIComponent(text.slice(0, 500))}`)
+        .then((r) => (r.ok ? r.blob() : null))
+        .then((blob) => {
+          if (!blob) return;
+          const url = URL.createObjectURL(blob);
+          const audio = new Audio(url);
+          audioRef.current = audio;
+          audio.onended = () => {
+            setSpeaking(false);
+            URL.revokeObjectURL(url);
+          };
+          audio
+            .play()
+            .then(() => setSpeaking(true))
+            .catch(() => setSpeaking(false));
+        })
+        .catch(() => setSpeaking(false));
+    },
+    [stopSpeaking, ttsEnabled],
+  );
 
-  const sendMessage = useCallback(async (text?: string) => {
-    const message = text ?? input.trim();
-    if (!message || loading || !sessionId) return;
+  const sendMessage = useCallback(
+    async (text?: string) => {
+      const message = (text ?? input).trim();
+      if (!message || loading || !sessionId) return;
 
-    stopSpeaking();
+      stopSpeaking();
 
-    const userMsg: Message = {
-      id: crypto.randomUUID(),
-      role: 'user',
-      content: message,
-      timestamp: new Date(),
-    };
-    setMessages(prev => [...prev, userMsg]);
-    setInput('');
-    setLoading(true);
-
-    try {
-      const res = await fetch('/api/chat/message/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          session_id: sessionId,
-          message,
-        }),
-      });
-
-      if (!res.ok) throw new Error('Failed');
-      const data = await res.json();
-
-      const assistantMsg: Message = {
+      const userMsg: Message = {
         id: crypto.randomUUID(),
-        role: 'assistant',
-        content: data.message?.content || 'Не удалось получить ответ',
+        role: 'user',
+        content: message,
         timestamp: new Date(),
       };
-      setMessages(prev => [...prev, assistantMsg]);
-      playResponse(assistantMsg.content);
-    } catch {
-      setMessages(prev => [
-        ...prev,
-        {
+      setMessages((prev) => [...prev, userMsg]);
+      if (!text) setInput('');
+      setLoading(true);
+
+      try {
+        const res = await fetch('/api/chat/message/', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            session_id: sessionId,
+            message,
+          }),
+        });
+
+        if (!res.ok) throw new Error('Failed');
+        const data = await res.json();
+
+        const assistantMsg: Message = {
           id: crypto.randomUUID(),
           role: 'assistant',
-          content: '⚠️ AI-сервис временно недоступен. Попробуйте позже.',
+          content: data.message?.content || 'Не удалось получить ответ',
           timestamp: new Date(),
-        },
-      ]);
-    } finally {
-      setLoading(false);
-    }
-  }, [input, loading, sessionId, playResponse, stopSpeaking]);
+        };
+        setMessages((prev) => [...prev, assistantMsg]);
+        playResponse(assistantMsg.content);
+      } catch {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: crypto.randomUUID(),
+            role: 'assistant',
+            content: '⚠️ AI-сервис временно недоступен. Проверьте подключение или попробуйте позже.',
+            timestamp: new Date(),
+          },
+        ]);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [input, loading, sessionId, playResponse, stopSpeaking],
+  );
 
   const startRecording = useCallback(async () => {
     try {
@@ -142,7 +165,7 @@ export default function ChatWidget() {
       };
 
       recorder.onstop = async () => {
-        stream.getTracks().forEach(t => t.stop());
+        stream.getTracks().forEach((t) => t.stop());
         setIsRecording(false);
 
         const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
@@ -161,19 +184,11 @@ export default function ChatWidget() {
           if (res.ok) {
             const data = await res.json();
             if (data.text) {
-              // Show recognized text and send it
-              const userMsg: Message = {
-                id: crypto.randomUUID(),
-                role: 'user',
-                content: `🎤 ${data.text}`,
-                timestamp: new Date(),
-              };
-              setMessages(prev => [...prev, userMsg]);
               sendMessage(data.text);
               return;
             }
           }
-          setMessages(prev => [
+          setMessages((prev) => [
             ...prev,
             {
               id: crypto.randomUUID(),
@@ -183,7 +198,7 @@ export default function ChatWidget() {
             },
           ]);
         } catch {
-          setMessages(prev => [
+          setMessages((prev) => [
             ...prev,
             {
               id: crypto.randomUUID(),
@@ -200,12 +215,12 @@ export default function ChatWidget() {
       recorder.start();
       setIsRecording(true);
     } catch {
-      setMessages(prev => [
+      setMessages((prev) => [
         ...prev,
         {
           id: crypto.randomUUID(),
           role: 'assistant',
-          content: '⚠️ Нет доступа к микрофону.',
+          content: '⚠️ Нет доступа к микрофону в браузере.',
           timestamp: new Date(),
         },
       ]);
@@ -216,138 +231,275 @@ export default function ChatWidget() {
     mediaRecorderRef.current?.stop();
   }, []);
 
+  const clearHistory = () => {
+    stopSpeaking();
+    setMessages([]);
+  };
+
   return (
     <>
-      {/* Floating button */}
+      {/* Floating HUD launcher button */}
       <motion.button
         initial={{ scale: 0 }}
         animate={{ scale: 1 }}
-        whileHover={{ scale: 1.1 }}
-        whileTap={{ scale: 0.95 }}
+        whileHover={{ scale: 1.06 }}
+        whileTap={{ scale: 0.96 }}
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full flex items-center justify-center
-                   bg-cyber-card border-2 border-neon-cyan/50 shadow-neon-cyan
-                   hover:shadow-neon-cyan-lg hover:border-neon-cyan transition-all"
-        aria-label="AI-ассистент"
+        className="fixed bottom-5 right-5 z-50 group flex items-center gap-3 px-4 py-3
+                   bg-[#090e20]/95 backdrop-blur-md border border-neon-cyan/70
+                   shadow-[0_0_24px_rgba(0,243,255,0.35)] hover:shadow-[0_0_34px_rgba(255,43,214,0.55)]
+                   hover:border-neon-magenta transition-all"
+        style={{
+          clipPath:
+            'polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px)',
+        }}
+        aria-label="Открыть нейро-ассистента"
       >
-        {isOpen ? (
-          <X className="w-6 h-6 text-neon-cyan" />
-        ) : (
-          <Bot className="w-6 h-6 text-neon-cyan" />
-        )}
-        {!isOpen && (
-          <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-neon-cyan animate-neon-pulse" />
-        )}
+        <span className="relative flex items-center justify-center w-8 h-8 hex-icon hex-cyan !w-8 !h-8">
+          {isOpen ? (
+            <X className="w-4 h-4 text-neon-cyan" />
+          ) : (
+            <Bot className="w-4 h-4 text-neon-cyan" />
+          )}
+        </span>
+        <div className="hidden sm:flex flex-col items-start text-left pr-1">
+          <span className="font-mono text-[9px] tracking-[0.2em] text-neon-cyan flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#22c55e] animate-ping" />
+            AI CORE // ONLINE
+          </span>
+          <span className="font-display font-bold text-xs tracking-wider text-white">
+            {isOpen ? 'CLOSE TERMINAL' : 'NEURAL ASSIST'}
+          </span>
+        </div>
       </motion.button>
 
-      {/* Chat panel */}
+      {/* Holographic AI Assistant Modal */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+            initial={{ opacity: 0, y: 24, scale: 0.96 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            className="fixed bottom-24 right-6 z-50 w-[calc(100vw-3rem)] max-w-md h-[500px] max-h-[70vh]
-                       rounded-xl overflow-hidden bg-cyber-card/95 backdrop-blur-md
-                       border border-neon-cyan/30 shadow-[0_0_40px_rgba(0,243,255,0.15)]"
+            exit={{ opacity: 0, y: 24, scale: 0.96 }}
+            transition={{ duration: 0.22 }}
+            className={`fixed right-5 bottom-24 z-50 cyber-frame shadow-[0_0_50px_rgba(0,243,255,0.22)] ${
+              expanded
+                ? 'w-[calc(100vw-2.5rem)] max-w-2xl h-[calc(100%-7.5rem)] max-h-[680px]'
+                : 'w-[calc(100vw-2.5rem)] max-w-[430px] h-[calc(100%-8.5rem)] max-h-[560px]'
+            }`}
           >
-            {/* Header */}
-            <div className="px-4 py-3 border-b border-cyber-border bg-cyber-black/50 flex items-center gap-3">
-              <div className="relative">
-                <Bot className="w-5 h-5 text-neon-cyan" />
-                <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-green-400" />
-              </div>
-              <div className="flex-1">
-                <div className="text-sm font-semibold text-foreground">AI-ассистент</div>
-                <div className="text-xs text-zinc-500">
-                  {isRecording ? '🎙 Запись...' : speaking ? '🔊 Озвучка...' : 'Онлайн'}
-                </div>
-              </div>
-              {speaking && (
-                <button onClick={stopSpeaking} className="p-1.5 text-zinc-400 hover:text-neon-cyan">
-                  <VolumeX className="w-4 h-4" />
-                </button>
-              )}
-            </div>
+            <div className="cyber-frame-body flex flex-col h-full relative overflow-hidden">
+              <span className="cb cb-tl" />
+              <span className="cb cb-tr" />
+              <span className="cb cb-bl" />
+              <span className="cb cb-br" />
 
-            {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-3">
-              {messages.length === 0 && (
-                <div className="text-center py-8">
-                  <Bot className="w-10 h-10 text-zinc-600 mx-auto mb-3" />
-                  <p className="text-sm text-zinc-500">
-                    Спросите о моих проектах или статьях.
-                    <br />
-                    Например: «Какие технологии ты используешь?»
-                  </p>
+              {/* Top HUD Header */}
+              <div className="px-4 py-3.5 border-b border-neon-cyan/25 bg-[#060a18]/90 flex items-center justify-between gap-2">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="hex-icon hex-cyan !w-10 !h-10 shrink-0">
+                    <Bot className="w-5 h-5 text-neon-cyan" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="font-display font-bold text-xs tracking-wider text-white truncate">
+                        NEURAL LINK // QWEN-RAG
+                      </span>
+                      <span className="px-1.5 py-0.5 text-[9px] font-mono bg-neon-cyan/15 text-neon-cyan border border-neon-cyan/40">
+                        v3.5
+                      </span>
+                    </div>
+                    <div className="font-mono text-[10px] tracking-widest text-zinc-400 flex items-center gap-1.5 mt-0.5">
+                      <span
+                        className={`w-1.5 h-1.5 rounded-full ${
+                          isRecording
+                            ? 'bg-red-500 animate-ping'
+                            : loading
+                              ? 'bg-acid-yellow animate-pulse'
+                              : 'bg-[#22c55e]'
+                        }`}
+                      />
+                      {isRecording
+                        ? 'VOICE CAPTURE ACTIVE...'
+                        : speaking
+                          ? 'SYNTH VOICE OUTPUT...'
+                          : loading
+                            ? 'QUERYING VECTOR MATRIX...'
+                            : 'UPLINK STABLE • NODE 44-A'}
+                    </div>
+                  </div>
                 </div>
-              )}
 
-              {messages.map(msg => (
-                <motion.div
-                  key={msg.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                >
-                  <div
-                    className={`max-w-[85%] px-3 py-2 rounded-xl text-sm ${
-                      msg.role === 'user'
-                        ? 'bg-neon-cyan/10 border border-neon-cyan/20 text-foreground'
-                        : 'bg-zinc-800/50 border border-zinc-700 text-zinc-300'
+                {/* Action buttons */}
+                <div className="flex items-center gap-1 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (speaking) stopSpeaking();
+                      setTtsEnabled((v) => !v);
+                    }}
+                    className={`p-1.5 border transition-colors ${
+                      ttsEnabled
+                        ? 'border-neon-cyan/40 text-neon-cyan bg-neon-cyan/10'
+                        : 'border-cyber-border text-zinc-500 hover:text-zinc-300'
                     }`}
+                    title={ttsEnabled ? 'Автоозвучка включена' : 'Автоозвучка выключена'}
                   >
-                    {msg.content}
-                  </div>
-                </motion.div>
-              ))}
-
-              {loading && (
-                <div className="flex justify-start">
-                  <div className="px-3 py-2 rounded-xl bg-zinc-800/50 border border-zinc-700">
-                    <Loader2 className="w-4 h-4 text-neon-cyan animate-spin" />
-                  </div>
+                    {ttsEnabled ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
+                  </button>
+                  {messages.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={clearHistory}
+                      className="p-1.5 border border-cyber-border text-zinc-400 hover:text-neon-magenta hover:border-neon-magenta/50 transition-colors"
+                      title="Очистить диалог"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setExpanded((v) => !v)}
+                    className="hidden sm:inline-flex p-1.5 border border-cyber-border text-zinc-400 hover:text-neon-cyan hover:border-neon-cyan/50 transition-colors"
+                    title={expanded ? 'Свернуть окно' : 'Развернуть окно'}
+                  >
+                    {expanded ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsOpen(false)}
+                    className="p-1.5 border border-cyber-border text-zinc-400 hover:text-neon-magenta hover:border-neon-magenta/50 transition-colors"
+                    title="Закрыть"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
                 </div>
-              )}
-              <div ref={messagesEndRef} />
-            </div>
+              </div>
 
-            {/* Input */}
-            <div className="p-3 border-t border-cyber-border bg-cyber-black/30">
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={isRecording ? stopRecording : startRecording}
-                  disabled={loading}
-                  className={`p-2 rounded-lg border transition-colors ${
-                    isRecording
-                      ? 'border-red-500 text-red-400 bg-red-500/10 animate-pulse'
-                      : 'border-zinc-700 text-zinc-400 hover:border-zinc-500 disabled:opacity-50'
-                  }`}
-                  title={isRecording ? 'Остановить запись' : 'Голосовой ввод'}
-                >
-                  {isRecording ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
-                </button>
+              {/* Messages Feed */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-3.5 bg-gradient-to-b from-[#070b18]/80 to-[#050813]/95">
+                {messages.length === 0 && (
+                  <div className="py-4 px-2">
+                    <div className="p-4 border border-neon-cyan/25 bg-neon-cyan/5 mb-4 relative">
+                      <div className="flex items-center gap-2 text-neon-cyan font-mono text-[10px] tracking-[0.2em] mb-1.5">
+                        <Terminal className="w-3.5 h-3.5" />
+                        SYSTEM INITIALIZED
+                      </div>
+                      <p className="text-xs text-zinc-300 leading-relaxed">
+                        Привет! Я нейросетевой ассистент Константина Фестчука с доступом к базе
+                        проектов, GitHub README и статьям блога через RAG.
+                      </p>
+                    </div>
 
-                <input
-                  type="text"
-                  value={input}
-                  onChange={e => setInput(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && sendMessage()}
-                  placeholder="Спросите о проектах..."
-                  disabled={loading}
-                  className="flex-1 px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-sm text-foreground
-                             placeholder-zinc-600 focus:outline-none focus:border-neon-cyan/50 disabled:opacity-50"
-                />
+                    <div className="font-mono text-[10px] tracking-[0.18em] text-zinc-400 mb-2.5 flex items-center gap-1.5">
+                      <Sparkles className="w-3 h-3 text-neon-magenta" />
+                      БЫСТРЫЕ КОМАНДЫ:
+                    </div>
+                    <div className="grid grid-cols-1 gap-2">
+                      {QUICK_PROMPTS.map((prompt) => (
+                        <button
+                          key={prompt}
+                          type="button"
+                          onClick={() => sendMessage(prompt)}
+                          className="text-left px-3 py-2 text-xs font-mono text-zinc-200 bg-[#0d1428]/90
+                                     border border-neon-cyan/30 hover:border-neon-cyan hover:text-neon-cyan
+                                     hover:bg-neon-cyan/10 transition-all flex items-center justify-between group"
+                        >
+                          <span className="truncate">{prompt}</span>
+                          <span className="text-neon-cyan opacity-60 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all">
+                            →
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
-                <button
-                  onClick={() => sendMessage()}
-                  disabled={loading || !input.trim()}
-                  className="p-2 rounded-lg bg-neon-cyan/10 border border-neon-cyan/30 text-neon-cyan
-                             hover:bg-neon-cyan/20 disabled:opacity-30 disabled:cursor-not-allowed"
-                  title="Отправить"
-                >
-                  <Send className="w-4 h-4" />
-                </button>
+                {messages.map((msg) => (
+                  <motion.div
+                    key={msg.id}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}
+                  >
+                    <span className="font-mono text-[9px] tracking-[0.16em] text-zinc-500 mb-1 px-1">
+                      {msg.role === 'user' ? 'USER // INPUT' : 'AI CORE // RESPONSE'} •{' '}
+                      {msg.timestamp.toLocaleTimeString('ru-RU', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </span>
+                    <div
+                      className={`max-w-[88%] px-3.5 py-2.5 text-xs sm:text-sm leading-relaxed ${
+                        msg.role === 'user'
+                          ? 'bg-gradient-to-r from-neon-magenta/25 to-neon-purple/25 border border-neon-magenta/60 text-white shadow-[0_0_16px_rgba(255,43,214,0.18)]'
+                          : 'bg-[#0e162d]/95 border border-neon-cyan/40 text-zinc-100 shadow-[0_0_16px_rgba(0,243,255,0.1)]'
+                      }`}
+                      style={{
+                        clipPath:
+                          'polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px)',
+                      }}
+                    >
+                      {msg.content}
+                    </div>
+                  </motion.div>
+                ))}
+
+                {loading && (
+                  <div className="flex items-start gap-2">
+                    <div className="px-3.5 py-2.5 bg-[#0e162d]/95 border border-neon-cyan/40 flex items-center gap-2.5">
+                      <Loader2 className="w-4 h-4 text-neon-cyan animate-spin" />
+                      <span className="font-mono text-xs text-neon-cyan tracking-wider">
+                        СИНТЕЗ ОТВЕТА...
+                      </span>
+                    </div>
+                  </div>
+                )}
+                <div ref={messagesEndRef} />
+              </div>
+
+              {/* Input Bar */}
+              <div className="p-3 border-t border-neon-cyan/25 bg-[#060a18]/95">
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={isRecording ? stopRecording : startRecording}
+                    disabled={loading}
+                    className={`p-2.5 border transition-all shrink-0 ${
+                      isRecording
+                        ? 'border-red-500 text-red-400 bg-red-500/20 animate-pulse shadow-[0_0_14px_rgba(239,68,68,0.5)]'
+                        : 'border-neon-purple/50 text-neon-purple bg-neon-purple/10 hover:border-neon-magenta hover:text-neon-magenta disabled:opacity-40'
+                    }`}
+                    style={{
+                      clipPath:
+                        'polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px)',
+                    }}
+                    title={isRecording ? 'Остановить запись' : 'Голосовой ввод (STT)'}
+                  >
+                    {isRecording ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                  </button>
+
+                  <input
+                    type="text"
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
+                    placeholder="Введите запрос в нейросеть..."
+                    disabled={loading}
+                    className="flex-1 min-w-0 px-3.5 py-2.5 bg-[#0b1224] border border-neon-cyan/35 text-xs sm:text-sm text-white
+                               placeholder-zinc-500 font-mono focus:outline-none focus:border-neon-cyan
+                               focus:shadow-[0_0_14px_rgba(0,243,255,0.25)] disabled:opacity-50"
+                  />
+
+                  <button
+                    type="button"
+                    onClick={() => sendMessage()}
+                    disabled={loading || !input.trim()}
+                    className="cyber-btn btn-primary px-4 py-2.5 text-xs font-bold shrink-0 disabled:opacity-35 disabled:pointer-events-none"
+                    title="Отправить запрос"
+                  >
+                    <Send className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
             </div>
           </motion.div>

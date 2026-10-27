@@ -13,6 +13,7 @@ import {
   ExternalLink,
   Clock,
   ArrowLeft,
+  Cpu,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -42,8 +43,8 @@ export default function ProjectDetailPage() {
 
   useEffect(() => {
     fetch(`/api/projects/${slug}/`)
-      .then(r => r.json())
-      .then(data => {
+      .then((r) => r.json())
+      .then((data) => {
         setProject(data);
         setLoading(false);
       })
@@ -55,137 +56,163 @@ export default function ProjectDetailPage() {
     try {
       await fetch(`/api/projects/${project.id}/like/`, { method: 'POST' });
       setLiked(true);
-      setProject(prev => prev ? { ...prev, likes_count: prev.likes_count + 1 } : null);
+      setProject((prev) => (prev ? { ...prev, likes_count: prev.likes_count + 1 } : null));
     } catch {}
   }, [project, liked]);
 
   if (loading) {
     return (
       <main className="min-h-screen flex items-center justify-center">
-        <div className="text-neon-cyan font-mono animate-pulse">Загрузка...</div>
+        <div className="cyber-frame">
+          <div className="cyber-frame-body px-8 py-5 text-neon-cyan font-mono tracking-[0.2em] animate-pulse">
+            ДЕКОДИРОВАНИЕ ДОСЬЕ ПРОЕКТА...
+          </div>
+        </div>
       </main>
     );
   }
 
   if (!project) {
     return (
-      <main className="min-h-screen flex flex-col items-center justify-center gap-4">
-        <div className="text-2xl text-zinc-500">Проект не найден</div>
-        <Link href="/projects" className="text-neon-cyan hover:underline">
-          ← Ко всем проектам
+      <main className="min-h-screen flex flex-col items-center justify-center gap-5">
+        <div className="text-2xl font-display text-zinc-300">Проект не найден</div>
+        <Link href="/projects" className="cyber-btn btn-ghost px-6 py-3 text-xs font-bold">
+          <ArrowLeft className="w-4 h-4" />
+          <span>КО ВСЕМ ПРОЕКТАМ</span>
         </Link>
       </main>
     );
   }
 
   return (
-    <main className="min-h-screen px-4 py-8">
+    <main className="min-h-screen px-4 py-10">
       <div className="max-w-4xl mx-auto">
-        {/* Back */}
         <Link
           href="/projects"
-          className="inline-flex items-center gap-2 text-sm text-zinc-500 hover:text-neon-cyan transition-colors mb-6"
+          className="cyber-btn btn-ghost px-4 py-2 text-xs font-bold mb-8 inline-flex"
         >
           <ArrowLeft className="w-4 h-4" />
-          Ко всем проектам
+          <span>КО ВСЕМ ПРОЕКТАМ</span>
         </Link>
 
-        {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
+          className="cyber-frame mb-8"
         >
-          <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
-            <div>
-              <h1 className="text-4xl font-display font-bold text-foreground mb-2">
-                {project.title}
-              </h1>
-              {project.summary && (
-                <p className="text-lg text-zinc-400">{project.summary}</p>
-              )}
+          <div className="cyber-frame-body p-6 md:p-8 relative">
+            <span className="cb cb-tl" />
+            <span className="cb cb-tr" />
+            <span className="cb cb-bl" />
+            <span className="cb cb-br" />
+
+            <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
+              <div>
+                <div className="font-mono text-xs tracking-[0.24em] text-neon-cyan mb-2 flex items-center gap-2">
+                  <Cpu className="w-3.5 h-3.5" />
+                  <span>SYSTEM SPECIFICATION</span>
+                </div>
+                <h1 className="text-3xl sm:text-4xl font-display font-black text-white mb-2">
+                  {project.title}
+                </h1>
+                {project.summary && (
+                  <p className="text-base sm:text-lg text-zinc-300 leading-relaxed">
+                    {project.summary}
+                  </p>
+                )}
+              </div>
+
+              <div className="flex flex-wrap gap-3">
+                {project.github_url && (
+                  <a
+                    href={project.github_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="cyber-btn btn-ghost px-5 py-2.5 text-xs font-bold"
+                  >
+                    <Github className="w-4 h-4" />
+                    <span>GITHUB</span>
+                  </a>
+                )}
+                {project.demo_url && (
+                  <a
+                    href={project.demo_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="cyber-btn btn-primary px-5 py-2.5 text-xs font-bold"
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                    <span>LIVE DEMO</span>
+                  </a>
+                )}
+              </div>
             </div>
 
-            <div className="flex gap-3">
-              {project.github_url && (
-                <a
-                  href={project.github_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="cyber-btn px-4 py-2 bg-transparent border border-zinc-600 text-zinc-300 hover:border-neon-cyan hover:text-neon-cyan flex items-center gap-2 text-sm"
-                >
-                  <Github className="w-4 h-4" />
-                  GitHub
-                </a>
-              )}
-              {project.demo_url && (
-                <a
-                  href={project.demo_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="cyber-btn px-4 py-2 bg-transparent border border-zinc-600 text-zinc-300 hover:border-acid-yellow hover:text-acid-yellow flex items-center gap-2 text-sm"
-                >
-                  <ExternalLink className="w-4 h-4" />
-                  Демо
-                </a>
-              )}
-            </div>
-          </div>
+            {project.technologies?.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-6">
+                {project.technologies.map((tech) => (
+                  <span
+                    key={tech}
+                    className="px-3 py-1 text-xs font-mono tracking-wider bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/35"
+                  >
+                    {tech}
+                  </span>
+                ))}
+              </div>
+            )}
 
-          {/* Stats */}
-          <div className="flex flex-wrap items-center gap-6 text-sm text-zinc-500">
-            <span className="flex items-center gap-1">
-              <Eye className="w-4 h-4" />
-              {project.views_count} просмотров
-            </span>
-            <button
-              onClick={handleLike}
-              className={`flex items-center gap-1 transition-colors ${
-                liked ? 'text-neon-cyan' : 'hover:text-neon-cyan'
-              }`}
-            >
-              <Heart className={`w-4 h-4 ${liked ? 'fill-neon-cyan' : ''}`} />
-              {project.likes_count}
-            </button>
-            <span className="flex items-center gap-1">
-              <Clock className="w-4 h-4" />
-              {new Date(project.created_at).toLocaleDateString('ru-RU')}
-            </span>
+            <div className="flex flex-wrap items-center gap-6 pt-4 border-t border-cyber-border text-xs font-mono text-zinc-400">
+              <span className="flex items-center gap-1.5">
+                <Eye className="w-4 h-4 text-neon-cyan" />
+                {project.views_count} ПРОСМОТРОВ
+              </span>
+              <button
+                type="button"
+                onClick={handleLike}
+                className={`flex items-center gap-1.5 transition-colors ${
+                  liked ? 'text-neon-magenta' : 'hover:text-neon-magenta'
+                }`}
+              >
+                <Heart
+                  className={`w-4 h-4 ${
+                    liked ? 'fill-neon-magenta text-neon-magenta' : 'text-neon-magenta'
+                  }`}
+                />
+                {project.likes_count} ЛАЙКОВ
+              </button>
+              <span className="flex items-center gap-1.5">
+                <Clock className="w-4 h-4 text-acid-yellow" />
+                {new Date(project.created_at).toLocaleDateString('ru-RU')}
+              </span>
+            </div>
           </div>
         </motion.div>
 
-        {/* Technologies */}
-        {project.technologies?.length > 0 && (
-          <div className="flex flex-wrap gap-2 mb-8">
-            {project.technologies.map(tech => (
-              <span
-                key={tech}
-                className="px-3 py-1.5 text-sm rounded-full bg-neon-purple/10 text-neon-purple border border-neon-purple/20"
-              >
-                {tech}
-              </span>
-            ))}
-          </div>
-        )}
-
-        {/* README Content */}
         {project.readme_content ? (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 0.2 }}
-            className="glass-card rounded-xl p-6 md:p-8 prose-cyber"
+            transition={{ delay: 0.15 }}
+            className="cyber-frame"
           >
-            <ReactMarkdown
-              remarkPlugins={[remarkGfm]}
-              rehypePlugins={[rehypeHighlight]}
-            >
-              {project.readme_content}
-            </ReactMarkdown>
+            <div className="cyber-frame-body p-6 md:p-9 prose-cyber relative">
+              <span className="cb cb-tl" />
+              <span className="cb cb-tr" />
+              <span className="cb cb-bl" />
+              <span className="cb cb-br" />
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                rehypePlugins={[rehypeHighlight]}
+              >
+                {project.readme_content}
+              </ReactMarkdown>
+            </div>
           </motion.div>
         ) : (
-          <div className="glass-card rounded-xl p-8 text-center text-zinc-500">
-            README пока не доступен
+          <div className="cyber-frame">
+            <div className="cyber-frame-body p-8 text-center text-zinc-400 font-mono">
+              README пока не доступен
+            </div>
           </div>
         )}
       </div>
