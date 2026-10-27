@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(sleep *)",
+      "Bash(true)",
+      "Bash(cd *)",
+      "Bash(docker compose *)",
+      "Bash(grep *)",
+      "Bash(echo *)",
+      "Bash(head *)",
+      "Bash(curl *)",
+      "Bash(sort *)",
+      "Bash(head)",
+      "Bash(python3 *)",
+      "Bash(xargs *)",
+      "Bash(ffprobe *)",
+      "Bash(ls *)",
+      "Bash(command *)",
+      "Bash(do *)",
+      "Bash(done)"
+    ]
+  },
+  "$version": 4
+}

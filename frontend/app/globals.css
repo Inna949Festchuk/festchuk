@@ -1,0 +1,530 @@
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Rajdhani:wght@500;600;700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #060912;
+  --foreground: #E2E8F0;
+  --neon-cyan: #00F3FF;
+  --neon-purple: #BC13FE;
+  --neon-magenta: #FF2BD6;
+  --acid-yellow: #FCEE0A;
+  --cyber-card: #0d1220;
+  --cyber-border: #1e2a44;
+}
+
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+  scrollbar-gutter: stable;
+}
+@supports not (scrollbar-gutter: stable) {
+  html { overflow-y: scroll; }
+}
+
+body {
+  background:
+    radial-gradient(1200px 600px at 75% -10%, rgba(188, 19, 254, 0.14), transparent 60%),
+    radial-gradient(1000px 500px at 15% 0%, rgba(0, 243, 255, 0.12), transparent 55%),
+    radial-gradient(900px 700px at 50% 120%, rgba(0, 243, 255, 0.10), transparent 60%),
+    var(--background);
+  color: var(--foreground);
+  font-family: 'Inter', system-ui, sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ============================================================
+   Background layers
+   ============================================================ */
+.cyber-grid-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  background:
+    linear-gradient(rgba(0, 243, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 243, 255, 0.05) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(ellipse at 50% 30%, black 0%, transparent 80%);
+  -webkit-mask-image: radial-gradient(ellipse at 50% 30%, black 0%, transparent 80%);
+  animation: grid-shift 24s linear infinite;
+}
+
+@keyframes grid-shift {
+  0% { background-position: 0 0; }
+  100% { background-position: 56px 56px; }
+}
+
+/* Diagonal light beams */
+.bg-beams {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    linear-gradient(115deg, transparent 40%, rgba(0, 243, 255, 0.06) 42%, transparent 44%),
+    linear-gradient(115deg, transparent 60%, rgba(188, 19, 254, 0.06) 62%, transparent 64%);
+  animation: beam-drift 14s ease-in-out infinite alternate;
+}
+
+@keyframes beam-drift {
+  0% { transform: translateX(-3%); opacity: 0.7; }
+  100% { transform: translateX(3%); opacity: 1; }
+}
+
+/* City horizon glow at the bottom */
+.bg-horizon {
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  height: 40vh;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    linear-gradient(to top, rgba(188, 19, 254, 0.10), transparent 70%);
+}
+
+/* ============================================================
+   Glitch text (chromatic aberration)
+   ============================================================ */
+.glitch {
+  position: relative;
+  display: inline-block;
+  color: #f4f7ff;
+}
+.glitch::before,
+.glitch::after {
+  content: attr(data-text);
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: 0.85;
+}
+.glitch::before {
+  color: var(--neon-cyan);
+  animation: glitch-a 3.2s infinite linear alternate-reverse;
+}
+.glitch::after {
+  color: var(--neon-magenta);
+  animation: glitch-b 2.6s infinite linear alternate-reverse;
+}
+@keyframes glitch-a {
+  0%   { clip-path: inset(0 0 88% 0); transform: translate(-3px, -1px); }
+  12%  { clip-path: inset(18% 0 62% 0); transform: translate(2px, 1px); }
+  24%  { clip-path: inset(52% 0 30% 0); transform: translate(-2px, 0); }
+  36%  { clip-path: inset(4% 0 92% 0); transform: translate(3px, -1px); }
+  48%  { clip-path: inset(72% 0 6% 0); transform: translate(-1px, 1px); }
+  60%  { clip-path: inset(26% 0 56% 0); transform: translate(2px, 0); }
+  72%  { clip-path: inset(86% 0 8% 0); transform: translate(-3px, 1px); }
+  84%  { clip-path: inset(12% 0 74% 0); transform: translate(1px, -1px); }
+  100% { clip-path: inset(44% 0 40% 0); transform: translate(-2px, 1px); }
+}
+@keyframes glitch-b {
+  0%   { clip-path: inset(80% 0 4% 0); transform: translate(3px, 1px); }
+  14%  { clip-path: inset(8% 0 82% 0); transform: translate(-2px, -1px); }
+  28%  { clip-path: inset(48% 0 34% 0); transform: translate(2px, 1px); }
+  42%  { clip-path: inset(88% 0 2% 0); transform: translate(-3px, 0); }
+  56%  { clip-path: inset(20% 0 60% 0); transform: translate(1px, -1px); }
+  70%  { clip-path: inset(64% 0 22% 0); transform: translate(-2px, 1px); }
+  84%  { clip-path: inset(4% 0 88% 0); transform: translate(3px, 0); }
+  100% { clip-path: inset(40% 0 44% 0); transform: translate(-1px, 1px); }
+}
+
+/* Static neon glow */
+.text-glow-cyan {
+  text-shadow: 0 0 10px rgba(0, 243, 255, 0.55), 0 0 22px rgba(0, 243, 255, 0.35);
+}
+.text-glow-purple {
+  text-shadow: 0 0 10px rgba(188, 19, 254, 0.55), 0 0 22px rgba(188, 19, 254, 0.35);
+}
+.text-glow-white {
+  text-shadow: 0 0 12px rgba(255, 255, 255, 0.4), 0 0 30px rgba(0, 243, 255, 0.25);
+}
+
+/* ============================================================
+   Cut-corner frame (NEXUS cards / buttons)
+   ============================================================ */
+.cyber-frame {
+  position: relative;
+  padding: 1px;
+  background: linear-gradient(135deg,
+    rgba(0, 243, 255, 0.85) 0%,
+    rgba(0, 243, 255, 0.18) 28%,
+    rgba(188, 19, 254, 0.18) 72%,
+    rgba(188, 19, 254, 0.85) 100%);
+  clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 16px 100%, 0 calc(100% - 16px));
+  transition: filter 0.3s ease, transform 0.3s ease;
+}
+.cyber-frame:hover {
+  filter: drop-shadow(0 0 14px rgba(0, 243, 255, 0.25));
+}
+.cyber-frame-body {
+  height: 100%;
+  background: linear-gradient(155deg, rgba(13, 18, 32, 0.96), rgba(8, 11, 20, 0.96));
+  clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 16px 100%, 0 calc(100% - 16px));
+}
+.cyber-frame--flat {
+  background: rgba(30, 42, 68, 0.6);
+  padding: 1px;
+}
+
+/* Corner brackets */
+.cb {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  pointer-events: none;
+  z-index: 2;
+}
+.cb-tl { top: 5px; left: 5px; border-top: 2px solid var(--neon-cyan); border-left: 2px solid var(--neon-cyan); }
+.cb-tr { top: 5px; right: 5px; border-top: 2px solid var(--neon-purple); border-right: 2px solid var(--neon-purple); }
+.cb-bl { bottom: 5px; left: 5px; border-bottom: 2px solid var(--neon-purple); border-left: 2px solid var(--neon-purple); }
+.cb-br { bottom: 5px; right: 5px; border-bottom: 2px solid var(--neon-cyan); border-right: 2px solid var(--neon-cyan); }
+
+/* ============================================================
+   Buttons
+   ============================================================ */
+.cyber-btn {
+  position: relative;
+  clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+  transition: all 0.25s ease;
+  overflow: hidden;
+  letter-spacing: 0.04em;
+}
+.cyber-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(0, 243, 255, 0.15), rgba(188, 19, 254, 0.15));
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+.cyber-btn:hover::before { opacity: 1; }
+.cyber-btn:hover { box-shadow: 0 0 22px rgba(0, 243, 255, 0.35); }
+
+.btn-primary {
+  background: linear-gradient(90deg, rgba(255, 43, 214, 0.22), rgba(188, 19, 254, 0.22));
+  border: 1px solid var(--neon-magenta);
+  color: #fff;
+  text-shadow: 0 0 8px rgba(255, 43, 214, 0.6);
+}
+.btn-primary:hover { box-shadow: 0 0 26px rgba(255, 43, 214, 0.5); }
+.btn-ghost {
+  background: transparent;
+  border: 1px solid rgba(0, 243, 255, 0.5);
+  color: var(--neon-cyan);
+}
+.btn-ghost:hover { border-color: var(--neon-cyan); box-shadow: 0 0 20px rgba(0, 243, 255, 0.4); }
+
+/* ============================================================
+   Hologram (hero visual)
+   ============================================================ */
+.holo-scene {
+  position: relative;
+  width: min(78vw, 380px);
+  aspect-ratio: 1 / 1;
+  perspective: 900px;
+}
+.holo-ring {
+  position: absolute;
+  inset: 0;
+  animation: holo-spin 26s linear infinite;
+  filter: drop-shadow(0 0 10px rgba(0, 243, 255, 0.35));
+}
+.holo-ring--inner {
+  inset: 14%;
+  animation: holo-spin-rev 18s linear infinite;
+}
+@keyframes holo-spin { from { transform: rotate(0); } to { transform: rotate(360deg); } }
+@keyframes holo-spin-rev { from { transform: rotate(360deg); } to { transform: rotate(0); } }
+
+.holo-cube-wrap {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.holo-cube {
+  width: 96px;
+  height: 96px;
+  position: relative;
+  transform-style: preserve-3d;
+  animation: cube-spin 14s linear infinite;
+}
+.holo-cube .face {
+  position: absolute;
+  width: 96px;
+  height: 96px;
+  border: 1.5px solid var(--neon-cyan);
+  background: rgba(0, 243, 255, 0.06);
+  box-shadow: 0 0 18px rgba(0, 243, 255, 0.35) inset;
+}
+.face-front  { transform: translateZ(48px); }
+.face-back   { transform: rotateY(180deg) translateZ(48px); }
+.face-right  { transform: rotateY(90deg) translateZ(48px); }
+.face-left   { transform: rotateY(-90deg) translateZ(48px); }
+.face-top    { transform: rotateX(90deg) translateZ(48px); }
+.face-bottom { transform: rotateX(-90deg) translateZ(48px); }
+@keyframes cube-spin {
+  from { transform: rotateX(-18deg) rotateY(0); }
+  to   { transform: rotateX(-18deg) rotateY(360deg); }
+}
+.holo-core {
+  position: absolute;
+  top: 50%; left: 50%;
+  width: 12px; height: 12px;
+  margin: -6px 0 0 -6px;
+  border-radius: 50%;
+  background: var(--neon-cyan);
+  box-shadow: 0 0 20px var(--neon-cyan), 0 0 40px var(--neon-cyan);
+  animation: neon-pulse 1.8s ease-in-out infinite;
+}
+
+/* Data readout chips */
+.data-readout {
+  position: absolute;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--neon-cyan);
+  background: rgba(6, 9, 18, 0.7);
+  border: 1px solid rgba(0, 243, 255, 0.35);
+  padding: 4px 8px;
+  backdrop-filter: blur(4px);
+}
+
+/* ============================================================
+   Modules / stats
+   ============================================================ */
+.hex-icon {
+  width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
+}
+.hex-cyan {
+  background: rgba(0, 243, 255, 0.12);
+  color: var(--neon-cyan);
+  box-shadow: inset 0 0 18px rgba(0, 243, 255, 0.25);
+}
+.hex-purple {
+  background: rgba(188, 19, 254, 0.14);
+  color: var(--neon-purple);
+  box-shadow: inset 0 0 18px rgba(188, 19, 254, 0.3);
+}
+
+.stat-num {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 800;
+  color: var(--neon-cyan);
+  text-shadow: 0 0 16px rgba(0, 243, 255, 0.5);
+}
+
+.neon-divider {
+  width: 1px;
+  align-self: stretch;
+  background: linear-gradient(to bottom, transparent, rgba(0, 243, 255, 0.4), transparent);
+}
+
+.module-eyebrow {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.3em;
+  color: var(--neon-cyan);
+}
+
+/* ============================================================
+   Legacy utilities (kept for projects/blog pages)
+   ============================================================ */
+.glass-card {
+  background: rgba(13, 18, 32, 0.6);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid var(--cyber-border);
+  transition: all 0.3s ease;
+}
+.glass-card:hover {
+  border-color: rgba(0, 243, 255, 0.5);
+  box-shadow: 0 0 20px rgba(0, 243, 255, 0.15), 0 0 60px rgba(0, 243, 255, 0.05);
+  transform: translateY(-4px);
+}
+
+/* Scanline effect */
+.scanline-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.04) 2px,
+    rgba(0, 0, 0, 0.04) 4px
+  );
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: var(--background); }
+::-webkit-scrollbar-thumb { background: var(--cyber-border); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(0, 243, 255, 0.3); }
+
+/* Prose styles for markdown content */
+.prose-cyber { color: var(--foreground); line-height: 1.75; }
+.prose-cyber h1, .prose-cyber h2, .prose-cyber h3 {
+  font-family: 'Orbitron', sans-serif;
+  color: var(--neon-cyan);
+  margin-top: 2em;
+  margin-bottom: 1em;
+}
+.prose-cyber h1 { font-size: 2rem; }
+.prose-cyber h2 { font-size: 1.5rem; }
+.prose-cyber h3 { font-size: 1.25rem; }
+.prose-cyber p { margin-bottom: 1em; }
+.prose-cyber code {
+  font-family: 'JetBrains Mono', monospace;
+  background: rgba(0, 243, 255, 0.1);
+  border: 1px solid rgba(0, 243, 255, 0.2);
+  padding: 0.2em 0.4em;
+  border-radius: 4px;
+  font-size: 0.9em;
+}
+.prose-cyber pre {
+  background: #0a0e1a;
+  border: 1px solid var(--cyber-border);
+  border-radius: 8px;
+  padding: 1em;
+  overflow-x: auto;
+  margin-bottom: 1.5em;
+}
+.prose-cyber pre code { background: transparent; border: none; padding: 0; }
+.prose-cyber a { color: var(--neon-cyan); text-decoration: underline; text-underline-offset: 2px; }
+.prose-cyber a:hover { color: var(--acid-yellow); }
+.prose-cyber table { width: 100%; border-collapse: collapse; margin-bottom: 1.5em; }
+.prose-cyber th, .prose-cyber td {
+  border: 1px solid var(--cyber-border);
+  padding: 0.75em 1em;
+  text-align: left;
+}
+.prose-cyber th {
+  background: rgba(0, 243, 255, 0.08);
+  color: var(--neon-cyan);
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.875em;
+  text-transform: uppercase;
+}
+.prose-cyber img { border-radius: 8px; border: 1px solid var(--cyber-border); margin-bottom: 1em; }
+.prose-cyber blockquote {
+  border-left: 3px solid var(--neon-purple);
+  padding-left: 1em;
+  color: #94A3B8;
+  font-style: italic;
+}
+.prose-cyber ul, .prose-cyber ol { margin-bottom: 1em; padding-left: 1.5em; }
+.prose-cyber li { margin-bottom: 0.5em; }
+.prose-cyber li::marker { color: var(--neon-cyan); }
+
+/* ============================================================
+   Cityscape — city, data streams, beams, orbit
+   ============================================================ */
+.cityscape { will-change: transform; }
+
+.datastream {
+  position: absolute;
+  top: -12%;
+  width: 16px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  line-height: 1.4;
+  letter-spacing: 2px;
+  writing-mode: vertical-rl;
+  text-orientation: upright;
+  opacity: 0.5;
+  animation-name: datastream-fall;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  mask-image: linear-gradient(to bottom, transparent, #000 15%, #000 72%, transparent);
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 15%, #000 72%, transparent);
+}
+@keyframes datastream-fall {
+  0% { transform: translateY(-30%); }
+  100% { transform: translateY(130%); }
+}
+
+.orbit-grid {
+  position: absolute;
+  top: 0; right: 0;
+  width: 72vw; height: 74vh;
+  background:
+    linear-gradient(rgba(0, 243, 255, 0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 243, 255, 0.07) 1px, transparent 1px);
+  background-size: 42px 42px;
+  transform: perspective(520px) rotateX(58deg) rotateZ(-8deg);
+  transform-origin: top right;
+  opacity: 0.5;
+  mask-image: radial-gradient(ellipse at top right, #000, transparent 72%);
+  -webkit-mask-image: radial-gradient(ellipse at top right, #000, transparent 72%);
+  animation: orbit-pulse 6s ease-in-out infinite;
+}
+@keyframes orbit-pulse {
+  0%, 100% { opacity: 0.35; }
+  50% { opacity: 0.6; }
+}
+
+.city-beam {
+  position: absolute;
+  bottom: 18%;
+  width: 3px;
+  height: 46vh;
+  background: linear-gradient(to top, rgba(0, 243, 255, 0.6), transparent);
+  transform-origin: bottom;
+  filter: blur(0.5px);
+  animation: beam-flicker 4s ease-in-out infinite;
+}
+.city-beam-1 { right: 30%; transform: rotate(18deg); }
+.city-beam-2 {
+  right: 52%; height: 36vh; transform: rotate(-14deg);
+  animation-delay: -2s;
+  background: linear-gradient(to top, rgba(188, 19, 254, 0.55), transparent);
+}
+@keyframes beam-flicker {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 0.95; }
+}
+
+/* ============================================================
+   Bento grid (asymmetric project/post cards)
+   ============================================================ */
+.bento-grid {
+  display: grid;
+  gap: 1.25rem;
+  grid-template-columns: repeat(6, 1fr);
+  grid-auto-rows: minmax(170px, auto);
+  grid-auto-flow: dense;
+}
+.bento-lg { grid-column: span 4; grid-row: span 2; }
+.bento-md { grid-column: span 3; }
+.bento-sm { grid-column: span 2; }
+@media (max-width: 1023px) {
+  .bento-grid { grid-template-columns: repeat(2, 1fr); }
+  .bento-lg { grid-column: span 2; grid-row: span 2; }
+  .bento-md, .bento-sm { grid-column: span 1; }
+}
+@media (max-width: 639px) {
+  .bento-grid { grid-template-columns: 1fr; }
+  .bento-lg, .bento-md, .bento-sm { grid-column: span 1; grid-row: span 1; }
+}
+
+/* Odometer (tabular digits, no width jump while counting) */
+.odometer { font-variant-numeric: tabular-nums; display: inline-block; }
