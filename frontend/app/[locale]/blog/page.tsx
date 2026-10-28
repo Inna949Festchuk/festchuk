@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
-import { Eye, Heart, Clock, Tag, BookOpen, ArrowUpRight } from 'lucide-react';
-import Link from 'next/link';
+import {useEffect, useState} from 'react';
+import {useTranslations, useLocale} from 'next-intl';
+import {motion} from 'framer-motion';
+import {Eye, Heart, Clock, Tag, BookOpen, ArrowUpRight} from 'lucide-react';
+import {Link} from '@/i18n/navigation';
 
 interface Post {
   id: number;
@@ -19,14 +20,19 @@ interface Post {
 }
 
 export default function BlogPage() {
+  const t = useTranslations('blog');
+  const locale = useLocale();
+
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTag, setActiveTag] = useState<string | null>(null);
 
+  const dateLocale = locale === 'ru' ? 'ru-RU' : 'en-US';
+
   useEffect(() => {
     const url = activeTag
-      ? `/api/posts/?tag=${encodeURIComponent(activeTag)}`
-      : '/api/posts/';
+      ? `/api/posts/?lang=${locale}&tag=${encodeURIComponent(activeTag)}`
+      : `/api/posts/?lang=${locale}`;
     fetch(url)
       .then((r) => r.json())
       .then((data) => {
@@ -34,15 +40,15 @@ export default function BlogPage() {
         setLoading(false);
       })
       .catch(() => setLoading(false));
-  }, [activeTag]);
+  }, [activeTag, locale]);
 
   const allTags = Array.from(new Set(posts.flatMap((p) => p.tags || []))).sort();
 
   const handleLike = async (id: number) => {
     try {
-      await fetch(`/api/posts/${id}/like/`, { method: 'POST' });
+      await fetch(`/api/posts/${id}/like/`, {method: 'POST'});
       setPosts((prev) =>
-        prev.map((p) => (p.id === id ? { ...p, likes_count: p.likes_count + 1 } : p)),
+        prev.map((p) => (p.id === id ? {...p, likes_count: p.likes_count + 1} : p)),
       );
     } catch {}
   };
@@ -52,7 +58,7 @@ export default function BlogPage() {
       <main className="min-h-screen flex items-center justify-center">
         <div className="cyber-frame">
           <div className="cyber-frame-body px-8 py-5 text-neon-cyan font-mono tracking-[0.2em] animate-pulse">
-            ЗАГРУЗКА АРХИВА СТАТЕЙ...
+            {t('loading')}
           </div>
         </div>
       </main>
@@ -66,15 +72,15 @@ export default function BlogPage() {
           <div>
             <div className="inline-flex items-center gap-2 font-mono text-xs tracking-[0.25em] text-neon-magenta mb-2">
               <BookOpen className="w-3.5 h-3.5" />
-              <span>KNOWLEDGE MATRIX // LOGS</span>
+              <span>{t('headerCode')}</span>
             </div>
             <h1 className="text-4xl sm:text-5xl font-display font-black tracking-wide">
-              <span className="text-white">ТЕХНИЧЕСКИЙ</span>{' '}
-              <span className="text-neon-purple text-glow-purple">БЛОГ</span>
+              <span className="text-white">{t('title1')}</span>{' '}
+              <span className="text-neon-purple text-glow-purple">{t('title2')}</span>
             </h1>
           </div>
           <p className="text-zinc-300 font-mono text-xs sm:text-sm max-w-sm">
-            Практические разборы архитектуры, LLM/RAG-систем, векторных БД и продакшн-инфраструктуры.
+            {t('headerDesc')}
           </p>
         </div>
 
@@ -88,7 +94,7 @@ export default function BlogPage() {
                 !activeTag ? 'btn-primary' : 'btn-ghost'
               }`}
             >
-              ВСЕ ЗАПИСИ
+              {t('allPosts')}
             </button>
             {allTags.map((tag) => (
               <button
@@ -111,9 +117,9 @@ export default function BlogPage() {
           {posts.map((post, i) => (
             <motion.article
               key={post.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.08 }}
+              initial={{opacity: 0, y: 20}}
+              animate={{opacity: 1, y: 0}}
+              transition={{delay: i * 0.08}}
               className="cyber-frame group"
             >
               <div className="cyber-frame-body relative overflow-hidden">
@@ -137,7 +143,7 @@ export default function BlogPage() {
                         <div className="flex flex-wrap items-center gap-4 text-xs font-mono text-zinc-400">
                           {post.published_at && (
                             <time dateTime={post.published_at} className="text-neon-cyan">
-                              {new Date(post.published_at).toLocaleDateString('ru-RU', {
+                              {new Date(post.published_at).toLocaleDateString(dateLocale, {
                                 year: 'numeric',
                                 month: 'long',
                                 day: 'numeric',
@@ -146,7 +152,7 @@ export default function BlogPage() {
                           )}
                           <span className="flex items-center gap-1">
                             <Clock className="w-3.5 h-3.5 text-acid-yellow" />
-                            {post.reading_time_minutes} МИН
+                            {post.reading_time_minutes} {t('min').toUpperCase()}
                           </span>
                           <span className="flex items-center gap-1">
                             <Eye className="w-3.5 h-3.5 text-neon-cyan" />
@@ -166,7 +172,7 @@ export default function BlogPage() {
                         </div>
 
                         <span className="inline-flex items-center gap-1 font-display text-xs font-bold text-neon-cyan group-hover:translate-x-1 transition-transform">
-                          <span>ЧИТАТЬ</span>
+                          <span>{t('read').toUpperCase()}</span>
                           <ArrowUpRight className="w-4 h-4" />
                         </span>
                       </div>
@@ -206,7 +212,7 @@ export default function BlogPage() {
         {posts.length === 0 && (
           <div className="cyber-frame">
             <div className="cyber-frame-body text-center py-20 text-zinc-400 font-mono">
-              Статьи скоро будут опубликованы
+              {t('empty')}
             </div>
           </div>
         )}

@@ -35,18 +35,18 @@ def sync_project_readme(self, project_id):
     try:
         response = requests.get(readme_url, timeout=30)
         if response.status_code == 200:
-            project.readme_content = response.text
-            project.save(update_fields=['readme_content'])
-            logger.info(f"Updated README for project {project.title}")
+            project.readme_ru = response.text
+            project.save(update_fields=['readme_ru'])
+            logger.info(f"Updated README for project {project.title_ru}")
 
             # Regenerate embeddings
             rag = RAGService()
             rag.embed_document(
-                text=project.readme_content,
+                text=project.readme_ru,
                 source_type='project',
                 source_id=project.pk,
                 metadata={
-                    'title': project.title,
+                    'title': project.title_ru,
                     'technologies': project.technologies,
                 },
             )
@@ -75,15 +75,15 @@ def generate_post_embeddings(post_id):
     try:
         rag = RAGService()
         rag.embed_document(
-            text=post.content,
+            text=post.content_ru,
             source_type='blog_post',
             source_id=post.pk,
             metadata={
-                'title': post.title,
+                'title': post.title_ru,
                 'tags': post.tags,
             },
         )
-        logger.info(f"Generated embeddings for post {post.title}")
+        logger.info(f"Generated embeddings for post {post.title_ru}")
     except Exception as e:
         logger.error(f"Error generating embeddings for post {post_id}: {e}")
         raise

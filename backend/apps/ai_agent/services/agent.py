@@ -26,13 +26,18 @@ SYSTEM_PROMPT = """\
 Твоя задача — помогать посетителям узнать о проектах и статьях на сайте.
 
 Правила:
-- Отвечай на языке пользователя (русский или английский).
 - Если вопрос о проектах или статьях — используй предоставленный контекст.
 - Если контекст пуст или недостаточно информации — честно скажи, что не нашёл ответа, и предложи посмотреть сайт.
 - Не выдумывай проекты или статьи, которых нет в контексте.
 - Отвечай кратко и по делу, без лишних формальностей.
 - Если вопрос не относится к сайту — вежливо направь на темы портфолио.
 """
+
+# Language instruction appended to the system prompt (driven by the UI locale).
+LANGUAGE_INSTRUCTIONS = {
+    'ru': 'Язык ответа: отвечай строго на русском языке.',
+    'en': 'Response language: respond strictly in English.',
+}
 
 # Tool definitions for function calling
 TOOLS = [
@@ -101,7 +106,7 @@ TOOLS = [
 ]
 
 
-def _execute_tool(name: str, arguments: dict[str, Any]) -> str:
+def _execute_tool(name: str, arguments: dict[str, Any], lang: str = 'ru') -> str:
     """Execute a tool function and return the result as a string."""
     try:
         if name == "get_project_stats":
@@ -111,8 +116,8 @@ def _execute_tool(name: str, arguments: dict[str, Any]) -> str:
                 return json.dumps({"error": f"Проект {arguments['project_id']} не найден"})
             return json.dumps({
                 "id": project.pk,
-                "title": project.title,
-                "description": project.summary,
+                "title": project.get_field('title', lang),
+                "description": project.get_field('summary', lang),
                 "technologies": project.technologies,
                 "github_url": project.github_url,
                 "views": project.views_count,
@@ -121,10 +126,18 @@ def _execute_tool(name: str, arguments: dict[str, Any]) -> str:
 
         elif name == "list_projects":
             from apps.projects.models import Project
-            projects = Project.objects.filter(visibility=Project.Visibility.PUBLIC).values(
-                'pk', 'title', 'summary', 'technologies', 'github_url'
-            )
-            return json.dumps(list(projects), ensure_ascii=False)
+            projects = Project.objects.filter(visibility=Project.Visibility.PUBLIC)
+            result = [
+                {
+                    'id': p.pk,
+                    'title': p.get_field('title', lang),
+                    'summary': p.get_field('summary', lang),
+                    'technologies': p.technologies,
+                    'github_url': p.github_url,
+                }
+                for p in projects
+            ]
+            return json.dumps(result, ensure_ascii=False)
 
         elif name == "search_blog_posts":
             from apps.blog.models import Post
@@ -132,12 +145,14 @@ def _execute_tool(name: str, arguments: dict[str, Any]) -> str:
             posts = Post.objects.filter(status=Post.Status.PUBLISHED)
             filtered = [
                 p for p in posts
-                if query in p.title.lower()
-                or query in p.excerpt.lower()
+                if query in p.get_field('title', 'ru').lower()
+                or query in p.get_field('title', 'en').lower()
+                or query in p.get_field('excerpt', 'ru').lower()
+                or query in p.get_field('excerpt', 'en').lower()
                 or any(query in tag.lower() for tag in p.tags)
             ]
             return json.dumps(
-                [{'id': p.pk, 'title': p.title, 'excerpt': p.excerpt, 'published_at': str(p.published_at)}
+                [{'id': p.pk, 'title': p.get_field('title', lang), 'excerpt': p.get_field('excerpt', lang), 'published_at': str(p.published_at)}
                  for p in filtered[:10]],
                 ensure_ascii=False,
             )
@@ -148,12 +163,12 @@ def _execute_tool(name: str, arguments: dict[str, Any]) -> str:
             if not post:
                 return json.dumps({"error": f"Статья {arguments['post_id']} не найдена"})
             # Truncate content to avoid token overflow
-            content = post.content[:3000]
-            if len(post.content) > 3000:
+            content = post.get_field('content', lang)[:3000]
+            if len(post.get_field('content', lang)) > 3000:
                 content += "\n\n[...контент урезан...]"
             return json.dumps({
                 "id": post.pk,
-                "title": post.title,
+                "title": post.get_field('title', lang),
                 "content": content,
                 "tags": post.tags,
             }, ensure_ascii=False)
@@ -171,8 +186,9 @@ class AIAgent:
     AI Agent with RAG, function calling, and session memory.
     """
 
-    def __init__(self, session):
+    def __init__(self, session, lang: str = 'ru'):
         self.session = session
+        self.lang = lang if lang in LANGUAGE_INSTRUCTIONS else 'ru'
         self.client = RouterAIClient()
         self.rag = RAGService()
 
@@ -218,7 +234,7 @@ class AIAgent:
         context = self.rag.build_context(rag_chunks)
 
         # 4. Build system prompt with context
-        system_prompt = SYSTEM_PROMPT
+        system_prompt = SYSTEM_PROMPT + '\n' + LANGUAGE_INSTRUCTIONS[self.lang]
         if context:
             system_prompt += f"\n\nКонтекст с сайта (по релевантности):\n\n{context}"
 
@@ -256,7 +272,7 @@ class AIAgent:
                     func_args = {}
 
                 logger.info(f"Agent calling tool: {func_name}({func_args})")
-                result = _execute_tool(func_name, func_args)
+                result = _execute_tool(func_name, func_args, lang=self.lang)
 
                 messages.append({
                     'role': 'tool',

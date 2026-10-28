@@ -1,11 +1,12 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
-import { useParams } from 'next/navigation';
+import {useEffect, useState, useCallback} from 'react';
+import {useParams} from 'next/navigation';
+import {useTranslations, useLocale} from 'next-intl';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
-import { motion } from 'framer-motion';
+import {motion} from 'framer-motion';
 import {
   Eye,
   Heart,
@@ -16,7 +17,7 @@ import {
   Tag,
   BookOpen,
 } from 'lucide-react';
-import Link from 'next/link';
+import {Link} from '@/i18n/navigation';
 
 interface Post {
   id: number;
@@ -34,6 +35,8 @@ interface Post {
 }
 
 export default function BlogPostPage() {
+  const t = useTranslations('post');
+  const locale = useLocale();
   const params = useParams();
   const slug = params.slug as string;
 
@@ -43,15 +46,17 @@ export default function BlogPostPage() {
   const [audio, setAudio] = useState<HTMLAudioElement | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
 
+  const dateLocale = locale === 'ru' ? 'ru-RU' : 'en-US';
+
   useEffect(() => {
-    fetch(`/api/posts/${slug}/`)
+    fetch(`/api/posts/${slug}/?lang=${locale}`)
       .then((r) => r.json())
       .then((data) => {
         setPost(data);
         setLoading(false);
       })
       .catch(() => setLoading(false));
-  }, [slug]);
+  }, [slug, locale]);
 
   useEffect(() => {
     return () => {
@@ -62,9 +67,9 @@ export default function BlogPostPage() {
   const handleLike = useCallback(async () => {
     if (!post || liked) return;
     try {
-      await fetch(`/api/posts/${post.id}/like/`, { method: 'POST' });
+      await fetch(`/api/posts/${post.id}/like/`, {method: 'POST'});
       setLiked(true);
-      setPost((prev) => (prev ? { ...prev, likes_count: prev.likes_count + 1 } : null));
+      setPost((prev) => (prev ? {...prev, likes_count: prev.likes_count + 1} : null));
     } catch {}
   }, [post, liked]);
 
@@ -88,7 +93,7 @@ export default function BlogPostPage() {
     }
 
     try {
-      const res = await fetch(`/api/posts/${post.id}/tts/`, { method: 'POST' });
+      const res = await fetch(`/api/posts/${post.id}/tts/?lang=${locale}`, {method: 'POST'});
       if (!res.ok) return;
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
@@ -101,14 +106,14 @@ export default function BlogPostPage() {
       await a.play();
       setIsPlaying(true);
     } catch {}
-  }, [post, isPlaying, audio]);
+  }, [post, isPlaying, audio, locale]);
 
   if (loading) {
     return (
       <main className="min-h-screen flex items-center justify-center">
         <div className="cyber-frame">
           <div className="cyber-frame-body px-8 py-5 text-neon-cyan font-mono tracking-[0.2em] animate-pulse">
-            ЗАГРУЗКА ПУБЛИКАЦИИ...
+            {t('loading')}
           </div>
         </div>
       </main>
@@ -118,10 +123,10 @@ export default function BlogPostPage() {
   if (!post) {
     return (
       <main className="min-h-screen flex flex-col items-center justify-center gap-5">
-        <div className="text-2xl font-display text-zinc-300">Статья не найдена</div>
+        <div className="text-2xl font-display text-zinc-300">{t('notFound')}</div>
         <Link href="/blog" className="cyber-btn btn-ghost px-6 py-3 text-xs font-bold">
           <ArrowLeft className="w-4 h-4" />
-          <span>КО ВСЕМ СТАТЬЯМ</span>
+          <span>{t('back')}</span>
         </Link>
       </main>
     );
@@ -135,13 +140,13 @@ export default function BlogPostPage() {
           className="cyber-btn btn-ghost px-4 py-2 text-xs font-bold mb-8 inline-flex"
         >
           <ArrowLeft className="w-4 h-4" />
-          <span>КО ВСЕМ СТАТЬЯМ</span>
+          <span>{t('back')}</span>
         </Link>
 
         {/* Header Card */}
         <motion.header
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
+          initial={{opacity: 0, y: 20}}
+          animate={{opacity: 1, y: 0}}
           className="cyber-frame mb-8"
         >
           <div className="cyber-frame-body p-6 md:p-8 relative">
@@ -150,7 +155,7 @@ export default function BlogPostPage() {
 
             <div className="font-mono text-xs tracking-[0.24em] text-neon-magenta mb-2 flex items-center gap-2">
               <BookOpen className="w-3.5 h-3.5" />
-              <span>TECH LOG // ENTRY</span>
+              <span>{t('entry')}</span>
             </div>
 
             <h1 className="text-3xl sm:text-4xl font-display font-black text-white mb-5 leading-tight">
@@ -160,7 +165,7 @@ export default function BlogPostPage() {
             <div className="flex flex-wrap items-center gap-5 text-xs font-mono text-zinc-400 mb-6">
               {post.published_at && (
                 <time dateTime={post.published_at} className="text-neon-cyan">
-                  {new Date(post.published_at).toLocaleDateString('ru-RU', {
+                  {new Date(post.published_at).toLocaleDateString(dateLocale, {
                     year: 'numeric',
                     month: 'long',
                     day: 'numeric',
@@ -169,7 +174,7 @@ export default function BlogPostPage() {
               )}
               <span className="flex items-center gap-1.5">
                 <Clock className="w-4 h-4 text-acid-yellow" />
-                {post.reading_time_minutes} МИН ЧТЕНИЯ
+                {post.reading_time_minutes} {t('minRead').toUpperCase()}
               </span>
               <span className="flex items-center gap-1.5">
                 <Eye className="w-4 h-4 text-neon-cyan" />
@@ -216,12 +221,12 @@ export default function BlogPostPage() {
                 {isPlaying ? (
                   <>
                     <VolumeX className="w-4 h-4" />
-                    <span>ОСТАНОВИТЬ ОЗВУЧКУ</span>
+                    <span>{t('stop').toUpperCase()}</span>
                   </>
                 ) : (
                   <>
                     <Volume2 className="w-4 h-4" />
-                    <span>СЛУШАТЬ СТАТЬЮ</span>
+                    <span>{t('listen').toUpperCase()}</span>
                   </>
                 )}
               </button>
@@ -231,9 +236,9 @@ export default function BlogPostPage() {
 
         {post.cover_image && (
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.1 }}
+            initial={{opacity: 0}}
+            animate={{opacity: 1}}
+            transition={{delay: 0.1}}
             className="cyber-frame mb-8"
           >
             <div className="cyber-frame-body overflow-hidden">
@@ -248,9 +253,9 @@ export default function BlogPostPage() {
 
         {/* Content */}
         <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.2 }}
+          initial={{opacity: 0}}
+          animate={{opacity: 1}}
+          transition={{delay: 0.2}}
           className="cyber-frame"
         >
           <div className="cyber-frame-body p-6 md:p-9 prose-cyber relative">
@@ -268,10 +273,10 @@ export default function BlogPostPage() {
         <footer className="mt-10 pt-8 border-t border-cyber-border flex items-center justify-between">
           <Link href="/blog" className="cyber-btn btn-ghost px-5 py-2.5 text-xs font-bold">
             <ArrowLeft className="w-4 h-4" />
-            <span>ВСЕ СТАТЬИ</span>
+            <span>{t('allArticles').toUpperCase()}</span>
           </Link>
           <div className="text-xs font-mono text-zinc-400 tracking-wider">
-            END OF TRANSMISSION //
+            {t('end')}
           </div>
         </footer>
       </article>

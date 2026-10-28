@@ -13,10 +13,13 @@ class Post(models.Model):
         PUBLISHED = 'published', 'Published'
         ARCHIVED = 'archived', 'Archived'
 
-    title = models.CharField('Заголовок', max_length=255)
+    title_ru = models.CharField('Заголовок (RU)', max_length=255)
+    title_en = models.CharField('Заголовок (EN)', max_length=255, blank=True)
     slug = models.SlugField('Slug', unique=True, allow_unicode=True)
-    excerpt = models.CharField('Анонс', max_length=500, blank=True)
-    content = models.TextField('Контент (Markdown)')
+    excerpt_ru = models.CharField('Анонс (RU)', max_length=500, blank=True)
+    excerpt_en = models.CharField('Анонс (EN)', max_length=500, blank=True)
+    content_ru = models.TextField('Контент (RU, Markdown)')
+    content_en = models.TextField('Контент (EN, Markdown)', blank=True)
 
     cover_image = models.ImageField(
         'Обложка',
@@ -60,11 +63,16 @@ class Post(models.Model):
         ]
 
     def __str__(self):
-        return self.title
+        return self.title_ru
+
+    def get_field(self, name: str, lang: str = 'ru') -> str:
+        """Return a localized text field with fallback to Russian."""
+        value = getattr(self, f'{name}_{lang}', '')
+        return value or getattr(self, f'{name}_ru', '')
 
     def save(self, *args, **kwargs):
         if not self.slug:
-            self.slug = slugify(self.title)
+            self.slug = slugify(self.title_ru)
         # Auto-set published_at if status changed to published
         if self.status == self.Status.PUBLISHED and not self.published_at:
             from django.utils import timezone
@@ -74,5 +82,5 @@ class Post(models.Model):
     @property
     def reading_time_minutes(self):
         """Estimate reading time in minutes."""
-        words = len(self.content.split())
+        words = len(self.content_ru.split())
         return max(1, words // 200)  # ~200 words per minute

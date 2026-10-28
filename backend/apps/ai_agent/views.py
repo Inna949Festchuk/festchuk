@@ -61,6 +61,7 @@ class ChatMessageView(APIView):
 
         session_id = serializer.validated_data['session_id']
         user_message = serializer.validated_data['message']
+        lang = serializer.validated_data.get('lang', 'ru')
 
         try:
             session = ChatSession.objects.get(session_id=session_id)
@@ -78,7 +79,7 @@ class ChatMessageView(APIView):
         )
 
         # Process through AI agent
-        agent = AIAgent(session)
+        agent = AIAgent(session, lang=lang)
         try:
             response_text, tokens_used = agent.process_message(user_message)
         except Exception as e:

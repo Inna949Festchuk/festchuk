@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
-import { Eye, Heart, ArrowUpRight, Github, Layers } from 'lucide-react';
-import Link from 'next/link';
+import {useEffect, useState} from 'react';
+import {useTranslations, useLocale} from 'next-intl';
+import {motion} from 'framer-motion';
+import {Eye, Heart, ArrowUpRight, Github, Layers} from 'lucide-react';
+import {Link} from '@/i18n/navigation';
 
 interface Project {
   id: number;
@@ -20,24 +21,27 @@ interface Project {
 }
 
 export default function ProjectsPage() {
+  const t = useTranslations('projects');
+  const locale = useLocale();
+
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/api/projects/')
+    fetch(`/api/projects/?lang=${locale}`)
       .then((r) => r.json())
       .then((data) => {
         setProjects(data.results || data);
         setLoading(false);
       })
       .catch(() => setLoading(false));
-  }, []);
+  }, [locale]);
 
   const handleLike = async (id: number) => {
     try {
-      await fetch(`/api/projects/${id}/like/`, { method: 'POST' });
+      await fetch(`/api/projects/${id}/like/`, {method: 'POST'});
       setProjects((prev) =>
-        prev.map((p) => (p.id === id ? { ...p, likes_count: p.likes_count + 1 } : p)),
+        prev.map((p) => (p.id === id ? {...p, likes_count: p.likes_count + 1} : p)),
       );
     } catch {}
   };
@@ -47,7 +51,7 @@ export default function ProjectsPage() {
       <main className="min-h-screen flex items-center justify-center">
         <div className="cyber-frame">
           <div className="cyber-frame-body px-8 py-5 text-neon-cyan font-mono tracking-[0.2em] animate-pulse">
-            ЗАГРУЗКА МАТРИЦЫ ПРОЕКТОВ...
+            {t('loading')}
           </div>
         </div>
       </main>
@@ -62,16 +66,15 @@ export default function ProjectsPage() {
           <div>
             <div className="inline-flex items-center gap-2 font-mono text-xs tracking-[0.25em] text-neon-cyan mb-2">
               <Layers className="w-3.5 h-3.5" />
-              <span>PORTFOLIO // DEPLOYED SYSTEMS</span>
+              <span>{t('headerCode')}</span>
             </div>
             <h1 className="text-4xl sm:text-5xl font-display font-black tracking-wide">
-              <span className="text-white">МОИ</span>{' '}
-              <span className="text-neon-cyan text-glow-cyan">ПРОЕКТЫ</span>
+              <span className="text-white">{t('title1')}</span>{' '}
+              <span className="text-neon-cyan text-glow-cyan">{t('title2')}</span>
             </h1>
           </div>
           <p className="text-zinc-300 font-mono text-xs sm:text-sm max-w-md">
-            Архитектура полного цикла: от высоконагруженных бэкендов и нейросетевых
-            пайплайнов до реактивных интерфейсов.
+            {t('headerDesc')}
           </p>
         </div>
 
@@ -83,9 +86,9 @@ export default function ProjectsPage() {
             return (
               <motion.div
                 key={project.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.08 }}
+                initial={{opacity: 0, y: 20}}
+                animate={{opacity: 1, y: 0}}
+                transition={{delay: i * 0.08}}
                 className={`cyber-frame group ${sizeClass}`}
               >
                 <div className="cyber-frame-body overflow-hidden flex flex-col h-full">
@@ -93,7 +96,9 @@ export default function ProjectsPage() {
                   <span className="cb cb-br" />
 
                   {/* Cover */}
-                  <div className={`relative ${coverClass} bg-[#070b18] overflow-hidden border-b border-neon-cyan/20`}>
+                  <div
+                    className={`relative ${coverClass} bg-[#070b18] overflow-hidden border-b border-neon-cyan/20`}
+                  >
                     {project.cover_image ? (
                       <img
                         src={project.cover_image}
@@ -114,7 +119,7 @@ export default function ProjectsPage() {
                     )}
                     {project.is_featured && (
                       <span className="absolute top-3 left-3 px-2.5 py-1 text-[10px] font-mono tracking-[0.2em] bg-neon-magenta/25 border border-neon-magenta text-white backdrop-blur-md">
-                        FEATURED // CORE
+                        {t('featured')}
                       </span>
                     )}
                   </div>
@@ -143,7 +148,7 @@ export default function ProjectsPage() {
                     {/* Stats & actions */}
                     <div className="mt-auto flex items-center justify-between gap-3 pt-4 border-t border-cyber-border">
                       <div className="flex items-center gap-4 text-xs font-mono text-zinc-400">
-                        <span className="flex items-center gap-1.5" title="Просмотры">
+                        <span className="flex items-center gap-1.5" title="views">
                           <Eye className="w-4 h-4 text-neon-cyan" />
                           {project.views_count}
                         </span>
@@ -151,7 +156,7 @@ export default function ProjectsPage() {
                           type="button"
                           onClick={() => handleLike(project.id)}
                           className="flex items-center gap-1.5 hover:text-neon-magenta transition-colors"
-                          title="Оценить проект"
+                          title="like"
                         >
                           <Heart className="w-4 h-4 text-neon-magenta" />
                           {project.likes_count}
@@ -162,7 +167,7 @@ export default function ProjectsPage() {
                             target="_blank"
                             rel="noopener noreferrer"
                             className="hover:text-white transition-colors"
-                            title="GitHub репозиторий"
+                            title="GitHub"
                           >
                             <Github className="w-4 h-4" />
                           </a>
@@ -173,7 +178,7 @@ export default function ProjectsPage() {
                         href={`/projects/${project.slug}`}
                         className="cyber-btn btn-ghost px-4 py-2 text-xs font-bold"
                       >
-                        <span>ОТКРЫТЬ</span>
+                        <span>{t('open')}</span>
                         <ArrowUpRight className="w-3.5 h-3.5" />
                       </Link>
                     </div>
@@ -187,7 +192,7 @@ export default function ProjectsPage() {
         {projects.length === 0 && (
           <div className="cyber-frame">
             <div className="cyber-frame-body text-center py-20 text-zinc-400 font-mono">
-              Проекты скоро будут добавлены
+              {t('empty')}
             </div>
           </div>
         )}

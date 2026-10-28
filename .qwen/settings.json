@@ -17,7 +17,11 @@
       "Bash(ls *)",
       "Bash(command *)",
       "Bash(do *)",
-      "Bash(done)"
+      "Bash(done)",
+      "Bash(tail *)",
+      "Bash(date)",
+      "WebFetch(api.github.com)",
+      "WebFetch(habr.com)"
     ]
   },
   "$version": 4

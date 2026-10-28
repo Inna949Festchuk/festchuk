@@ -176,40 +176,40 @@ class Command(BaseCommand):
         project, created = Project.objects.get_or_create(
             slug=DEMO_PROJECT_SLUG,
             defaults={
-                'title': DEMO_PROJECT_TITLE,
-                'summary': 'AI-платформа мониторинга сетевой инфраструктуры в реальном времени.',
-                'description': PROJECT_README.split('\n', 1)[-1],
+                'title_ru': DEMO_PROJECT_TITLE,
+                'summary_ru': 'AI-платформа мониторинга сетевой инфраструктуры в реальном времени.',
+                'description_ru': PROJECT_README.split('\n', 1)[-1],
                 'github_url': 'https://github.com/Inna949Festchuk/neural-grid',
                 'demo_url': '',
                 'technologies': [
                     'Next.js', 'Django', 'Python', 'Celery',
                     'PostgreSQL', 'PyTorch', 'WebSocket',
                 ],
-                'readme_content': PROJECT_README,
+                'readme_ru': PROJECT_README,
                 'visibility': Project.Visibility.PUBLIC,
                 'is_featured': True,
                 'order': 1,
             },
         )
         self.stdout.write(
-            self.style.SUCCESS('• Project created: ' + project.title)
+            self.style.SUCCESS('• Project created: ' + project.title_ru)
             if created else
-            self.style.WARNING('• Project exists — skipping: ' + project.title)
+            self.style.WARNING('• Project exists — skipping: ' + project.title_ru)
         )
 
     def _ensure_post(self):
         post, created = Post.objects.get_or_create(
             slug=DEMO_POST_SLUG,
             defaults={
-                'title': DEMO_POST_TITLE,
-                'excerpt': 'RAG без fine-tuning: pgvector, bge-m3, Qwen — от чанкинга до retrieval.',
-                'content': POST_CONTENT,
+                'title_ru': DEMO_POST_TITLE,
+                'excerpt_ru': 'RAG без fine-tuning: pgvector, bge-m3, Qwen — от чанкинга до retrieval.',
+                'content_ru': POST_CONTENT,
                 'tags': ['ai', 'rag', 'pgvector', 'django', 'python'],
                 'status': Post.Status.PUBLISHED,
             },
         )
         self.stdout.write(
-            self.style.SUCCESS('• Post created: ' + post.title)
+            self.style.SUCCESS('• Post created: ' + post.title_ru)
             if created else
-            self.style.WARNING('• Post exists — skipping: ' + post.title)
+            self.style.WARNING('• Post exists — skipping: ' + post.title_ru)
         )

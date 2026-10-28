@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useRef, useEffect, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import {useState, useRef, useEffect, useCallback} from 'react';
+import {useTranslations, useLocale} from 'next-intl';
+import {motion, AnimatePresence} from 'framer-motion';
 import {
   Bot,
   X,
@@ -25,14 +26,10 @@ interface Message {
   timestamp: Date;
 }
 
-const QUICK_PROMPTS = [
-  'Расскажи про проекты',
-  'Какой стек технологий?',
-  'О чём статьи в блоге?',
-  'Как связаться с Константином?',
-];
-
 export default function ChatWidget() {
+  const t = useTranslations('chat');
+  const locale = useLocale();
+
   const [isOpen, setIsOpen] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -48,6 +45,9 @@ export default function ChatWidget() {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
 
+  const quickPrompts = [t('q1'), t('q2'), t('q3'), t('q4')];
+  const timeLocale = locale === 'ru' ? 'ru-RU' : 'en-US';
+
   // Initialize session
   useEffect(() => {
     fetch('/api/chat/session/')
@@ -62,7 +62,7 @@ export default function ChatWidget() {
 
   // Auto-scroll to bottom
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    messagesEndRef.current?.scrollIntoView({behavior: 'smooth'});
   }, [messages, loading]);
 
   const stopSpeaking = useCallback(() => {
@@ -77,7 +77,7 @@ export default function ChatWidget() {
     (text: string) => {
       if (!ttsEnabled) return;
       stopSpeaking();
-      fetch(`/api/chat/tts/?text=${encodeURIComponent(text.slice(0, 500))}`)
+      fetch(`/api/chat/tts/?text=${encodeURIComponent(text.slice(0, 500))}&lang=${locale}`)
         .then((r) => (r.ok ? r.blob() : null))
         .then((blob) => {
           if (!blob) return;
@@ -95,7 +95,7 @@ export default function ChatWidget() {
         })
         .catch(() => setSpeaking(false));
     },
-    [stopSpeaking, ttsEnabled],
+    [stopSpeaking, ttsEnabled, locale],
   );
 
   const sendMessage = useCallback(
@@ -118,10 +118,11 @@ export default function ChatWidget() {
       try {
         const res = await fetch('/api/chat/message/', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {'Content-Type': 'application/json'},
           body: JSON.stringify({
             session_id: sessionId,
             message,
+            lang: locale,
           }),
         });
 
@@ -131,7 +132,7 @@ export default function ChatWidget() {
         const assistantMsg: Message = {
           id: crypto.randomUUID(),
           role: 'assistant',
-          content: data.message?.content || 'Не удалось получить ответ',
+          content: data.message?.content || t('errNoResponse'),
           timestamp: new Date(),
         };
         setMessages((prev) => [...prev, assistantMsg]);
@@ -142,7 +143,7 @@ export default function ChatWidget() {
           {
             id: crypto.randomUUID(),
             role: 'assistant',
-            content: '⚠️ AI-сервис временно недоступен. Проверьте подключение или попробуйте позже.',
+            content: t('errAi'),
             timestamp: new Date(),
           },
         ]);
@@ -150,12 +151,12 @@ export default function ChatWidget() {
         setLoading(false);
       }
     },
-    [input, loading, sessionId, playResponse, stopSpeaking],
+    [input, loading, sessionId, playResponse, stopSpeaking, locale, t],
   );
 
   const startRecording = useCallback(async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const stream = await navigator.mediaDevices.getUserMedia({audio: true});
       const recorder = new MediaRecorder(stream);
       mediaRecorderRef.current = recorder;
       audioChunksRef.current = [];
@@ -165,10 +166,10 @@ export default function ChatWidget() {
       };
 
       recorder.onstop = async () => {
-        stream.getTracks().forEach((t) => t.stop());
+        stream.getTracks().forEach((tr) => tr.stop());
         setIsRecording(false);
 
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        const audioBlob = new Blob(audioChunksRef.current, {type: 'audio/webm'});
         if (!sessionId) return;
 
         setLoading(true);
@@ -176,7 +177,7 @@ export default function ChatWidget() {
           const formData = new FormData();
           formData.append('audio', audioBlob, 'recording.webm');
 
-          const res = await fetch(`/api/chat/voice/stt/?session_id=${sessionId}`, {
+          const res = await fetch(`/api/chat/voice/stt/?session_id=${sessionId}&lang=${locale}`, {
             method: 'POST',
             body: formData,
           });
@@ -193,7 +194,7 @@ export default function ChatWidget() {
             {
               id: crypto.randomUUID(),
               role: 'assistant',
-              content: '⚠️ Не удалось распознать речь. Попробуйте ещё раз.',
+              content: t('errStt'),
               timestamp: new Date(),
             },
           ]);
@@ -203,7 +204,7 @@ export default function ChatWidget() {
             {
               id: crypto.randomUUID(),
               role: 'assistant',
-              content: '⚠️ Ошибка распознавания речи.',
+              content: t('errStt2'),
               timestamp: new Date(),
             },
           ]);
@@ -220,12 +221,12 @@ export default function ChatWidget() {
         {
           id: crypto.randomUUID(),
           role: 'assistant',
-          content: '⚠️ Нет доступа к микрофону в браузере.',
+          content: t('errMic'),
           timestamp: new Date(),
         },
       ]);
     }
-  }, [sessionId, sendMessage]);
+  }, [sessionId, sendMessage, locale, t]);
 
   const stopRecording = useCallback(() => {
     mediaRecorderRef.current?.stop();
@@ -240,10 +241,10 @@ export default function ChatWidget() {
     <>
       {/* Floating HUD launcher button */}
       <motion.button
-        initial={{ scale: 0 }}
-        animate={{ scale: 1 }}
-        whileHover={{ scale: 1.06 }}
-        whileTap={{ scale: 0.96 }}
+        initial={{scale: 0}}
+        animate={{scale: 1}}
+        whileHover={{scale: 1.06}}
+        whileTap={{scale: 0.96}}
         onClick={() => setIsOpen(!isOpen)}
         className="fixed right-5 bottom-[132px] sm:bottom-[72px] z-50 group flex items-center gap-3 px-4 py-3
                    bg-[#090e20]/95 backdrop-blur-md border border-neon-cyan/70
@@ -253,7 +254,7 @@ export default function ChatWidget() {
           clipPath:
             'polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px)',
         }}
-        aria-label="Открыть нейро-ассистента"
+        aria-label={t('launcherAria')}
       >
         <span className="relative flex items-center justify-center w-8 h-8 hex-icon hex-cyan !w-8 !h-8">
           {isOpen ? (
@@ -265,10 +266,10 @@ export default function ChatWidget() {
         <div className="hidden sm:flex flex-col items-start text-left pr-1">
           <span className="font-mono text-[9px] tracking-[0.2em] text-neon-cyan flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-[#22c55e] animate-ping" />
-            AI CORE // ONLINE
+            {t('coreOnline')}
           </span>
           <span className="font-display font-bold text-xs tracking-wider text-white">
-            {isOpen ? 'CLOSE TERMINAL' : 'NEURAL ASSIST'}
+            {isOpen ? t('closeLabel') : t('openLabel')}
           </span>
         </div>
       </motion.button>
@@ -277,10 +278,10 @@ export default function ChatWidget() {
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ opacity: 0, y: 24, scale: 0.96 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 24, scale: 0.96 }}
-            transition={{ duration: 0.22 }}
+            initial={{opacity: 0, y: 24, scale: 0.96}}
+            animate={{opacity: 1, y: 0, scale: 1}}
+            exit={{opacity: 0, y: 24, scale: 0.96}}
+            transition={{duration: 0.22}}
             className={`fixed right-5 top-[76px] bottom-[198px] sm:bottom-[138px] z-50 drop-shadow-[0_0_24px_rgba(0,243,255,0.22)] ${
               expanded ? 'w-[calc(100vw-2.5rem)] max-w-2xl' : 'w-[calc(100vw-2.5rem)] max-w-[430px]'
             }`}
@@ -339,7 +340,7 @@ export default function ChatWidget() {
                         ? 'border-neon-cyan/40 text-neon-cyan bg-neon-cyan/10'
                         : 'border-cyber-border text-zinc-500 hover:text-zinc-300'
                     }`}
-                    title={ttsEnabled ? 'Автоозвучка включена' : 'Автоозвучка выключена'}
+                    title={ttsEnabled ? t('ttsOn') : t('ttsOff')}
                   >
                     {ttsEnabled ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
                   </button>
@@ -348,7 +349,7 @@ export default function ChatWidget() {
                       type="button"
                       onClick={clearHistory}
                       className="p-1.5 border border-cyber-border text-zinc-400 hover:text-neon-magenta hover:border-neon-magenta/50 transition-colors"
-                      title="Очистить диалог"
+                      title={t('clear')}
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
@@ -357,7 +358,7 @@ export default function ChatWidget() {
                     type="button"
                     onClick={() => setExpanded((v) => !v)}
                     className="hidden sm:inline-flex p-1.5 border border-cyber-border text-zinc-400 hover:text-neon-cyan hover:border-neon-cyan/50 transition-colors"
-                    title={expanded ? 'Свернуть окно' : 'Развернуть окно'}
+                    title={expanded ? t('collapse') : t('expand')}
                   >
                     {expanded ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
                   </button>
@@ -365,7 +366,7 @@ export default function ChatWidget() {
                     type="button"
                     onClick={() => setIsOpen(false)}
                     className="p-1.5 border border-cyber-border text-zinc-400 hover:text-neon-magenta hover:border-neon-magenta/50 transition-colors"
-                    title="Закрыть"
+                    title={t('close')}
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>
@@ -379,20 +380,19 @@ export default function ChatWidget() {
                     <div className="p-4 border border-neon-cyan/25 bg-neon-cyan/5 mb-4 relative">
                       <div className="flex items-center gap-2 text-neon-cyan font-mono text-[10px] tracking-[0.2em] mb-1.5">
                         <Terminal className="w-3.5 h-3.5" />
-                        SYSTEM INITIALIZED
+                        {t('sysInit')}
                       </div>
                       <p className="text-xs text-zinc-300 leading-relaxed">
-                        Привет! Я нейросетевой ассистент Константина Фестчука с доступом к базе
-                        проектов, GitHub README и статьям блога через RAG.
+                        {t('greeting')}
                       </p>
                     </div>
 
                     <div className="font-mono text-[10px] tracking-[0.18em] text-zinc-400 mb-2.5 flex items-center gap-1.5">
                       <Sparkles className="w-3 h-3 text-neon-magenta" />
-                      БЫСТРЫЕ КОМАНДЫ:
+                      {t('quickLabel')}
                     </div>
                     <div className="grid grid-cols-1 gap-2">
-                      {QUICK_PROMPTS.map((prompt) => (
+                      {quickPrompts.map((prompt) => (
                         <button
                           key={prompt}
                           type="button"
@@ -414,13 +414,13 @@ export default function ChatWidget() {
                 {messages.map((msg) => (
                   <motion.div
                     key={msg.id}
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
+                    initial={{opacity: 0, y: 8}}
+                    animate={{opacity: 1, y: 0}}
                     className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}
                   >
                     <span className="font-mono text-[9px] tracking-[0.16em] text-zinc-500 mb-1 px-1">
-                      {msg.role === 'user' ? 'USER // INPUT' : 'AI CORE // RESPONSE'} •{' '}
-                      {msg.timestamp.toLocaleTimeString('ru-RU', {
+                      {msg.role === 'user' ? t('userTag') : t('aiTag')} •{' '}
+                      {msg.timestamp.toLocaleTimeString(timeLocale, {
                         hour: '2-digit',
                         minute: '2-digit',
                       })}
@@ -446,7 +446,7 @@ export default function ChatWidget() {
                     <div className="px-3.5 py-2.5 bg-[#0e162d]/95 border border-neon-cyan/40 flex items-center gap-2.5">
                       <Loader2 className="w-4 h-4 text-neon-cyan animate-spin" />
                       <span className="font-mono text-xs text-neon-cyan tracking-wider">
-                        СИНТЕЗ ОТВЕТА...
+                        {t('synth')}
                       </span>
                     </div>
                   </div>
@@ -470,7 +470,7 @@ export default function ChatWidget() {
                       clipPath:
                         'polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px)',
                     }}
-                    title={isRecording ? 'Остановить запись' : 'Голосовой ввод (STT)'}
+                    title={isRecording ? t('micOn') : t('micOff')}
                   >
                     {isRecording ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
                   </button>
@@ -480,7 +480,7 @@ export default function ChatWidget() {
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
-                    placeholder="Введите запрос в нейросеть..."
+                    placeholder={t('placeholder')}
                     disabled={loading}
                     className="flex-1 min-w-0 px-3.5 py-2.5 bg-[#0b1224] border border-neon-cyan/35 text-xs sm:text-sm text-white
                                placeholder-zinc-500 font-mono focus:outline-none focus:border-neon-cyan
@@ -492,7 +492,7 @@ export default function ChatWidget() {
                     onClick={() => sendMessage()}
                     disabled={loading || !input.trim()}
                     className="cyber-btn btn-primary px-4 py-2.5 text-xs font-bold shrink-0 disabled:opacity-35 disabled:pointer-events-none"
-                    title="Отправить запрос"
+                    title={t('send')}
                   >
                     <Send className="w-4 h-4" />
                   </button>

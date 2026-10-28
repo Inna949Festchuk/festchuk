@@ -31,6 +31,12 @@ class PostViewSet(viewsets.ModelViewSet):
             return PostUpdateSerializer
         return PostSerializer
 
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        lang = self.request.query_params.get('lang', 'ru')
+        context['lang'] = lang if lang in ('ru', 'en') else 'ru'
+        return context
+
     def get_queryset(self):
         queryset = super().get_queryset()
         # Support tag filtering

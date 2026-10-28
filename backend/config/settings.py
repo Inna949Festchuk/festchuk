@@ -59,6 +59,9 @@ INSTALLED_APPS = [
 # ============================================================
 
 MIDDLEWARE = [
+    # Дописывает завершающий слэш /api/ путям НА МЕСТЕ (без 301) — иначе
+    # Next.js-прокси ↔ Django APPEND_SLASH образуют петлю перенаправлений.
+    'config.middleware.ApiTrailingSlashMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -184,7 +187,7 @@ CHANNEL_LAYERS = {
 # ============================================================
 
 ROUTERAI_API_KEY = os.getenv('ROUTERAI_API_KEY', '')
-ROUTERAI_BASE_URL = os.getenv('ROUTERAI_BASE_URL', 'https://api.routerai.ru/v1')
+ROUTERAI_BASE_URL = os.getenv('ROUTERAI_BASE_URL', 'https://routerai.ru/api/v1')
 ROUTERAI_LLM_MODEL = os.getenv('ROUTERAI_LLM_MODEL', 'qwen-2.5-plus')
 ROUTERAI_EMBEDDINGS_MODEL = os.getenv('ROUTERAI_EMBEDDINGS_MODEL', 'bge-m3')
 ROUTERAI_TTS_MODEL = os.getenv('ROUTERAI_TTS_MODEL', 'tts-1-hd')

@@ -1,11 +1,12 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
-import { useParams } from 'next/navigation';
+import {useEffect, useState, useCallback} from 'react';
+import {useParams} from 'next/navigation';
+import {useTranslations, useLocale} from 'next-intl';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
-import { motion } from 'framer-motion';
+import {motion} from 'framer-motion';
 import {
   Eye,
   Heart,
@@ -15,7 +16,7 @@ import {
   ArrowLeft,
   Cpu,
 } from 'lucide-react';
-import Link from 'next/link';
+import {Link} from '@/i18n/navigation';
 
 interface Project {
   id: number;
@@ -34,6 +35,8 @@ interface Project {
 }
 
 export default function ProjectDetailPage() {
+  const t = useTranslations('project');
+  const locale = useLocale();
   const params = useParams();
   const slug = params.slug as string;
 
@@ -41,22 +44,24 @@ export default function ProjectDetailPage() {
   const [loading, setLoading] = useState(true);
   const [liked, setLiked] = useState(false);
 
+  const dateLocale = locale === 'ru' ? 'ru-RU' : 'en-US';
+
   useEffect(() => {
-    fetch(`/api/projects/${slug}/`)
+    fetch(`/api/projects/${slug}/?lang=${locale}`)
       .then((r) => r.json())
       .then((data) => {
         setProject(data);
         setLoading(false);
       })
       .catch(() => setLoading(false));
-  }, [slug]);
+  }, [slug, locale]);
 
   const handleLike = useCallback(async () => {
     if (!project || liked) return;
     try {
-      await fetch(`/api/projects/${project.id}/like/`, { method: 'POST' });
+      await fetch(`/api/projects/${project.id}/like/`, {method: 'POST'});
       setLiked(true);
-      setProject((prev) => (prev ? { ...prev, likes_count: prev.likes_count + 1 } : null));
+      setProject((prev) => (prev ? {...prev, likes_count: prev.likes_count + 1} : null));
     } catch {}
   }, [project, liked]);
 
@@ -65,7 +70,7 @@ export default function ProjectDetailPage() {
       <main className="min-h-screen flex items-center justify-center">
         <div className="cyber-frame">
           <div className="cyber-frame-body px-8 py-5 text-neon-cyan font-mono tracking-[0.2em] animate-pulse">
-            ДЕКОДИРОВАНИЕ ДОСЬЕ ПРОЕКТА...
+            {t('loading')}
           </div>
         </div>
       </main>
@@ -75,10 +80,10 @@ export default function ProjectDetailPage() {
   if (!project) {
     return (
       <main className="min-h-screen flex flex-col items-center justify-center gap-5">
-        <div className="text-2xl font-display text-zinc-300">Проект не найден</div>
+        <div className="text-2xl font-display text-zinc-300">{t('notFound')}</div>
         <Link href="/projects" className="cyber-btn btn-ghost px-6 py-3 text-xs font-bold">
           <ArrowLeft className="w-4 h-4" />
-          <span>КО ВСЕМ ПРОЕКТАМ</span>
+          <span>{t('back')}</span>
         </Link>
       </main>
     );
@@ -92,12 +97,12 @@ export default function ProjectDetailPage() {
           className="cyber-btn btn-ghost px-4 py-2 text-xs font-bold mb-8 inline-flex"
         >
           <ArrowLeft className="w-4 h-4" />
-          <span>КО ВСЕМ ПРОЕКТАМ</span>
+          <span>{t('back')}</span>
         </Link>
 
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
+          initial={{opacity: 0, y: 20}}
+          animate={{opacity: 1, y: 0}}
           className="cyber-frame mb-8"
         >
           <div className="cyber-frame-body p-6 md:p-8 relative">
@@ -108,7 +113,7 @@ export default function ProjectDetailPage() {
               <div>
                 <div className="font-mono text-xs tracking-[0.24em] text-neon-cyan mb-2 flex items-center gap-2">
                   <Cpu className="w-3.5 h-3.5" />
-                  <span>SYSTEM SPECIFICATION</span>
+                  <span>{t('spec')}</span>
                 </div>
                 <h1 className="text-3xl sm:text-4xl font-display font-black text-white mb-2">
                   {project.title}
@@ -129,7 +134,7 @@ export default function ProjectDetailPage() {
                     className="cyber-btn btn-ghost px-5 py-2.5 text-xs font-bold"
                   >
                     <Github className="w-4 h-4" />
-                    <span>GITHUB</span>
+                    <span>{t('github')}</span>
                   </a>
                 )}
                 {project.demo_url && (
@@ -140,7 +145,7 @@ export default function ProjectDetailPage() {
                     className="cyber-btn btn-primary px-5 py-2.5 text-xs font-bold"
                   >
                     <ExternalLink className="w-4 h-4" />
-                    <span>LIVE DEMO</span>
+                    <span>{t('demo')}</span>
                   </a>
                 )}
               </div>
@@ -162,7 +167,7 @@ export default function ProjectDetailPage() {
             <div className="flex flex-wrap items-center gap-6 pt-4 border-t border-cyber-border text-xs font-mono text-zinc-400">
               <span className="flex items-center gap-1.5">
                 <Eye className="w-4 h-4 text-neon-cyan" />
-                {project.views_count} ПРОСМОТРОВ
+                {project.views_count} {t('views').toUpperCase()}
               </span>
               <button
                 type="button"
@@ -176,11 +181,11 @@ export default function ProjectDetailPage() {
                     liked ? 'fill-neon-magenta text-neon-magenta' : 'text-neon-magenta'
                   }`}
                 />
-                {project.likes_count} ЛАЙКОВ
+                {project.likes_count} {t('likes').toUpperCase()}
               </button>
               <span className="flex items-center gap-1.5">
                 <Clock className="w-4 h-4 text-acid-yellow" />
-                {new Date(project.created_at).toLocaleDateString('ru-RU')}
+                {new Date(project.created_at).toLocaleDateString(dateLocale)}
               </span>
             </div>
           </div>
@@ -188,9 +193,9 @@ export default function ProjectDetailPage() {
 
         {project.readme_content ? (
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.15 }}
+            initial={{opacity: 0}}
+            animate={{opacity: 1}}
+            transition={{delay: 0.15}}
             className="cyber-frame"
           >
             <div className="cyber-frame-body p-6 md:p-9 prose-cyber relative">
@@ -207,7 +212,7 @@ export default function ProjectDetailPage() {
         ) : (
           <div className="cyber-frame">
             <div className="cyber-frame-body p-8 text-center text-zinc-400 font-mono">
-              README пока не доступен
+              {t('noReadme')}
             </div>
           </div>
         )}

@@ -1,22 +1,16 @@
 'use client';
 
-import { useState } from 'react';
-import { motion } from 'framer-motion';
-import {
-  Mail,
-  Send,
-  Github,
-  Copy,
-  Check,
-  Radio,
-  ArrowUpRight,
-} from 'lucide-react';
+import {useState} from 'react';
+import {useTranslations} from 'next-intl';
+import {motion} from 'framer-motion';
+import {Mail, Send, Github, Copy, Check, Radio, ArrowUpRight} from 'lucide-react';
 
 const EMAIL = 'contact@festchuk.dev';
 const TELEGRAM = 'https://t.me/festchuk';
 const GITHUB = 'https://github.com/Inna949Festchuk';
 
 export default function ContactsPage() {
+  const t = useTranslations('contacts');
   const [copied, setCopied] = useState(false);
 
   const copyEmail = async () => {
@@ -30,8 +24,8 @@ export default function ContactsPage() {
   const contactCards = [
     {
       icon: Mail,
-      code: 'CHANNEL 01 // DIRECT MAIL',
-      title: 'Email',
+      code: t('ch1Code'),
+      title: t('tEmail'),
       value: EMAIL,
       href: `mailto:${EMAIL}`,
       action: 'copy',
@@ -39,8 +33,8 @@ export default function ContactsPage() {
     },
     {
       icon: Send,
-      code: 'CHANNEL 02 // ENCRYPTED CHAT',
-      title: 'Telegram',
+      code: t('ch2Code'),
+      title: t('tTelegram'),
       value: '@festchuk',
       href: TELEGRAM,
       action: 'link',
@@ -48,13 +42,19 @@ export default function ContactsPage() {
     },
     {
       icon: Github,
-      code: 'CHANNEL 03 // CODE REPOSITORIES',
-      title: 'GitHub',
+      code: t('ch3Code'),
+      title: t('tGithub'),
       value: 'Inna949Festchuk',
       href: GITHUB,
       action: 'link',
       hex: 'hex-cyan',
     },
+  ];
+
+  const rules = [
+    {n: '01', text: t('r1'), cls: 'bg-neon-cyan/15 text-neon-cyan border-neon-cyan/40'},
+    {n: '02', text: t('r2'), cls: 'bg-neon-purple/15 text-neon-purple border-neon-purple/40'},
+    {n: '03', text: t('r3'), cls: 'bg-acid-yellow/15 text-acid-yellow border-acid-yellow/40'},
   ];
 
   return (
@@ -63,14 +63,14 @@ export default function ContactsPage() {
         <div className="mb-10 border-b border-neon-cyan/20 pb-6">
           <div className="inline-flex items-center gap-2 font-mono text-xs tracking-[0.25em] text-neon-cyan mb-2">
             <Radio className="w-3.5 h-3.5 animate-pulse" />
-            <span>UPLINK // COMMUNICATION TERMINALS</span>
+            <span>{t('headerCode')}</span>
           </div>
           <h1 className="text-4xl sm:text-5xl font-display font-black tracking-wide mb-3">
-            <span className="text-white">СВЯЗАТЬСЯ</span>{' '}
-            <span className="text-neon-cyan text-glow-cyan">СО МНОЙ</span>
+            <span className="text-white">{t('title1')}</span>{' '}
+            <span className="text-neon-cyan text-glow-cyan">{t('title2')}</span>
           </h1>
           <p className="text-zinc-300 font-mono text-xs sm:text-sm max-w-xl">
-            Открыт к сложным инженерным задачам, разработке AI-систем, архитектуре и техническому консалтингу.
+            {t('headerDesc')}
           </p>
         </div>
 
@@ -78,9 +78,9 @@ export default function ContactsPage() {
           {contactCards.map((card, i) => (
             <motion.div
               key={card.title}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.1 }}
+              initial={{opacity: 0, y: 20}}
+              animate={{opacity: 1, y: 0}}
+              transition={{delay: i * 0.1}}
               className={`cyber-frame group ${card.action === 'copy' ? 'cursor-pointer' : ''}`}
               onClick={card.action === 'copy' ? copyEmail : undefined}
             >
@@ -109,17 +109,17 @@ export default function ContactsPage() {
                       className={`cyber-btn px-4 py-2.5 text-xs font-bold ${
                         copied ? 'btn-primary' : 'btn-ghost'
                       }`}
-                      title="Скопировать email"
+                      title={t('copy')}
                     >
                       {copied ? (
                         <>
                           <Check className="w-4 h-4" />
-                          <span>СКОПИРОВАНО</span>
+                          <span>{t('copied')}</span>
                         </>
                       ) : (
                         <>
                           <Copy className="w-4 h-4" />
-                          <span>КОПИРОВАТЬ</span>
+                          <span>{t('copy')}</span>
                         </>
                       )}
                     </button>
@@ -132,9 +132,9 @@ export default function ContactsPage() {
                       if (card.action === 'copy') e.stopPropagation();
                     }}
                     className="cyber-btn btn-primary px-5 py-2.5 text-xs font-bold"
-                    title={card.action === 'link' ? 'Открыть канал' : 'Написать письмо'}
+                    title={card.action === 'link' ? t('open') : t('write')}
                   >
-                    <span>{card.action === 'copy' ? 'НАПИСАТЬ' : 'ОТКРЫТЬ'}</span>
+                    <span>{card.action === 'copy' ? t('write') : t('open')}</span>
                     <ArrowUpRight className="w-4 h-4" />
                   </a>
                 </div>
@@ -148,30 +148,22 @@ export default function ContactsPage() {
             <span className="cb cb-tl" />
             <span className="cb cb-br" />
             <div className="font-mono text-xs tracking-[0.24em] text-neon-magenta mb-2">
-              // PROTOCOL GUIDELINES
+              {t('protocol')}
             </div>
             <h2 className="text-xl font-display font-bold text-white mb-5">
-              РЕГЛАМЕНТ СВЯЗИ
+              {t('protocolTitle')}
             </h2>
             <ul className="space-y-3.5 text-sm text-zinc-300">
-              <li className="flex items-start gap-3">
-                <span className="px-2 py-0.5 text-xs font-mono bg-neon-cyan/15 text-neon-cyan border border-neon-cyan/40">
-                  01
-                </span>
-                <span>Для коммерческих проектов и архитектуры — Telegram или Email.</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <span className="px-2 py-0.5 text-xs font-mono bg-neon-purple/15 text-neon-purple border border-neon-purple/40">
-                  02
-                </span>
-                <span>Для вопросов по коду и open-source — GitHub Issues / Pull Requests.</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <span className="px-2 py-0.5 text-xs font-mono bg-acid-yellow/15 text-acid-yellow border border-acid-yellow/40">
-                  03
-                </span>
-                <span>Среднее время отклика по прямым каналам — менее 24 часов.</span>
-              </li>
+              {rules.map((rule) => (
+                <li key={rule.n} className="flex items-start gap-3">
+                  <span
+                    className={`px-2 py-0.5 text-xs font-mono border ${rule.cls}`}
+                  >
+                    {rule.n}
+                  </span>
+                  <span>{rule.text}</span>
+                </li>
+              ))}
             </ul>
           </div>
         </div>

@@ -1,19 +1,21 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, Terminal } from 'lucide-react';
+import {useState, useEffect} from 'react';
+import {useTranslations} from 'next-intl';
+import {usePathname, Link} from '@/i18n/navigation';
+import {motion, AnimatePresence} from 'framer-motion';
+import {Menu, X} from 'lucide-react';
+import LanguageSwitcher from '@/components/LanguageSwitcher';
 
 const navLinks = [
-  { href: '/', label: 'HOME', ru: 'ГЛАВНАЯ' },
-  { href: '/projects', label: 'PROJECTS', ru: 'ПРОЕКТЫ' },
-  { href: '/blog', label: 'BLOG', ru: 'БЛОГ' },
-  { href: '/contacts', label: 'CONTACT', ru: 'КОНТАКТЫ' },
-];
+  {href: '/', key: 'home'},
+  {href: '/projects', key: 'projects'},
+  {href: '/blog', key: 'blog'},
+  {href: '/contacts', key: 'contacts'},
+] as const;
 
 export default function Header() {
+  const t = useTranslations('nav');
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
@@ -80,21 +82,15 @@ export default function Header() {
                     active ? 'bg-neon-cyan shadow-[0_0_8px_#00F3FF]' : 'bg-[#22c55e]'
                   }`}
                 />
-                <span>{link.label}</span>
+                <span>{t(link.key)}</span>
               </Link>
             );
           })}
         </div>
 
-        {/* Right: JACK IN */}
+        {/* Right: language */}
         <div className="hidden md:flex items-center gap-3">
-          <Link
-            href="/contacts"
-            className="cyber-btn btn-primary px-5 py-2.5 font-display font-bold text-xs tracking-[0.18em]"
-          >
-            <Terminal className="w-3.5 h-3.5" />
-            <span>JACK IN</span>
-          </Link>
+          <LanguageSwitcher />
         </div>
 
         {/* Mobile toggle */}
@@ -102,7 +98,7 @@ export default function Header() {
           type="button"
           className="md:hidden p-2 text-zinc-300 hover:text-neon-cyan border border-cyber-border"
           onClick={() => setMobileOpen(!mobileOpen)}
-          aria-label="Меню"
+          aria-label={t('menu')}
         >
           {mobileOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
         </button>
@@ -112,12 +108,15 @@ export default function Header() {
       <AnimatePresence>
         {mobileOpen && (
           <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
+            initial={{opacity: 0, height: 0}}
+            animate={{opacity: 1, height: 'auto'}}
+            exit={{opacity: 0, height: 0}}
             className="md:hidden bg-[#060912]/95 backdrop-blur-lg border-b border-neon-cyan/30 overflow-hidden"
           >
             <div className="px-4 py-4 space-y-1.5">
+              <div className="flex justify-end mb-1">
+                <LanguageSwitcher />
+              </div>
               {navLinks.map((link) => {
                 const active =
                   norm(link.href) === '/'
@@ -140,20 +139,16 @@ export default function Header() {
                           active ? 'bg-neon-cyan' : 'bg-[#22c55e]'
                         }`}
                       />
-                      {link.label}
+                      {t(link.key)}
                     </span>
-                    <span className="font-mono text-[10px] text-zinc-500">{link.ru}</span>
+                    <span className="font-mono text-[10px] text-zinc-500">
+                      {link.href === '/'
+                        ? 'HOME'
+                        : link.href.replace(/^\//, '').toUpperCase()}
+                    </span>
                   </Link>
                 );
               })}
-              <Link
-                href="/contacts"
-                onClick={() => setMobileOpen(false)}
-                className="cyber-btn btn-primary w-full py-3 mt-3 text-center font-display font-bold text-xs tracking-[0.2em]"
-              >
-                <Terminal className="w-3.5 h-3.5" />
-                <span>JACK IN</span>
-              </Link>
             </div>
           </motion.div>
         )}

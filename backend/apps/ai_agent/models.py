@@ -5,6 +5,7 @@ import uuid
 
 from django.db import models
 from django.utils import timezone
+from pgvector.django import VectorField
 
 
 class ChatSession(models.Model):
@@ -81,9 +82,7 @@ class DocumentEmbedding(models.Model):
     chunk_index = models.PositiveIntegerField('Индекс чанка', default=0)
     chunk_text = models.TextField('Текст чанка')
     metadata = models.JSONField('Метаданные', default=dict)
-
-    # pgvector field — will be handled in migration
-    # embedding = VectorField(dimensions=1024)
+    embedding = VectorField('Вектор', dimensions=1024)
 
     created_at = models.DateTimeField('Создан', auto_now_add=True)
     updated_at = models.DateTimeField('Обновлён', auto_now=True)

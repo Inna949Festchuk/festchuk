@@ -17,6 +17,7 @@ class ChatMessageSendSerializer(serializers.Serializer):
     """Serializer for sending a message to the AI agent."""
     session_id = serializers.UUIDField()
     message = serializers.CharField(max_length=4000)
+    lang = serializers.ChoiceField(choices=('ru', 'en'), required=False, default='ru')
 
 
 class ChatMessageSerializer(serializers.ModelSerializer):

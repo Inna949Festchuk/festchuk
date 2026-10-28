@@ -4,6 +4,8 @@
 // For local (non-Docker) dev, default to localhost.
 const apiTarget = process.env.API_PROXY_TARGET || 'http://localhost:8000';
 
+const withNextIntl = require('next-intl/plugin')('./i18n/request.ts');
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: 'standalone',
@@ -36,4 +38,4 @@ const nextConfig = {
   },
 };
 
-module.exports = nextConfig;
+module.exports = withNextIntl(nextConfig);

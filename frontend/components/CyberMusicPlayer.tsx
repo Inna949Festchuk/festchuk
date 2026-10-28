@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import {useTranslations} from 'next-intl';
 import { Volume2, VolumeX, Shuffle, Radio } from 'lucide-react';
 
 interface TrackComposition {
@@ -159,6 +160,7 @@ const TRACKS: TrackComposition[] = [
 const BAR_COUNT = 12;
 
 export default function CyberMusicPlayer() {
+  const t = useTranslations('player');
   const [isPlaying, setIsPlaying] = useState(false);
   const [trackIndex, setTrackIndex] = useState(0);
   const [bars, setBars] = useState<number[]>(() => Array(BAR_COUNT).fill(18));
@@ -457,7 +459,7 @@ export default function CyberMusicPlayer() {
   const currentTrack = TRACKS[trackIndex];
 
   return (
-    <div className="cyber-audio-dock" role="region" aria-label="Фоновый киберпанк-плеер">
+    <div className="cyber-audio-dock" role="region" aria-label={t('aria')}>
       <div className={`cyber-audio-panel ${isPlaying ? 'is-playing' : ''}`}>
         <span className="cb cb-tl" />
         <span className="cb cb-br" />
@@ -493,8 +495,8 @@ export default function CyberMusicPlayer() {
             type="button"
             onClick={togglePlay}
             className={`cyber-audio-btn ${isPlaying ? 'active' : ''}`}
-            aria-label={isPlaying ? 'Отключить фоновую музыку' : 'Включить фоновую музыку'}
-            title={isPlaying ? 'Отключить музыку' : 'Включить музыку'}
+            aria-label={isPlaying ? t('muteAria') : t('playAria')}
+            title={isPlaying ? t('muteTitle') : t('playTitle')}
           >
             {isPlaying ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
             <span>{isPlaying ? 'MUTE' : 'PLAY'}</span>
@@ -504,8 +506,8 @@ export default function CyberMusicPlayer() {
             type="button"
             onClick={playRandomTrack}
             className="cyber-audio-btn cyber-audio-btn-shuffle"
-            aria-label="Случайная киберпанк-композиция"
-            title="Переключить на случайную композицию"
+            aria-label={t('randomAria')}
+            title={t('randomTitle')}
           >
             <Shuffle className="w-4 h-4" />
             <span>RANDOM</span>

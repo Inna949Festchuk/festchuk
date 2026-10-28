@@ -1,7 +1,8 @@
 'use client';
 
-import Link from 'next/link';
-import { motion } from 'framer-motion';
+import {useTranslations} from 'next-intl';
+import {Link} from '@/i18n/navigation';
+import {motion} from 'framer-motion';
 import {
   Github,
   Mail,
@@ -16,45 +17,47 @@ import {
 import Hologram from '@/components/Hologram';
 import Odometer from '@/components/Odometer';
 
-const modules = [
-  {
-    icon: Brain,
-    code: 'AI / LLM / RAG',
-    name: 'NEURAL SYNC',
-    desc: 'Векторный ретривал по проектам и статьям, Function Calling, голосовой ввод и синтез речи (STT/TTS).',
-    hex: 'hex-cyan',
-  },
-  {
-    icon: Shield,
-    code: 'SECURITY',
-    name: 'QUANTUM SHIELD',
-    desc: 'Многоуровневый rate limiting, анонимная аналитика в Redis, полное соответствие 152-ФЗ.',
-    hex: 'hex-purple',
-  },
-  {
-    icon: Eye,
-    code: 'FRONTEND / UX',
-    name: 'OMNI VISION',
-    desc: 'Next.js 14 App Router, голографический HUD-интерфейс, Framer Motion и полная адаптивность.',
-    hex: 'hex-cyan',
-  },
-  {
-    icon: Cpu,
-    code: 'BACKEND / DATA',
-    name: 'HYPER DRIVE',
-    desc: 'Высоконагруженная архитектура на Django 5, DRF, Celery, PostgreSQL + pgvector и Redis.',
-    hex: 'hex-purple',
-  },
-];
-
-const stats = [
-  { n: 15, suffix: '+', label: 'PROJECTS DEPLOYED' },
-  { n: 5, suffix: '+', label: 'YEARS EXPERIENCE' },
-  { n: 10, suffix: '+', label: 'TECH ARTICLES' },
-  { n: 24, suffix: '/7', label: 'AI CORE ONLINE' },
-];
-
 export default function HomePage() {
+  const t = useTranslations('home');
+
+  const modules = [
+    {
+      icon: Brain,
+      code: t('moduleAiCode'),
+      name: t('moduleAiName'),
+      desc: t('moduleAiDesc'),
+      hex: 'hex-cyan',
+    },
+    {
+      icon: Shield,
+      code: t('moduleSecCode'),
+      name: t('moduleSecName'),
+      desc: t('moduleSecDesc'),
+      hex: 'hex-purple',
+    },
+    {
+      icon: Eye,
+      code: t('moduleFrontCode'),
+      name: t('moduleFrontName'),
+      desc: t('moduleFrontDesc'),
+      hex: 'hex-cyan',
+    },
+    {
+      icon: Cpu,
+      code: t('moduleBackCode'),
+      name: t('moduleBackName'),
+      desc: t('moduleBackDesc'),
+      hex: 'hex-purple',
+    },
+  ];
+
+  const stats = [
+    {n: 15, suffix: '+', label: t('statProjects')},
+    {n: 5, suffix: '+', label: t('statYears')},
+    {n: 10, suffix: '+', label: t('statArticles')},
+    {n: 24, suffix: '/7', label: t('statAi')},
+  ];
+
   return (
     <main className="relative">
       {/* ============ HERO ============ */}
@@ -62,14 +65,14 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto w-full grid lg:grid-cols-2 gap-12 items-center">
           {/* Left column */}
           <motion.div
-            initial={{ opacity: 0, x: -30 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.7 }}
+            initial={{opacity: 0, x: -30}}
+            animate={{opacity: 1, x: 0}}
+            transition={{duration: 0.7}}
           >
             <div className="mb-7 inline-flex items-center gap-2.5 px-4 py-2 border border-neon-cyan/50 bg-[#070c1c]/80 backdrop-blur-md shadow-[0_0_20px_rgba(0,243,255,0.18)]">
               <span className="w-2 h-2 rounded-full bg-[#22c55e] animate-neon-pulse" />
               <span className="text-xs text-neon-cyan font-mono tracking-[0.24em]">
-                AI-DRIVEN FULLSTACK ARCHITECT // NODE 44-A
+                {t('heroBadge')}
               </span>
             </div>
 
@@ -80,15 +83,12 @@ export default function HomePage() {
             </h1>
 
             <p className="font-display font-bold text-xl sm:text-2xl text-zinc-100 tracking-wide mb-5 flex items-center gap-3">
-              <span>Константин</span>
-              <span className="text-neon-cyan text-glow-cyan">Фестчук</span>
+              <span>{t('nameFirst')}</span>
+              <span className="text-neon-cyan text-glow-cyan">{t('nameLast')}</span>
             </p>
 
             <p className="text-base md:text-lg text-zinc-200/90 mb-9 max-w-xl leading-relaxed bg-[#070b18]/65 backdrop-blur-sm p-4 border-l-2 border-neon-cyan">
-              Проектирую и запускаю интеллектуальные веб-системы на стыке{' '}
-              <span className="text-neon-magenta font-semibold">Python</span>,{' '}
-              <span className="text-neon-cyan font-semibold">React / Next.js</span> и{' '}
-              <span className="text-acid-yellow font-semibold">автономных AI-агентов</span>.
+              {t('heroText')}
             </p>
 
             <div className="flex flex-wrap gap-4 mb-9">
@@ -97,13 +97,13 @@ export default function HomePage() {
                 className="cyber-btn btn-primary px-8 py-4 font-display font-bold text-xs sm:text-sm tracking-[0.16em]"
               >
                 <Sparkles className="w-4 h-4" />
-                <span>СМОТРЕТЬ ПРОЕКТЫ</span>
+                <span>{t('ctaProjects')}</span>
               </Link>
               <Link
                 href="/blog"
                 className="cyber-btn btn-ghost px-8 py-4 font-display font-semibold text-xs sm:text-sm tracking-[0.16em]"
               >
-                <span>ТЕХНИЧЕСКИЙ БЛОГ</span>
+                <span>{t('ctaBlog')}</span>
                 <ArrowUpRight className="w-4 h-4" />
               </Link>
             </div>
@@ -138,7 +138,7 @@ export default function HomePage() {
                 <Send className="w-5 h-5" />
               </a>
               <span className="ml-2 font-mono text-[11px] tracking-[0.2em] text-zinc-400 hidden sm:inline">
-                UPLINK // DIRECT CHANNELS
+                {t('uplink')}
               </span>
             </div>
           </motion.div>
@@ -156,18 +156,18 @@ export default function HomePage() {
           <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-10 gap-4">
             <div>
               <div className="font-mono text-xs tracking-[0.28em] text-neon-cyan mb-2">
-                // SYSTEM ARCHITECTURE
+                {t('systemArchitecture')}
               </div>
               <h2
                 className="glitch font-display font-black text-3xl sm:text-4xl inline-block"
-                data-text="CORE MODULES"
+                data-text={t('coreModules')}
               >
-                CORE MODULES
+                {t('coreModules')}
               </h2>
             </div>
             <div className="font-mono text-xs tracking-[0.2em] text-emerald-400 flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-              ALL SUBSYSTEMS NOMINAL
+              {t('allNominal')}
             </div>
           </div>
 
@@ -175,10 +175,10 @@ export default function HomePage() {
             {modules.map((m, i) => (
               <motion.div
                 key={m.name}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
+                initial={{opacity: 0, y: 30}}
+                whileInView={{opacity: 1, y: 0}}
+                viewport={{once: true}}
+                transition={{delay: i * 0.1}}
                 className="cyber-frame group"
               >
                 <div className="cyber-frame-body p-6 h-full flex flex-col">
@@ -214,10 +214,10 @@ export default function HomePage() {
               {stats.map((s, i) => (
                 <motion.div
                   key={s.label}
-                  initial={{ opacity: 0 }}
-                  whileInView={{ opacity: 1 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.1 }}
+                  initial={{opacity: 0}}
+                  whileInView={{opacity: 1}}
+                  viewport={{once: true}}
+                  transition={{delay: i * 0.1}}
                   className={`flex flex-col items-center justify-center px-4 ${
                     i < stats.length - 1 ? 'md:border-r md:border-cyber-border' : ''
                   }`}
