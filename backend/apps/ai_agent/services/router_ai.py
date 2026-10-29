@@ -167,7 +167,8 @@ class RouterAIClient:
         Perform speech-to-text on an audio file.
 
         Args:
-            audio_file: File-like object or bytes of audio
+            audio_file: File-like object (Django UploadedFile preferred — its
+                filename carries the format) or raw bytes
 
         Returns:
             Transcribed text
@@ -175,14 +176,21 @@ class RouterAIClient:
         model = model or settings.ROUTERAI_STT_MODEL
 
         try:
+            # The router infers the audio format from the multipart filename
+            # (mp3/wav/flac/m4a/ogg/webm/aac). A nameless BytesIO made from
+            # raw bytes produces a 400 "unsupported audio format", so keep the
+            # original filename; default to webm (browser MediaRecorder output).
+            name = None
             if hasattr(audio_file, 'read'):
-                audio_data = audio_file.read()
+                audio = io.BytesIO(audio_file.read())
+                name = getattr(audio_file, 'name', None)
             else:
-                audio_data = audio_file
+                audio = io.BytesIO(audio_file)
+            audio.name = name or 'recording.webm'
 
             response = self.client.audio.transcriptions.create(
                 model=model,
-                file=io.BytesIO(audio_data),
+                file=audio,
             )
             return response.text
 
