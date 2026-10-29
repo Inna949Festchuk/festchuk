@@ -48,9 +48,9 @@ export default function ProjectDetailPage() {
 
   useEffect(() => {
     fetch(`/api/projects/${slug}/?lang=${locale}`)
-      .then((r) => r.json())
+      .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
-        setProject(data);
+        setProject(data && data.id ? data : null);
         setLoading(false);
       })
       .catch(() => setLoading(false));
@@ -59,11 +59,11 @@ export default function ProjectDetailPage() {
   const handleLike = useCallback(async () => {
     if (!project || liked) return;
     try {
-      await fetch(`/api/projects/${project.id}/like/`, {method: 'POST'});
+      await fetch(`/api/projects/${slug}/like/`, {method: 'POST'});
       setLiked(true);
       setProject((prev) => (prev ? {...prev, likes_count: prev.likes_count + 1} : null));
     } catch {}
-  }, [project, liked]);
+  }, [project, liked, slug]);
 
   if (loading) {
     return (

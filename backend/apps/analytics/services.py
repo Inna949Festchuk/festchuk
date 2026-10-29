@@ -12,12 +12,33 @@ from django.conf import settings
 logger = logging.getLogger(__name__)
 
 
+def _is_trusted_proxy(ip: str) -> bool:
+    """Whether ``ip`` is a reverse proxy whose X-Forwarded-For we may believe."""
+    if ip in getattr(settings, 'TRUSTED_PROXY_IPS', frozenset()):
+        return True
+    try:
+        # Docker bridge / nginx / Next.js rewrite all reach Django from a
+        # private range; a public peer is the client itself.
+        return ipaddress.ip_address(ip).is_private
+    except ValueError:
+        return False
+
+
 def _get_client_ip(request) -> str:
-    """Extract client IP from request, respecting proxy headers."""
+    """Extract the real client IP, trusting X-Forwarded-For only from a proxy.
+
+    Reading the header unconditionally lets a caller spoof it to reset their
+    like/view counters and rate-limit bucket, so it is honoured only when the
+    direct peer is a known proxy.
+    """
+    remote_addr = request.META.get('REMOTE_ADDR', '0.0.0.0')
+    if not _is_trusted_proxy(remote_addr):
+        return remote_addr
+
     x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
     if x_forwarded_for:
         return x_forwarded_for.split(',')[0].strip()
-    return request.META.get('REMOTE_ADDR', '0.0.0.0')
+    return remote_addr
 
 
 def _hash_ip(ip: str) -> str:

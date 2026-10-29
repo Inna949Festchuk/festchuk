@@ -39,6 +39,7 @@ export default function ChatWidget() {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [speaking, setSpeaking] = useState(false);
   const [ttsEnabled, setTtsEnabled] = useState(true);
+  const [sessionError, setSessionError] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -48,17 +49,27 @@ export default function ChatWidget() {
   const quickPrompts = [t('q1'), t('q2'), t('q3'), t('q4')];
   const timeLocale = locale === 'ru' ? 'ru-RU' : 'en-US';
 
+  // Initialize session. Extracted so it can be retried on failure.
+  const initSession = useCallback(async () => {
+    try {
+      const res = await fetch('/api/chat/session/');
+      if (!res.ok) throw new Error('session failed');
+      const data = await res.json();
+      setSessionId(data.session_id);
+      setSessionError(false);
+    } catch {
+      setSessionError(true);
+    }
+  }, []);
+
   // Initialize session
   useEffect(() => {
-    fetch('/api/chat/session/')
-      .then((r) => r.json())
-      .then((data) => setSessionId(data.session_id))
-      .catch(() => {});
+    initSession();
 
     return () => {
       if (audioRef.current) audioRef.current.pause();
     };
-  }, []);
+  }, [initSession]);
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -101,7 +112,30 @@ export default function ChatWidget() {
   const sendMessage = useCallback(
     async (text?: string) => {
       const message = (text ?? input).trim();
-      if (!message || loading || !sessionId) return;
+      if (!message || loading) return;
+
+      // Session not established (e.g. the initial /api/chat/session/ call failed):
+      // surface it visibly and try again, instead of dropping the input silently.
+      if (!sessionId) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: crypto.randomUUID(),
+            role: 'user',
+            content: message,
+            timestamp: new Date(),
+          },
+          {
+            id: crypto.randomUUID(),
+            role: 'assistant',
+            content: t('errSession'),
+            timestamp: new Date(),
+          },
+        ]);
+        if (!text) setInput('');
+        initSession();
+        return;
+      }
 
       stopSpeaking();
 
@@ -151,7 +185,7 @@ export default function ChatWidget() {
         setLoading(false);
       }
     },
-    [input, loading, sessionId, playResponse, stopSpeaking, locale, t],
+    [input, loading, sessionId, playResponse, stopSpeaking, locale, t, initSession],
   );
 
   const startRecording = useCallback(async () => {

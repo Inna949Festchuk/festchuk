@@ -43,7 +43,16 @@
     "statProjects": "PROJECTS DEPLOYED",
     "statYears": "YEARS EXPERIENCE",
     "statArticles": "TECH ARTICLES",
-    "statAi": "AI CORE ONLINE"
+    "statAi": "AI CORE ONLINE",
+    "featuredCode": "// DEPLOYED SYSTEMS",
+    "featuredTitle1": "ИЗБРАННЫЕ",
+    "featuredTitle2": "ПРОЕКТЫ",
+    "featuredAll": "ВСЕ ПРОЕКТЫ",
+    "latestCode": "// KNOWLEDGE MATRIX",
+    "latestTitle1": "ПОСЛЕДНИЕ",
+    "latestTitle2": "СТАТЬИ",
+    "latestAll": "ВЕСЬ БЛОГ",
+    "min": "МИН"
   },
   "projects": {
     "headerCode": "PORTFOLIO // DEPLOYED SYSTEMS",
@@ -138,7 +147,8 @@
     "errAi": "⚠️ AI-сервис временно недоступен. Проверьте подключение или попробуйте позже.",
     "errStt": "⚠️ Не удалось распознать речь. Попробуйте ещё раз.",
     "errStt2": "⚠️ Ошибка распознавания речи.",
-    "errMic": "⚠️ Нет доступа к микрофону в браузере."
+    "errMic": "⚠️ Нет доступа к микрофону в браузере.",
+    "errSession": "⚠️ Не удалось установить соединение с ассистентом. Попробуйте ещё раз."
   },
   "player": {
     "aria": "Фоновый киберпанк-плеер",

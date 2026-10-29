@@ -17,7 +17,7 @@ class ChatSession(models.Model):
         default=uuid.uuid4,
         editable=False,
     )
-    ip_hash = models.CharField('IP Hash', max_length=64)
+    ip_hash = models.CharField('IP Hash', max_length=64, unique=True, db_index=True)
     created_at = models.DateTimeField('Создан', auto_now_add=True)
     last_active_at = models.DateTimeField('Активность', default=timezone.now)
 
@@ -27,7 +27,7 @@ class ChatSession(models.Model):
         ordering = ['-last_active_at']
 
     def __str__(self):
-        return f"Session {self.session_id[:8]}..."
+        return f"Session {str(self.session_id)[:8]}..."
 
     def touch(self):
         """Update last activity timestamp."""

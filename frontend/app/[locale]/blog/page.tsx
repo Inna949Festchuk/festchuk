@@ -34,9 +34,9 @@ export default function BlogPage() {
       ? `/api/posts/?lang=${locale}&tag=${encodeURIComponent(activeTag)}`
       : `/api/posts/?lang=${locale}`;
     fetch(url)
-      .then((r) => r.json())
+      .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
-        setPosts(data.results || data);
+        setPosts(Array.isArray(data) ? data : (data?.results ?? []));
         setLoading(false);
       })
       .catch(() => setLoading(false));
@@ -44,11 +44,11 @@ export default function BlogPage() {
 
   const allTags = Array.from(new Set(posts.flatMap((p) => p.tags || []))).sort();
 
-  const handleLike = async (id: number) => {
+  const handleLike = async (post: Post) => {
     try {
-      await fetch(`/api/posts/${id}/like/`, {method: 'POST'});
+      await fetch(`/api/posts/${post.slug}/like/`, {method: 'POST'});
       setPosts((prev) =>
-        prev.map((p) => (p.id === id ? {...p, likes_count: p.likes_count + 1} : p)),
+        prev.map((p) => (p.id === post.id ? {...p, likes_count: p.likes_count + 1} : p)),
       );
     } catch {}
   };
@@ -162,7 +162,7 @@ export default function BlogPage() {
                             type="button"
                             onClick={(e) => {
                               e.preventDefault();
-                              handleLike(post.id);
+                              handleLike(post);
                             }}
                             className="flex items-center gap-1 hover:text-neon-magenta transition-colors"
                           >
@@ -184,7 +184,7 @@ export default function BlogPage() {
                         {post.excerpt}
                       </p>
 
-                      {post.tags?.length > 0 && (
+                      {(post.tags?.length ?? 0) > 0 && (
                         <div className="flex flex-wrap gap-2">
                           {post.tags.map((tag) => (
                             <button

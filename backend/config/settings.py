@@ -153,12 +153,33 @@ REST_FRAMEWORK = {
         'rest_framework.renderers.JSONRenderer',
     ],
     'DEFAULT_THROTTLE_CLASSES': [
-        'rest_framework.throttling.AnonRateThrottle',
+        'config.throttling.ClientIPAnonRateThrottle',
     ],
     'DEFAULT_THROTTLE_RATES': {
-        'anon': '100/hour',
+        # Reads are cheap; the frontend fires 2+ of them per page view and the
+        # whole site shares one bucket in dev (Next.js rewrites do not forward
+        # X-Forwarded-For), so this has to stay well above browsing volume.
+        'anon': os.getenv('THROTTLE_ANON_RATE', '2000/hour'),
+        # Likes / views.
+        'write': os.getenv('THROTTLE_WRITE_RATE', '120/hour'),
+        # Paid AI calls — deliberately tight.
+        'chat': os.getenv('THROTTLE_CHAT_RATE', '30/hour'),
+        'tts': os.getenv('THROTTLE_TTS_RATE', '30/hour'),
+        'stt': os.getenv('THROTTLE_STT_RATE', '30/hour'),
     },
 }
+
+# ============================================================
+# Reverse proxies
+# ============================================================
+# Peers allowed to speak for the client via X-Forwarded-For. Private-range
+# addresses (Docker bridge, nginx, the Next.js rewrite) are always trusted;
+# list any public proxy here.
+TRUSTED_PROXY_IPS = frozenset(
+    ip.strip()
+    for ip in os.getenv('TRUSTED_PROXY_IPS', '').split(',')
+    if ip.strip()
+)
 
 # ============================================================
 # CORS
@@ -190,7 +211,13 @@ ROUTERAI_API_KEY = os.getenv('ROUTERAI_API_KEY', '')
 ROUTERAI_BASE_URL = os.getenv('ROUTERAI_BASE_URL', 'https://routerai.ru/api/v1')
 ROUTERAI_LLM_MODEL = os.getenv('ROUTERAI_LLM_MODEL', 'qwen-2.5-plus')
 ROUTERAI_EMBEDDINGS_MODEL = os.getenv('ROUTERAI_EMBEDDINGS_MODEL', 'bge-m3')
-ROUTERAI_TTS_MODEL = os.getenv('ROUTERAI_TTS_MODEL', 'tts-1-hd')
+# MiniMax speech is multilingual (Russian included) and accepts the OpenAI
+# `voice` names; HeyGen/Gemini/Qwen voices are provider-specific and 400 here.
+ROUTERAI_TTS_MODEL = os.getenv('ROUTERAI_TTS_MODEL', 'minimax/speech-2.8-turbo')
+# The OpenAI SDK treats `voice` as required, so this must always be non-empty.
+ROUTERAI_TTS_VOICE = os.getenv('ROUTERAI_TTS_VOICE', 'alloy')
+# Must be explicit: the default is raw PCM, which a browser cannot play.
+ROUTERAI_TTS_FORMAT = os.getenv('ROUTERAI_TTS_FORMAT', 'mp3')
 ROUTERAI_STT_MODEL = os.getenv('ROUTERAI_STT_MODEL', 'whisper-large-v3')
 
 # ============================================================
@@ -200,6 +227,8 @@ ROUTERAI_STT_MODEL = os.getenv('ROUTERAI_STT_MODEL', 'whisper-large-v3')
 CHAT_SESSION_TTL = 4 * 3600  # 4 hours
 MAX_CHAT_HISTORY = 50  # messages to keep in context
 RAG_TOP_K = 5  # number of similar documents to retrieve
+# Upper bound on characters handed to the synthesizer per request.
+TTS_MAX_CHARS = int(os.getenv('TTS_MAX_CHARS', '4000'))
 
 # ============================================================
 # Analytics

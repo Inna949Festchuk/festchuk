@@ -50,9 +50,9 @@ export default function BlogPostPage() {
 
   useEffect(() => {
     fetch(`/api/posts/${slug}/?lang=${locale}`)
-      .then((r) => r.json())
+      .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
-        setPost(data);
+        setPost(data && data.id ? data : null);
         setLoading(false);
       })
       .catch(() => setLoading(false));
@@ -67,7 +67,7 @@ export default function BlogPostPage() {
   const handleLike = useCallback(async () => {
     if (!post || liked) return;
     try {
-      await fetch(`/api/posts/${post.id}/like/`, {method: 'POST'});
+      await fetch(`/api/posts/${post.slug}/like/`, {method: 'POST'});
       setLiked(true);
       setPost((prev) => (prev ? {...prev, likes_count: prev.likes_count + 1} : null));
     } catch {}
@@ -93,7 +93,7 @@ export default function BlogPostPage() {
     }
 
     try {
-      const res = await fetch(`/api/posts/${post.id}/tts/?lang=${locale}`, {method: 'POST'});
+      const res = await fetch(`/api/posts/${post.slug}/tts/?lang=${locale}`, {method: 'POST'});
       if (!res.ok) return;
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);

@@ -29,19 +29,20 @@ export default function ProjectsPage() {
 
   useEffect(() => {
     fetch(`/api/projects/?lang=${locale}`)
-      .then((r) => r.json())
+      .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
-        setProjects(data.results || data);
+        // pagination disabled: the API returns a plain array now.
+        setProjects(Array.isArray(data) ? data : (data?.results ?? []));
         setLoading(false);
       })
       .catch(() => setLoading(false));
   }, [locale]);
 
-  const handleLike = async (id: number) => {
+  const handleLike = async (project: Project) => {
     try {
-      await fetch(`/api/projects/${id}/like/`, {method: 'POST'});
+      await fetch(`/api/projects/${project.slug}/like/`, {method: 'POST'});
       setProjects((prev) =>
-        prev.map((p) => (p.id === id ? {...p, likes_count: p.likes_count + 1} : p)),
+        prev.map((p) => (p.id === project.id ? {...p, likes_count: p.likes_count + 1} : p)),
       );
     } catch {}
   };
@@ -154,7 +155,7 @@ export default function ProjectsPage() {
                         </span>
                         <button
                           type="button"
-                          onClick={() => handleLike(project.id)}
+                          onClick={() => handleLike(project)}
                           className="flex items-center gap-1.5 hover:text-neon-magenta transition-colors"
                           title="like"
                         >

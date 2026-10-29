@@ -12,6 +12,21 @@ from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
+# MIME type per ROUTERAI_TTS_FORMAT, so views do not hardcode audio/mpeg.
+_TTS_CONTENT_TYPES = {
+    'mp3': 'audio/mpeg',
+    'wav': 'audio/wav',
+    'opus': 'audio/ogg',
+    'flac': 'audio/flac',
+    'pcm': 'audio/L16;rate=24000;channels=1',
+}
+
+
+def tts_content_type() -> str:
+    """MIME type matching the configured TTS ``response_format``."""
+    fmt = (getattr(settings, 'ROUTERAI_TTS_FORMAT', 'mp3') or 'mp3').lower()
+    return _TTS_CONTENT_TYPES.get(fmt, f'audio/{fmt}')
+
 
 class RouterAIClient:
     """
@@ -113,20 +128,33 @@ class RouterAIClient:
             logger.error(f"RouterAI embeddings error: {e}")
             raise
 
-    def tts(self, text: str, model: str | None = None, voice: str = 'alloy') -> bytes:
+    def tts(
+        self,
+        text: str,
+        model: str | None = None,
+        voice: str | None = None,
+        response_format: str | None = None,
+    ) -> bytes:
         """
         Generate text-to-speech audio.
 
+        ``response_format`` must be requested explicitly: without it the router
+        falls back to raw PCM (which the browser cannot play from a Blob URL),
+        and MiniMax rejects the call outright.
+
         Returns:
-            Audio bytes (MP3)
+            Audio bytes in ``response_format`` (mp3 by default)
         """
         model = model or settings.ROUTERAI_TTS_MODEL
+        voice = voice or settings.ROUTERAI_TTS_VOICE
+        response_format = response_format or settings.ROUTERAI_TTS_FORMAT
 
         try:
             response = self.client.audio.speech.create(
                 model=model,
                 voice=voice,
                 input=text,
+                response_format=response_format,
             )
             return response.content
 

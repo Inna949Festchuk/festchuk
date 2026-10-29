@@ -12,6 +12,12 @@ const nextConfig = {
   // Preserve trailing slashes so /api/* rewrites line up with DRF's
   // trailing-slash routes (avoids a Next 308 <-> Django 301 redirect loop).
   trailingSlash: true,
+  experimental: {
+    // The rewrite proxy defaults to a 30s timeout. The AI chat (RAG retrieval
+    // plus up to 4 LLM rounds) takes ~17s warm and longer when cold, so it was
+    // cut off with a 500. Match nginx's prod proxy_read_timeout for /api/chat/.
+    proxyTimeout: 180000,
+  },
   images: {
     remotePatterns: [
       {

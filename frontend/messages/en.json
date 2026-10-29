@@ -43,7 +43,16 @@
     "statProjects": "PROJECTS DEPLOYED",
     "statYears": "YEARS EXPERIENCE",
     "statArticles": "TECH ARTICLES",
-    "statAi": "AI CORE ONLINE"
+    "statAi": "AI CORE ONLINE",
+    "featuredCode": "// DEPLOYED SYSTEMS",
+    "featuredTitle1": "FEATURED",
+    "featuredTitle2": "PROJECTS",
+    "featuredAll": "ALL PROJECTS",
+    "latestCode": "// KNOWLEDGE MATRIX",
+    "latestTitle1": "LATEST",
+    "latestTitle2": "ARTICLES",
+    "latestAll": "ALL ARTICLES",
+    "min": "MIN"
   },
   "projects": {
     "headerCode": "PORTFOLIO // DEPLOYED SYSTEMS",
@@ -138,7 +147,8 @@
     "errAi": "⚠️ AI service is temporarily unavailable. Check your connection or try again later.",
     "errStt": "⚠️ Speech recognition failed. Please try again.",
     "errStt2": "⚠️ Speech recognition error.",
-    "errMic": "⚠️ No microphone access in the browser."
+    "errMic": "⚠️ No microphone access in the browser.",
+    "errSession": "⚠️ Could not connect to the assistant. Please try again."
   },
   "player": {
     "aria": "Background cyberpunk player",

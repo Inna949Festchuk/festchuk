@@ -14,18 +14,20 @@ class AnalyticsStatsView(APIView):
     permission_classes = [AllowAny]
 
     def get(self, request):
-        projects = Project.objects.aggregate(total_views=Sum('views_count'), total_likes=Sum('likes_count'))
-        posts = Post.objects.aggregate(total_views=Sum('views_count'), total_likes=Sum('likes_count'))
+        projects = Project.objects.filter(visibility=Project.Visibility.PUBLIC)
+        posts = Post.objects.filter(status=Post.Status.PUBLISHED)
+        project_totals = projects.aggregate(total_views=Sum('views_count'), total_likes=Sum('likes_count'))
+        post_totals = posts.aggregate(total_views=Sum('views_count'), total_likes=Sum('likes_count'))
 
         return Response({
             'projects': {
-                'count': Project.objects.count(),
-                'total_views': projects['total_views'] or 0,
-                'total_likes': projects['total_likes'] or 0,
+                'count': projects.count(),
+                'total_views': project_totals['total_views'] or 0,
+                'total_likes': project_totals['total_likes'] or 0,
             },
             'posts': {
-                'count': Post.objects.filter(status=Post.Status.PUBLISHED).count(),
-                'total_views': posts['total_views'] or 0,
-                'total_likes': posts['total_likes'] or 0,
+                'count': posts.count(),
+                'total_views': post_totals['total_views'] or 0,
+                'total_likes': post_totals['total_likes'] or 0,
             },
         })

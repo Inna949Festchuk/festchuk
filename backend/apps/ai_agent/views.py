@@ -1,12 +1,19 @@
 """
 AI Agent views for REST API.
 """
+import hashlib
 import logging
 
+from django.conf import settings
+from django.core.cache import cache
+from django.db import IntegrityError
+from django.http import HttpResponse
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import AllowAny
+
+from config.throttling import ClientIPScopedRateThrottle
 
 from .models import ChatSession, ChatMessage
 from .serializers import (
@@ -15,10 +22,32 @@ from .serializers import (
     ChatHistorySerializer,
 )
 from .services.agent import AIAgent
-from .services.router_ai import RouterAIClient
+from .services.router_ai import RouterAIClient, tts_content_type
 from apps.analytics.services import _get_client_ip, _hash_ip
 
 logger = logging.getLogger(__name__)
+
+TTS_CACHE_TTL = 3600  # repeated greetings/questions should not re-bill the API
+
+
+def _resolve_session(ip_hash: str) -> tuple[ChatSession, bool]:
+    """Return ``(session, created)`` for a visitor, creating it exactly once.
+
+    `get_or_create` is only race-free when the lookup key is unique at the
+    database level. React 18 StrictMode mounts effects twice in dev, so two
+    concurrent requests used to insert two rows for one IP and every later
+    lookup then died with MultipleObjectsReturned. The unique constraint from
+    migration 0003 makes the create-or-refetch below safe.
+    """
+    existing = ChatSession.objects.filter(ip_hash=ip_hash).first()
+    if existing is not None:
+        return existing, False
+
+    try:
+        return ChatSession.objects.create(ip_hash=ip_hash), True
+    except IntegrityError:
+        # Lost the race with a concurrent request; theirs is committed.
+        return ChatSession.objects.get(ip_hash=ip_hash), False
 
 
 class ChatSessionView(APIView):
@@ -27,13 +56,8 @@ class ChatSessionView(APIView):
 
     def post(self, request):
         """Create a new chat session."""
-        ip_hash = _hash_ip(_get_client_ip(request))
-        session, created = ChatSession.objects.get_or_create(
-            ip_hash=ip_hash,
-            defaults={'last_active_at': timezone.now()},
-        )
-        if not created:
-            session.touch()
+        session, created = _resolve_session(_hash_ip(_get_client_ip(request)))
+        session.touch()
 
         return Response({
             'session_id': str(session.session_id),
@@ -42,10 +66,7 @@ class ChatSessionView(APIView):
 
     def get(self, request):
         """Get or create a session for the current IP."""
-        ip_hash = _hash_ip(_get_client_ip(request))
-        session, created = ChatSession.objects.get_or_create(
-            ip_hash=ip_hash,
-        )
+        session, _ = _resolve_session(_hash_ip(_get_client_ip(request)))
         session.touch()
         return Response({'session_id': str(session.session_id)})
 
@@ -53,6 +74,8 @@ class ChatSessionView(APIView):
 class ChatMessageView(APIView):
     """Send a message to the AI agent."""
     permission_classes = [AllowAny]
+    throttle_classes = [ClientIPScopedRateThrottle]
+    throttle_scope = 'chat'
 
     def post(self, request):
         serializer = ChatMessageSendSerializer(data=request.data)
@@ -104,6 +127,42 @@ class ChatMessageView(APIView):
         })
 
 
+class ChatTTSView(APIView):
+    """Text-to-speech for assistant replies."""
+    permission_classes = [AllowAny]
+    throttle_classes = [ClientIPScopedRateThrottle]
+    throttle_scope = 'tts'
+
+    def get(self, request):
+        text = (request.query_params.get('text') or '').strip()[:500]
+        if not text:
+            return Response(
+                {'error': 'text required'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        voice = request.query_params.get('voice') or settings.ROUTERAI_TTS_VOICE
+        cache_key = 'tts:chat:{}:{}:{}'.format(
+            settings.ROUTERAI_TTS_FORMAT,
+            voice,
+            hashlib.sha256(text.encode()).hexdigest()[:16],
+        )
+        audio = cache.get(cache_key)
+
+        if audio is None:
+            try:
+                audio = RouterAIClient().tts(text, voice=voice)
+            except Exception as e:
+                logger.error(f"Chat TTS error: {e}")
+                return Response(
+                    {'error': 'Speech synthesis failed'},
+                    status=status.HTTP_502_BAD_GATEWAY,
+                )
+            cache.set(cache_key, audio, TTS_CACHE_TTL)
+
+        return HttpResponse(audio, content_type=tts_content_type())
+
+
 class ChatHistoryView(APIView):
     """Get chat history for a session."""
     permission_classes = [AllowAny]
@@ -130,10 +189,12 @@ class ChatHistoryView(APIView):
 class ChatSTTView(APIView):
     """Speech-to-Text endpoint."""
     permission_classes = [AllowAny]
+    throttle_classes = [ClientIPScopedRateThrottle]
+    throttle_scope = 'stt'
 
-    def post(self, request, session_id=None):
-        # Get session_id from query params or path
-        session_id = session_id or request.query_params.get('session_id')
+    def post(self, request):
+        # Get session_id from query params or form data
+        session_id = request.query_params.get('session_id')
         if not session_id:
             return Response(
                 {'error': 'session_id required'},
@@ -157,7 +218,3 @@ class ChatSTTView(APIView):
                 {'error': 'Speech recognition failed'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
-
-
-# Fix import
-from django.utils import timezone
