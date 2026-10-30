@@ -27,6 +27,7 @@ chromadb>=0.4.24
 # --- Markdown & Utilities ---
 markdown>=3.5
 markdown-it-py>=3.0
+html2text>=2024.2.26
 beautifulsoup4>=4.12
 requests>=2.31
 python-dotenv>=1.0
