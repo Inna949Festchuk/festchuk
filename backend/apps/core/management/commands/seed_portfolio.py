@@ -298,6 +298,12 @@ def fetch_habr_article(article_url: str) -> str:
             logger.warning('Habr article body not found: %s', article_url)
             return ''
         
+        # Исправить URL картинок: Habr обрезает расширение в src, добавляем .png
+        for img in article_div.find_all('img'):
+            src = img.get('src', '')
+            if src and 'habrastorage.org' in src and not src.endswith(('.png', '.jpg', '.jpeg', '.gif', '.webp')):
+                img['src'] = src + '.png'
+        
         # Конвертировать HTML в markdown
         h = html2text.HTML2Text()
         h.body_width = 0  # Не переносить строки
