@@ -47,6 +47,7 @@ ARTICLES = [
         ),
         "published_at": "2026-04-01",
         "tags": ["telegram", "obsidian", "python", "knowledge-base", "llm"],
+        "habr_url": "https://habr.com/ru/articles/1017772/",
     },
     {
         "file": "04_geoai_fire.md",
@@ -57,6 +58,7 @@ ARTICLES = [
         ),
         "published_at": "2026-10-07",
         "tags": ["geoai", "llm", "agents", "fire-monitor", "mcp"],
+        "habr_url": "https://habr.com/ru/articles/1091794/",
     },
 ]
 

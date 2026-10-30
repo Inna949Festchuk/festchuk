@@ -47,15 +47,16 @@ export default function ProjectDetailPage() {
   const dateLocale = locale === 'ru' ? 'ru-RU' : 'en-US';
 
   // Кастомный рендерер для картинок: преобразует относительные пути в GitHub raw URL
+  // с фоллбеком main → master если файл не найден
   const markdownComponents = {
     img: ({src, alt, ...props}: any) => {
       if (!src) return null;
-      
+
       // Если URL абсолютный — оставить как есть
       if (src.startsWith('http://') || src.startsWith('https://')) {
         return <img src={src} alt={alt} {...props} />;
       }
-      
+
       // Преобразовать относительный путь в GitHub raw URL
       if (project?.github_url) {
         try {
@@ -63,16 +64,28 @@ export default function ProjectDetailPage() {
           const pathParts = url.pathname.split('/').filter(Boolean);
           if (pathParts.length >= 2) {
             const [owner, repo] = pathParts;
-            // Убрать .git если есть
             const repoName = repo.replace(/\.git$/, '');
-            // Убрать ведущий слеш из относительного пути
             const cleanSrc = src.replace(/^\//, '');
+            // Пробуем main, при 404 — master
             const rawUrl = `https://raw.githubusercontent.com/${owner}/${repoName}/main/${cleanSrc}`;
-            return <img src={rawUrl} alt={alt} {...props} />;
+            return (
+              <img
+                src={rawUrl}
+                alt={alt}
+                {...props}
+                onError={(e) => {
+                  const el = e.currentTarget;
+                  if (!el.dataset.fallbackTried) {
+                    el.dataset.fallbackTried = '1';
+                    el.src = `https://raw.githubusercontent.com/${owner}/${repoName}/master/${cleanSrc}`;
+                  }
+                }}
+              />
+            );
           }
         } catch {}
       }
-      
+
       // Fallback — оставить как есть (будет 404)
       return <img src={src} alt={alt} {...props} />;
     },
