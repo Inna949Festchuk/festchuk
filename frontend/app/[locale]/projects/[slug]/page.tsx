@@ -46,6 +46,38 @@ export default function ProjectDetailPage() {
 
   const dateLocale = locale === 'ru' ? 'ru-RU' : 'en-US';
 
+  // Кастомный рендерер для картинок: преобразует относительные пути в GitHub raw URL
+  const markdownComponents = {
+    img: ({src, alt, ...props}: any) => {
+      if (!src) return null;
+      
+      // Если URL абсолютный — оставить как есть
+      if (src.startsWith('http://') || src.startsWith('https://')) {
+        return <img src={src} alt={alt} {...props} />;
+      }
+      
+      // Преобразовать относительный путь в GitHub raw URL
+      if (project?.github_url) {
+        try {
+          const url = new URL(project.github_url);
+          const pathParts = url.pathname.split('/').filter(Boolean);
+          if (pathParts.length >= 2) {
+            const [owner, repo] = pathParts;
+            // Убрать .git если есть
+            const repoName = repo.replace(/\.git$/, '');
+            // Убрать ведущий слеш из относительного пути
+            const cleanSrc = src.replace(/^\//, '');
+            const rawUrl = `https://raw.githubusercontent.com/${owner}/${repoName}/main/${cleanSrc}`;
+            return <img src={rawUrl} alt={alt} {...props} />;
+          }
+        } catch {}
+      }
+      
+      // Fallback — оставить как есть (будет 404)
+      return <img src={src} alt={alt} {...props} />;
+    },
+  };
+
   useEffect(() => {
     fetch(`/api/projects/${slug}/?lang=${locale}`)
       .then((r) => (r.ok ? r.json() : null))
@@ -204,6 +236,7 @@ export default function ProjectDetailPage() {
               <ReactMarkdown
                 remarkPlugins={[remarkGfm]}
                 rehypePlugins={[rehypeHighlight]}
+                components={markdownComponents}
               >
                 {project.readme_content}
               </ReactMarkdown>
