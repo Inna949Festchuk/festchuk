@@ -246,6 +246,12 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
+# Absolute base used to build media URLs in API responses. Necessary because
+# in Docker the backend only sees internal proxy requests (Host: backend:8000),
+# which the browser cannot resolve. Set e.g. http://localhost:8000 in .env for
+# local dev; leave empty to fall back to request.build_absolute_uri().
+API_BASE_URL = os.getenv('API_BASE_URL', '')
+
 # ============================================================
 # i18n
 # ============================================================

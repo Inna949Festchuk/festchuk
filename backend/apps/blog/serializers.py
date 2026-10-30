@@ -6,6 +6,7 @@ in the serializer context (query param ``?lang=ru|en``), with fallback to
 Russian when the requested language is empty.
 """
 from rest_framework import serializers
+from apps.projects.serializers import MediaUrlField
 from .models import Post
 
 VALID_LANGS = ('ru', 'en')
@@ -22,6 +23,7 @@ class PostSerializer(serializers.ModelSerializer):
     title = serializers.SerializerMethodField()
     excerpt = serializers.SerializerMethodField()
     content = serializers.SerializerMethodField()
+    cover_image = MediaUrlField('cover_image')
 
     class Meta:
         model = Post
@@ -48,6 +50,7 @@ class PostListSerializer(serializers.ModelSerializer):
     reading_time_minutes = serializers.IntegerField(read_only=True)
     title = serializers.SerializerMethodField()
     excerpt = serializers.SerializerMethodField()
+    cover_image = MediaUrlField('cover_image')
 
     class Meta:
         model = Post
