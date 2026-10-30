@@ -216,7 +216,6 @@ def attach_image(obj, field_name: str, stem: str, url: str,
     (кроме --force-images). Возвращает True, если изображение обновлено."""
     if not url:
         return False
-    field = obj._meta.get_field(field_name)
     current = getattr(obj, field_name)
     if not force and current and current.name.startswith(stem):
         try:
@@ -232,7 +231,9 @@ def attach_image(obj, field_name: str, stem: str, url: str,
     # старое изображение (например, с другим расширением) удаляем за собой
     if current and current.name and current.name != name:
         current.delete(save=False)
-    field.save(name, ContentFile(out), save=False)
+    storage = obj._meta.get_field(field_name).storage
+    path = storage.save(name, ContentFile(out))
+    setattr(obj, field_name, path)
     obj.save(update_fields=[field_name])
     return True
 
