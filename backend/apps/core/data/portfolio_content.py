@@ -2,8 +2,11 @@
 Данные портфолио для команды ``seed_portfolio``.
 
 - ``ARTICLES`` — метаданные статей Хабра. Полный текст берётся из соседних
-  ``.md``-файлов в каталоге ``data/articles/``.
+  ``.md``-файлов в каталоге ``data/articles/``. Поле ``habr_url`` — ссылка на
+  оригинал: seed_portfolio скачивает og:image статьи и делает её обложкой.
 - ``PROJECTS`` — репозитории GitHub (все не-форки) для раздела «Проекты».
+  Поле ``cover_image`` — путь к картинке в репозитории; seed_portfolio
+  скачивает её и сохраняет как превью проекта.
 
 Поля ``*_en`` намеренно пустые: при отсутствии перевода фронтенд/AI
 корректно фолбэкт на русский (см. ``Project.get_field`` / ``Post.get_field``).
@@ -22,6 +25,7 @@ ARTICLES = [
         ),
         "published_at": "2024-10-06",
         "tags": ["geodjango", "postgis", "web-gis", "django", "arrow"],
+        "habr_url": "https://habr.com/ru/articles/848558/",
     },
     {
         "file": "02_satellite.md",
@@ -32,6 +36,7 @@ ARTICLES = [
         ),
         "published_at": "2024-10-27",
         "tags": ["gis", "gdal", "landsat", "numpy", "spectral-indexes"],
+        "habr_url": "https://habr.com/ru/articles/853736/",
     },
     {
         "file": "03_telegram_obsidian.md",
@@ -61,7 +66,7 @@ ARTICLES = [
 GITHUB_OWNER = "Inna949Festchuk"
 
 
-def _repo(name, description, language, branch, featured=False):
+def _repo(name, description, language, branch, featured=False, cover_image=''):
     return {
         "name": name,
         "github_url": f"https://github.com/{GITHUB_OWNER}/{name}",
@@ -69,6 +74,7 @@ def _repo(name, description, language, branch, featured=False):
         "description": description,
         "technologies": [language] if language else [],
         "is_featured": featured,
+        "cover_image": cover_image,
     }
 
 
@@ -79,6 +85,7 @@ PROJECTS = [
         "Система мониторинга пожаров с веб-картой, управляемая GeoAI-agent "
         "с интерфейсами MCP и REST",
         "Python", "main", featured=True,
+        cover_image="Interface.png",
     ),
     _repo(
         "flight-planning",
@@ -90,6 +97,7 @@ PROJECTS = [
         "Конвертер экспорта Telegram в Obsidian: личная база знаний с "
         "локальным LLM-поиском (Ollama)",
         "Python", "main", featured=True,
+        cover_image="blog.png",
     ),
     _repo(
         "festchuk",

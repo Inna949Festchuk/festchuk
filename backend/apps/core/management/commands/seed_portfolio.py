@@ -5,20 +5,30 @@
     python manage.py seed_portfolio                # идемпотентно
     python manage.py seed_portfolio --flush        # сначала удалить ВСЕ статьи/проекты
     python manage.py seed_portfolio --no-readme    # не скачивать README с GitHub
+    python manage.py seed_portfolio --no-images    # не скачивать обложки/превью
     python manage.py seed_portfolio --no-embed     # не генерировать RAG-эмбеддинги
 
 Поведение:
 - Удаляет демо-записи seed_demo (проект neural-grid, статью rag-assistant-...).
 - Статьи: полный текст из data/articles/*.md, EN-поля пусты (фоллбек на RU).
 - Проекты: все не-форки GitHub, README скачивается с raw.githubusercontent.com.
+- Обложки статей: og:image с habr.com скачивается и сохраняется локально
+  в MEDIA_ROOT/blog/covers/ (ссылки на Хабр/GitHub в браузере не работают —
+  хотлинлинг и CORS/CSP, поэтому картинки храним у себя).
+- Превью проектов: изображение из корня репозитория (поле cover_image) или
+  первая картинка из README; сохраняется в MEDIA_ROOT/projects/previews/.
 - После создания генерируются эмбеддинги для RAG (AI-ассистент).
 """
+import hashlib
+import io
 import logging
 import re
 from datetime import datetime
 from pathlib import Path
+from urllib.parse import quote, urlparse
 
 import requests
+from django.core.files.base import ContentFile
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 from django.utils.dateparse import parse_date
@@ -37,6 +47,24 @@ DEMO_PROJECT_SLUG = 'neural-grid'
 
 README_NAMES = ('README.md', 'readme.md', 'README.rst', 'README')
 REQUEST_TIMEOUT = 20
+USER_AGENT = (
+    'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 '
+    '(KHTML, like Gecko) Chrome/120.0 Safari/537.36'
+)
+MAX_IMAGE_BYTES = 8 * 1024 * 1024          # 8 МБ на картинку
+COVER_MAX_SIDE = 1600                      # обложки статей
+PREVIEW_MAX_SIDE = 1200                    # превью проектов
+ALLOWED_IMAGE_EXT = {'.jpg', '.jpeg', '.png', '.webp'}
+# Разрешённые для скачивания домены (защита от SSRF при чужих URL).
+ALLOWED_DOWNLOAD_HOST_SUFFIXES = (
+    'habrastorage.org',
+    'githubusercontent.com',
+    'github.com',
+)
+
+_MD_IMG_RE = re.compile(
+    r'!\[[^\]]*\]\(\s*<?([^)\s>]+)>?(?:\s+["\'][^"\']*["\'])?\s*\)'
+)
 
 
 def _strip_h1(markdown: str) -> str:
@@ -102,6 +130,162 @@ def fetch_readme(github_url: str, branch: str) -> str:
     return ''
 
 
+# --------------------------------------------------------------------------- #
+# Скачивание и сохранение изображений
+# --------------------------------------------------------------------------- #
+
+def _host_allowed(url: str) -> bool:
+    host = (urlparse(url).hostname or '').lower()
+    return any(
+        host == suffix or host.endswith('.' + suffix)
+        for suffix in ALLOWED_DOWNLOAD_HOST_SUFFIXES
+    )
+
+
+def download_image(url: str) -> bytes:
+    """Скачивает картинку (best-effort: b'' при любой ошибке)."""
+    if not url or not url.startswith(('http://', 'https://')) or not _host_allowed(url):
+        return b''
+    try:
+        resp = requests.get(
+            url, timeout=REQUEST_TIMEOUT, headers={'User-Agent': USER_AGENT},
+            stream=True,
+        )
+        if resp.status_code != 200:
+            return b''
+        declared = int(resp.headers.get('Content-Length') or 0)
+        if declared > MAX_IMAGE_BYTES:
+            return b''
+        data = resp.content[:MAX_IMAGE_BYTES + 1]
+        return data if len(data) <= MAX_IMAGE_BYTES else b''
+    except (requests.RequestException, ValueError) as exc:
+        logger.debug('Image download error %s: %s', url, exc)
+        return b''
+
+
+def normalize_image(data: bytes, max_side: int):
+    """Валидация, конвертация в JPEG/PNG/WEBP, ресайз до max_side.
+    Возвращает (bytes, ext) или None, если данные не картинка."""
+    if not data:
+        return None
+    try:
+        from PIL import Image
+    except ImportError:  # Pillow есть в requirements; fallback без ресайза
+        return data, ('.jpg' if _looks_jpeg(data) else '.png')
+
+    try:
+        img = Image.open(io.BytesIO(data))
+        img.load()
+    except Exception:  # noqa: BLE001 — битые данные
+        return None
+
+    if img.width < 64 or img.height < 64:  # иконки/бейджи shields.io — не годятся
+        return None
+
+    fmt = (img.format or '').upper()
+    if fmt not in ('JPEG', 'PNG', 'WEBP'):
+        img = img.convert('RGB')
+        fmt = 'JPEG'
+
+    img.thumbnail((max_side, max_side), Image.LANCZOS)
+
+    buf = io.BytesIO()
+    if fmt == 'WEBP':
+        img.save(buf, 'WEBP', quality=85)
+        ext = '.webp'
+    elif fmt == 'PNG':
+        img.save(buf, 'PNG', optimize=True)
+        ext = '.png'
+    else:
+        if img.mode not in ('RGB', 'L'):
+            img = img.convert('RGB')
+        img.save(buf, 'JPEG', quality=85, optimize=True)
+        ext = '.jpg'
+    out = buf.getvalue()
+    return (out, ext) if out else None
+
+
+def _looks_jpeg(data: bytes) -> bool:
+    return data[:3] == b'\xff\xd8\xff'
+
+
+def attach_image(obj, field_name: str, stem: str, url: str,
+                 max_side: int, force: bool) -> bool:
+    """Скачивает url, нормализует и сохраняет в ImageField obj.<field_name>.
+    Идемпотентно: пропускает, если файл с тем же stem уже лежит на диске
+    (кроме --force-images). Возвращает True, если изображение обновлено."""
+    if not url:
+        return False
+    field = obj._meta.get_field(field_name)
+    current = getattr(obj, field_name)
+    if not force and current and current.name.startswith(stem):
+        try:
+            if current.storage.exists(current.name):
+                return False
+        except NotImplementedError:
+            pass
+    normalized = normalize_image(download_image(url), max_side)
+    if not normalized:
+        return False
+    out, ext = normalized
+    name = f'{stem}{ext}'
+    # старое изображение (например, с другим расширением) удаляем за собой
+    if current and current.name and current.name != name:
+        current.delete(save=False)
+    field.save(name, ContentFile(out), save=False)
+    obj.save(update_fields=[field_name])
+    return True
+
+
+def habr_cover_url(article_url: str) -> str:
+    """og:image страницы статьи на Хабре ('' при неудаче)."""
+    try:
+        resp = requests.get(
+            article_url, timeout=REQUEST_TIMEOUT,
+            headers={'User-Agent': USER_AGENT},
+        )
+        if resp.status_code != 200:
+            return ''
+    except requests.RequestException as exc:
+        logger.debug('Habr page error %s: %s', article_url, exc)
+        return ''
+    m = re.search(
+        r'<meta\s+property="og:image"\s+content="([^"]+)"', resp.text
+    ) or re.search(
+        r'<meta\s+content="([^"]+)"\s+property="og:image"', resp.text
+    )
+    return m.group(1) if m else ''
+
+
+def _is_badge(src: str) -> bool:
+    low = src.lower()
+    return 'shields.io' in low or '/badge/' in low or low.endswith('.svg')
+
+
+def repo_image_candidates(readme: str, github_url: str, branch: str,
+                          declared: str) -> list:
+    """URL-кандидаты картинки-обложки проекта: объявленная, из README
+    (абсолютные и относительные к репозиторию)."""
+    path = github_url.rstrip('/').replace('https://github.com/', '')
+    base = f'https://raw.githubusercontent.com/{path}/{branch}/'
+    urls = []
+    if declared:
+        if declared.startswith('http'):
+            urls.append(declared)
+        else:
+            urls.append(base + quote(declared.lstrip('/')))
+    for m in _MD_IMG_RE.finditer(readme or ''):
+        src = m.group(1)
+        if _is_badge(src):
+            continue
+        if src.startswith('http'):
+            urls.append(src)
+        elif not src.startswith('/'):
+            urls.append(base + quote(src))
+    # dedupe preserving order
+    return list(dict.fromkeys(u for u in urls if u))
+
+
 class Command(BaseCommand):
     help = 'Seed real portfolio content: Habr articles + GitHub projects'
 
@@ -113,6 +297,14 @@ class Command(BaseCommand):
         parser.add_argument(
             '--no-readme', action='store_true',
             help='Не скачивать README с GitHub',
+        )
+        parser.add_argument(
+            '--no-images', action='store_true',
+            help='Не скачивать обложки статей и превью проектов',
+        )
+        parser.add_argument(
+            '--force-images', action='store_true',
+            help='Перекачать изображения даже если они уже сохранены',
         )
         parser.add_argument(
             '--no-embed', action='store_true',
@@ -129,7 +321,7 @@ class Command(BaseCommand):
                 f'• Flushed: posts={n_posts}, projects={n_proj}'
             ))
 
-        posts = self._seed_articles()
+        posts = self._seed_articles(opts)
         projects = self._seed_projects(opts)
 
         if not opts['no_embed']:
@@ -161,8 +353,9 @@ class Command(BaseCommand):
                     f'• Removed demo {src_type}: {slug}'
                 ))
 
-    def _seed_articles(self) -> list:
+    def _seed_articles(self, opts) -> list:
         created = 0
+        images_ok = 0
         for article in ARTICLES:
             path = ARTICLES_DIR / article['file']
             if not path.exists():
@@ -191,16 +384,34 @@ class Command(BaseCommand):
                 },
             )
             created += int(was_created)
+
+            marker = ''
+            if not opts['no_images'] and article.get('habr_url'):
+                stem = hashlib.sha1(
+                    article['habr_url'].encode()
+                ).hexdigest()[:12]
+                url = habr_cover_url(article['habr_url'])
+                if attach_image(post, 'cover_image', stem, url,
+                                COVER_MAX_SIDE, opts['force_images']):
+                    images_ok += 1
+                    marker = ' cover ✓'
+                elif url:
+                    marker = ' cover —'
+                else:
+                    marker = ' cover ✗(no og:image)'
+
             self.stdout.write(
-                f'• Article: {post.title_ru} ({len(content):,} chars)'
+                f'• Article: {post.title_ru} ({len(content):,} chars){marker}'
             )
         self.stdout.write(self.style.SUCCESS(
-            f'• Articles: {created} created, {len(ARTICLES) - created} updated'
+            f'• Articles: {created} created, {len(ARTICLES) - created} updated, '
+            f'{images_ok} covers downloaded'
         ))
         return list(Post.objects.filter(slug__in=[a['slug'] for a in ARTICLES]))
 
     def _seed_projects(self, opts) -> list:
         slugs = []
+        images_ok = 0
         for order, item in enumerate(PROJECTS, start=1):
             readme = ''
             if not opts['no_readme']:
@@ -221,10 +432,36 @@ class Command(BaseCommand):
                 },
             )
             slugs.append(project.slug)
+
             marker = 'README ✓' if readme else 'README —'
+            if not opts['no_images']:
+                stem = hashlib.sha1(
+                    item['github_url'].encode()
+                ).hexdigest()[:12]
+                candidates = repo_image_candidates(
+                    readme, item['github_url'], item['branch'],
+                    item.get('cover_image', ''),
+                )
+                saved = False
+                for url in candidates:
+                    if attach_image(project, 'image_preview', stem, url,
+                                    PREVIEW_MAX_SIDE, opts['force_images']):
+                        saved = True
+                        break
+                    # файл уже на месте (идемпотентность) — тоже успех
+                    cur = project.image_preview
+                    if cur and cur.name.startswith(stem):
+                        saved = True
+                        break
+                marker += ' img ✓' if saved else (' img —' if candidates else '')
             featured = ' ★' if item['is_featured'] else ''
+            if 'img ✓' in marker:
+                images_ok += 1
             self.stdout.write(f'• Project: {item["name"]}{featured} {marker}')
 
+        self.stdout.write(self.style.SUCCESS(
+            f'• Project previews downloaded: {images_ok}'
+        ))
         return list(Project.objects.filter(slug__in=slugs))
 
     def _embed(self, posts: list, projects: list):
