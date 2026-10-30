@@ -22,6 +22,7 @@
 import hashlib
 import io
 import logging
+import os
 import re
 from datetime import datetime
 from pathlib import Path
@@ -209,6 +210,17 @@ def _looks_jpeg(data: bytes) -> bool:
     return data[:3] == b'\xff\xd8\xff'
 
 
+def _storage_exists(file_field) -> bool:
+    """True, если файл field реально лежит в хранилище (или проверку
+    сделать нельзя — считаем, что есть)."""
+    if not file_field or not file_field.name:
+        return False
+    try:
+        return file_field.storage.exists(file_field.name)
+    except NotImplementedError:
+        return True
+
+
 def attach_image(obj, field_name: str, stem: str, url: str,
                  max_side: int, force: bool) -> bool:
     """Скачивает url, нормализует и сохраняет в ImageField obj.<field_name>.
@@ -387,19 +399,29 @@ class Command(BaseCommand):
             created += int(was_created)
 
             marker = ''
-            if not opts['no_images'] and article.get('habr_url'):
+            if not opts['no_images']:
                 stem = hashlib.sha1(
-                    article['habr_url'].encode()
+                    (article.get('habr_url') or article['slug']).encode()
                 ).hexdigest()[:12]
-                url = habr_cover_url(article['habr_url'])
-                if attach_image(post, 'cover_image', stem, url,
-                                COVER_MAX_SIDE, opts['force_images']):
-                    images_ok += 1
-                    marker = ' cover ✓'
-                elif url:
-                    marker = ' cover —'
-                else:
-                    marker = ' cover ✗(no og:image)'
+                cur = post.cover_image
+                have_file = False
+                if cur and cur.name:
+                    try:
+                        have_file = cur.storage.exists(cur.name)
+                    except NotImplementedError:
+                        have_file = True
+                if have_file and not opts['force_images']:
+                    marker = ' cover ✓(cached)'
+                elif article.get('habr_url'):
+                    url = habr_cover_url(article['habr_url'])
+                    if attach_image(post, 'cover_image', stem, url,
+                                    COVER_MAX_SIDE, opts['force_images']):
+                        images_ok += 1
+                        marker = ' cover ✓'
+                    elif url:
+                        marker = ' cover —'
+                    else:
+                        marker = ' cover ✗(no og:image)'
 
             self.stdout.write(
                 f'• Article: {post.title_ru} ({len(content):,} chars){marker}'
@@ -454,6 +476,31 @@ class Command(BaseCommand):
                     if cur and cur.name.startswith(stem):
                         saved = True
                         break
+                # Карточки проектов рендерят cover_image, а не image_preview —
+                # дублируем то же превью в cover_image.
+                if saved and project.image_preview:
+                    src = project.image_preview
+                    try:
+                        exists = src.storage.exists(src.name)
+                    except NotImplementedError:
+                        exists = False
+                    dst = project.cover_image
+                    need_copy = (
+                        opts['force_images'] or not exists
+                        or not dst or not dst.name
+                        or not _storage_exists(dst)
+                        or os.path.splitext(dst.name)[1]
+                        != os.path.splitext(src.name)[1]
+                    )
+                    if need_copy:
+                        if dst and dst.name:
+                            dst.delete(save=False)
+                        cname = f'{stem}{os.path.splitext(src.name)[1]}'
+                        path = project._meta.get_field(
+                            'cover_image').storage.save(
+                            cname, ContentFile(src.open('rb').read()))
+                        project.cover_image = path
+                        project.save(update_fields=['cover_image'])
                 marker += ' img ✓' if saved else (' img —' if candidates else '')
             featured = ' ★' if item['is_featured'] else ''
             if 'img ✓' in marker:
