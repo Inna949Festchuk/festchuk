@@ -7,3 +7,5 @@
 *.swo
 *.log
 *.tmp
+node_modules/
+.next/
