@@ -9,3 +9,7 @@
 *.tmp
 node_modules/
 .next/
+__pycache__/
+*.pyc
+*.pyo
+celerybeat-schedule
