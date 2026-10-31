@@ -15,6 +15,8 @@
 # --------------------------------------------------------------------------- #
 # Статьи (Хабр)
 # --------------------------------------------------------------------------- #
+HABR_AUTHOR_URL = "https://habr.com/ru/users/dilmah949/articles/"
+
 ARTICLES = [
     {
         "file": "01_web_gis.md",
@@ -26,6 +28,7 @@ ARTICLES = [
         "published_at": "2024-10-06",
         "tags": ["geodjango", "postgis", "web-gis", "django", "arrow"],
         "habr_url": "https://habr.com/ru/articles/848558/",
+        "habr_article_id": "848558",
     },
     {
         "file": "02_satellite.md",
@@ -37,6 +40,7 @@ ARTICLES = [
         "published_at": "2024-10-27",
         "tags": ["gis", "gdal", "landsat", "numpy", "spectral-indexes"],
         "habr_url": "https://habr.com/ru/articles/853736/",
+        "habr_article_id": "853736",
     },
     {
         "file": "03_telegram_obsidian.md",
@@ -48,6 +52,7 @@ ARTICLES = [
         "published_at": "2026-04-01",
         "tags": ["telegram", "obsidian", "python", "knowledge-base", "llm"],
         "habr_url": "https://habr.com/ru/articles/1017772/",
+        "habr_article_id": "1017772",
     },
     {
         "file": "04_geoai_fire.md",
@@ -59,6 +64,7 @@ ARTICLES = [
         "published_at": "2026-10-07",
         "tags": ["geoai", "llm", "agents", "fire-monitor", "mcp"],
         "habr_url": "https://habr.com/ru/articles/1091794/",
+        "habr_article_id": "1091794",
     },
 ]
 

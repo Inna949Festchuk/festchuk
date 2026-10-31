@@ -36,7 +36,7 @@ from django.utils.dateparse import parse_date
 
 from apps.blog.models import Post
 from apps.projects.models import Project
-from apps.core.data.portfolio_content import ARTICLES, PROJECTS
+from apps.core.data.portfolio_content import ARTICLES, PROJECTS, HABR_AUTHOR_URL
 
 logger = logging.getLogger(__name__)
 
@@ -271,6 +271,44 @@ def habr_cover_url(article_url: str) -> str:
     return m.group(1) if m else ''
 
 
+def habr_author_preview(author_url: str, article_id: str) -> str:
+    """Превью статьи из карточки на странице автора Хабра.
+    
+    Аргументы:
+    - author_url: https://habr.com/ru/users/{username}/articles/
+    - article_id: числовой ID статьи (например, '1091794')
+    
+    Возвращает URL превью ('' если не найдено).
+    """
+    try:
+        from bs4 import BeautifulSoup
+        
+        resp = requests.get(
+            author_url, timeout=REQUEST_TIMEOUT,
+            headers={'User-Agent': USER_AGENT},
+        )
+        if resp.status_code != 200:
+            return ''
+        
+        soup = BeautifulSoup(resp.text, 'html.parser')
+        article = soup.find('article', id=article_id)
+        if not article:
+            return ''
+        
+        imgs = article.find_all('img')
+        # Превью — второе img (первое — аватар автора)
+        if len(imgs) >= 2:
+            src = imgs[1].get('src', '')
+            if src.startswith('//'):
+                src = 'https:' + src
+            return src
+        return ''
+    
+    except Exception as exc:
+        logger.debug('Habr author preview error %s: %s', author_url, exc)
+        return ''
+
+
 def fetch_habr_article(article_url: str) -> tuple:
     """Скачивает HTML-контент статьи с Хабра и конвертирует в markdown.
 
@@ -493,25 +531,37 @@ class Command(BaseCommand):
                         have_file = True
                 if have_file and not opts['force_images']:
                     marker = ' cover ✓(cached)'
-                elif first_image_url:
-                    # Используем первую картинку из тела статьи
-                    if attach_image(post, 'cover_image', stem, first_image_url,
-                                    COVER_MAX_SIDE, opts['force_images']):
-                        images_ok += 1
-                        marker = ' cover ✓(body)'
-                    else:
-                        marker = ' cover —(body)'
-                elif article.get('habr_url'):
-                    # Fallback на og:image если нет картинок в теле
-                    url = habr_cover_url(article['habr_url'])
-                    if attach_image(post, 'cover_image', stem, url,
-                                    COVER_MAX_SIDE, opts['force_images']):
-                        images_ok += 1
-                        marker = ' cover ✓(og)'
-                    elif url:
-                        marker = ' cover —(og)'
-                    else:
-                        marker = ' cover ✗(no image)'
+                elif article.get('habr_article_id'):
+                    # 1. Превью из карточки на странице автора Хабра
+                    preview_url = habr_author_preview(
+                        HABR_AUTHOR_URL, article['habr_article_id']
+                    )
+                    if preview_url:
+                        if attach_image(post, 'cover_image', stem, preview_url,
+                                        COVER_MAX_SIDE, opts['force_images']):
+                            images_ok += 1
+                            marker = ' cover ✓(author)'
+                        else:
+                            marker = ' cover —(author)'
+                    elif first_image_url:
+                        # 2. Первая картинка из тела статьи
+                        if attach_image(post, 'cover_image', stem, first_image_url,
+                                        COVER_MAX_SIDE, opts['force_images']):
+                            images_ok += 1
+                            marker = ' cover ✓(body)'
+                        else:
+                            marker = ' cover —(body)'
+                    elif article.get('habr_url'):
+                        # 3. Fallback на og:image
+                        url = habr_cover_url(article['habr_url'])
+                        if attach_image(post, 'cover_image', stem, url,
+                                        COVER_MAX_SIDE, opts['force_images']):
+                            images_ok += 1
+                            marker = ' cover ✓(og)'
+                        elif url:
+                            marker = ' cover —(og)'
+                        else:
+                            marker = ' cover ✗(no image)'
 
             self.stdout.write(
                 f'• Article: {post.title_ru} ({len(content):,} chars){marker}'
