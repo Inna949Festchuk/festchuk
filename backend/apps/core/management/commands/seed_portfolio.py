@@ -59,6 +59,7 @@ ALLOWED_IMAGE_EXT = {'.jpg', '.jpeg', '.png', '.webp'}
 # Разрешённые для скачивания домены (защита от SSRF при чужих URL).
 ALLOWED_DOWNLOAD_HOST_SUFFIXES = (
     'habrastorage.org',
+    'habr.com',
     'githubusercontent.com',
     'github.com',
 )
