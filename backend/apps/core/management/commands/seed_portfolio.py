@@ -271,24 +271,26 @@ def habr_cover_url(article_url: str) -> str:
     return m.group(1) if m else ''
 
 
-def fetch_habr_article(article_url: str) -> str:
+def fetch_habr_article(article_url: str) -> tuple:
     """Скачивает HTML-контент статьи с Хабра и конвертирует в markdown.
-    
-    Возвращает markdown-строку с абсолютными ссылками на картинки (hadrastorage.org).
-    При ошибке возвращает пустую строку.
+
+    Возвращает кортеж (markdown, first_image_url):
+    - markdown: строка с абсолютными ссылками на картинки (hadrastorage.org)
+    - first_image_url: URL первой картинки в теле статьи ('' если нет)
+    При ошибке возвращает ('', '').
     """
     try:
         import html2text
         from bs4 import BeautifulSoup
-        
+
         resp = requests.get(
             article_url, timeout=REQUEST_TIMEOUT,
             headers={'User-Agent': USER_AGENT},
         )
         if resp.status_code != 200:
             logger.warning('Habr article fetch error %s: HTTP %s', article_url, resp.status_code)
-            return ''
-        
+            return ('', '')
+
         soup = BeautifulSoup(resp.text, 'html.parser')
         # Контент статьи находится в div с классом article-body
         article_div = soup.find('div', class_='article-body')
@@ -297,14 +299,20 @@ def fetch_habr_article(article_url: str) -> str:
             article_div = soup.find('div', class_='content')
         if not article_div:
             logger.warning('Habr article body not found: %s', article_url)
-            return ''
-        
+            return ('', '')
+
         # Исправить URL картинок: Habr обрезает расширение в src, добавляем .png
+        first_image_url = ''
         for img in article_div.find_all('img'):
             src = img.get('src', '')
-            if src and 'habrastorage.org' in src and not src.endswith(('.png', '.jpg', '.jpeg', '.gif', '.webp')):
-                img['src'] = src + '.png'
-        
+            if src:
+                if 'habrastorage.org' in src and not src.endswith(('.png', '.jpg', '.jpeg', '.gif', '.webp')):
+                    src = src + '.png'
+                    img['src'] = src
+                # Запоминаем первую картинку как обложку
+                if not first_image_url and src:
+                    first_image_url = src
+
         # Конвертировать HTML в markdown
         h = html2text.HTML2Text()
         h.body_width = 0  # Не переносить строки
@@ -316,20 +324,20 @@ def fetch_habr_article(article_url: str) -> str:
         h.mark_code = False
         h.skip_internal_links = False
         h.single_line_break = False
-        
+
         markdown = h.handle(str(article_div))
-        
+
         # Убрать первый H1 (заголовок статьи хранится отдельно)
         markdown = _strip_h1(markdown)
-        
-        return markdown.strip()
-    
+
+        return (markdown.strip(), first_image_url)
+
     except ImportError:
         logger.warning('html2text not installed, skipping Habr article fetch')
-        return ''
+        return ('', '')
     except Exception as exc:
         logger.warning('Habr article fetch error %s: %s', article_url, exc)
-        return ''
+        return ('', '')
 
 
 def _is_badge(src: str) -> bool:
@@ -434,12 +442,13 @@ class Command(BaseCommand):
         for article in ARTICLES:
             # Сначала пытаемся скачать контент с Хабра (если есть habr_url)
             content = ''
+            first_image_url = ''
             source = 'local'
             if article.get('habr_url') and not opts.get('no_readme'):
-                content = fetch_habr_article(article['habr_url'])
+                content, first_image_url = fetch_habr_article(article['habr_url'])
                 if content:
                     source = 'habr'
-            
+
             # Если не удалось скачать с Хабра — читаем локальный файл
             if not content:
                 path = ARTICLES_DIR / article['file']
@@ -450,7 +459,7 @@ class Command(BaseCommand):
                     continue
                 raw = path.read_text(encoding='utf-8')
                 content = _strip_h1(raw)
-            
+
             excerpt = _make_excerpt(content)
             published_at = timezone.make_aware(
                 datetime.combine(parse_date(article['published_at']),
@@ -484,16 +493,25 @@ class Command(BaseCommand):
                         have_file = True
                 if have_file and not opts['force_images']:
                     marker = ' cover ✓(cached)'
+                elif first_image_url:
+                    # Используем первую картинку из тела статьи
+                    if attach_image(post, 'cover_image', stem, first_image_url,
+                                    COVER_MAX_SIDE, opts['force_images']):
+                        images_ok += 1
+                        marker = ' cover ✓(body)'
+                    else:
+                        marker = ' cover —(body)'
                 elif article.get('habr_url'):
+                    # Fallback на og:image если нет картинок в теле
                     url = habr_cover_url(article['habr_url'])
                     if attach_image(post, 'cover_image', stem, url,
                                     COVER_MAX_SIDE, opts['force_images']):
                         images_ok += 1
-                        marker = ' cover ✓'
+                        marker = ' cover ✓(og)'
                     elif url:
-                        marker = ' cover —'
+                        marker = ' cover —(og)'
                     else:
-                        marker = ' cover ✗(no og:image)'
+                        marker = ' cover ✗(no image)'
 
             self.stdout.write(
                 f'• Article: {post.title_ru} ({len(content):,} chars){marker}'
