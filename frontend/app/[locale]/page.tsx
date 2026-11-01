@@ -161,7 +161,7 @@ export default function HomePage() {
       </section>
 
       {/* ============ CORE MODULES ============ */}
-      <section className="relative px-4 py-16">
+      <section className="relative z-10 px-4 py-16">
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-10 gap-4">
             <div>

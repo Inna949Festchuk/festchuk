@@ -274,81 +274,48 @@ body {
 }
 
 /* ============================================================
-   Hologram (hero visual)
+   Hero Cyber Robot Visual
    ============================================================ */
-.holo-scene {
+.hero-robot-stage {
   position: relative;
-  width: min(78vw, 380px);
-  aspect-ratio: 1 / 1;
-  perspective: 900px;
-}
-.holo-ring {
-  position: absolute;
-  inset: 0;
-  animation: holo-spin 26s linear infinite;
-  filter: drop-shadow(0 0 10px rgba(0, 243, 255, 0.35));
-}
-.holo-ring--inner {
-  inset: 14%;
-  animation: holo-spin-rev 18s linear infinite;
-}
-@keyframes holo-spin { from { transform: rotate(0); } to { transform: rotate(360deg); } }
-@keyframes holo-spin-rev { from { transform: rotate(360deg); } to { transform: rotate(0); } }
-
-.holo-cube-wrap {
-  position: absolute;
-  inset: 0;
+  width: 100%;
+  max-width: 500px;
+  height: clamp(480px, 58vh, 560px);
   display: flex;
-  align-items: center;
   justify-content: center;
-}
-.holo-cube {
-  width: 96px;
-  height: 96px;
-  position: relative;
-  transform-style: preserve-3d;
-  animation: cube-spin 14s linear infinite;
-}
-.holo-cube .face {
-  position: absolute;
-  width: 96px;
-  height: 96px;
-  border: 1.5px solid var(--neon-cyan);
-  background: rgba(0, 243, 255, 0.06);
-  box-shadow: 0 0 18px rgba(0, 243, 255, 0.35) inset;
-}
-.face-front  { transform: translateZ(48px); }
-.face-back   { transform: rotateY(180deg) translateZ(48px); }
-.face-right  { transform: rotateY(90deg) translateZ(48px); }
-.face-left   { transform: rotateY(-90deg) translateZ(48px); }
-.face-top    { transform: rotateX(90deg) translateZ(48px); }
-.face-bottom { transform: rotateX(-90deg) translateZ(48px); }
-@keyframes cube-spin {
-  from { transform: rotateX(-18deg) rotateY(0); }
-  to   { transform: rotateX(-18deg) rotateY(360deg); }
-}
-.holo-core {
-  position: absolute;
-  top: 50%; left: 50%;
-  width: 12px; height: 12px;
-  margin: -6px 0 0 -6px;
-  border-radius: 50%;
-  background: var(--neon-cyan);
-  box-shadow: 0 0 20px var(--neon-cyan), 0 0 40px var(--neon-cyan);
-  animation: neon-pulse 1.8s ease-in-out infinite;
+  align-items: flex-start;
+  overflow: visible;
+  z-index: 1;
 }
 
-/* Data readout chips */
-.data-readout {
+.hero-robot-glow {
   position: absolute;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 10px;
-  letter-spacing: 0.08em;
-  color: var(--neon-cyan);
-  background: rgba(6, 9, 18, 0.7);
-  border: 1px solid rgba(0, 243, 255, 0.35);
-  padding: 4px 8px;
-  backdrop-filter: blur(4px);
+  top: -8%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 440px;
+  height: 560px;
+  background:
+    radial-gradient(ellipse at 52% 36%, rgba(0, 243, 255, 0.28) 0%, rgba(188, 19, 254, 0.18) 44%, transparent 72%);
+  filter: blur(26px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.hero-robot-img {
+  position: absolute;
+  top: -72px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: clamp(370px, 30vw, 450px);
+  height: auto;
+  max-width: none;
+  z-index: 1;
+  filter:
+    drop-shadow(0 0 18px rgba(0, 243, 255, 0.45))
+    drop-shadow(0 0 38px rgba(188, 19, 254, 0.28))
+    contrast(1.06)
+    brightness(1.06);
 }
 
 /* ============================================================
