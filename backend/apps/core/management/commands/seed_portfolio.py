@@ -36,7 +36,9 @@ from django.utils.dateparse import parse_date
 
 from apps.blog.models import Post
 from apps.projects.models import Project
-from apps.core.data.portfolio_content import ARTICLES, PROJECTS, HABR_AUTHOR_URL
+from apps.core.data.portfolio_content import (
+    ARTICLES, PROJECTS, HABR_AUTHOR_URL, GITHUB_OWNER,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -407,6 +409,54 @@ def repo_image_candidates(readme: str, github_url: str, branch: str,
     return list(dict.fromkeys(u for u in urls if u))
 
 
+def list_github_repos(owner: str) -> list:
+    """Возвращает все не-форк публичные репозитории владельца через GitHub API.
+
+    Каждый элемент — dict со строками:
+    name, github_url, description, language, branch (default).
+    Пустой список при ошибке (нет сети/403/limit) — сид продолжает работать
+    по статическому списку PROJECTS.
+    """
+    repos = []
+    url = f'https://api.github.com/users/{owner}/repos'
+    try:
+        resp = requests.get(
+            url,
+            timeout=REQUEST_TIMEOUT,
+            headers={
+                'User-Agent': USER_AGENT,
+                'Accept': 'application/vnd.github+json',
+            },
+            params={'per_page': 100, 'type': 'owner'},
+        )
+        if resp.status_code != 200:
+            logger.warning('GitHub API /users/%s/repos: HTTP %s', owner, resp.status_code)
+            return []
+        data = resp.json()
+        if not isinstance(data, list):
+            return []
+    except requests.RequestException as exc:
+        logger.warning('GitHub API /users/%s/repos error: %s', owner, exc)
+        return []
+
+    for item in data:
+        if item.get('fork'):
+            continue
+        if item.get('private'):
+            continue
+        name = item.get('name')
+        if not name:
+            continue
+        repos.append({
+            'name': name,
+            'github_url': item.get('html_url') or f'https://github.com/{owner}/{name}',
+            'description': (item.get('description') or '').strip(),
+            'language': item.get('language') or '',
+            'branch': item.get('default_branch') or 'main',
+        })
+    return repos
+
+
 class Command(BaseCommand):
     help = 'Seed real portfolio content: Habr articles + GitHub projects'
 
@@ -575,7 +625,43 @@ class Command(BaseCommand):
     def _seed_projects(self, opts) -> list:
         slugs = []
         images_ok = 0
-        for order, item in enumerate(PROJECTS, start=1):
+
+        # --- Сбор полного списка проектов -------------------------------- #
+        # Статический список PROJECTS задаёт порядок, описания, переводы,
+        # featured и cover_image. Динамическое перечисление через GitHub API
+        # добавляет все не-форк репозитории, которых ещё нет в списке —
+        # их description/language/branch берутся из API (default_branch).
+        items = list(PROJECTS)
+        known_urls = {item['github_url'] for item in items}
+
+        api_repos = list_github_repos(GITHUB_OWNER)
+        if api_repos:
+            new_from_api = 0
+            for repo in api_repos:
+                if repo['github_url'] in known_urls:
+                    continue
+                items.append({
+                    'name': repo['name'],
+                    'github_url': repo['github_url'],
+                    'description': repo['description'],
+                    'technologies': [repo['language']] if repo['language'] else [],
+                    'is_featured': False,
+                    'branch': repo['branch'],
+                    'cover_image': '',
+                })
+                known_urls.add(repo['github_url'])
+                new_from_api += 1
+            if new_from_api:
+                self.stdout.write(
+                    f'• GitHub sync: +{new_from_api} new repo(s) from '
+                    f'https://github.com/{GITHUB_OWNER}'
+                )
+        else:
+            self.stdout.write(self.style.WARNING(
+                '• GitHub sync: unavailable (API error), using static list only'
+            ))
+
+        for order, item in enumerate(items, start=1):
             readme = ''
             if not opts['no_readme']:
                 readme = fetch_readme(item['github_url'], item['branch'])
