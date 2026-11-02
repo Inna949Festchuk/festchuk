@@ -641,6 +641,14 @@ class Command(BaseCommand):
             ))
 
         for article in all_articles:
+            # Пропустить записи, которые пользователь кастомизировал через Admin
+            existing_post = Post.objects.filter(slug=article['slug']).first()
+            if existing_post and not existing_post.sync_from_source:
+                self.stdout.write(
+                    f'• Article: {existing_post.title_ru} (skipped: manual)'
+                )
+                continue
+
             # Сначала пытаемся скачать контент с Хабра (если есть habr_url)
             content = ''
             first_image_url = ''
@@ -775,6 +783,15 @@ class Command(BaseCommand):
             ))
 
         for order, item in enumerate(items, start=1):
+            # Пропустить проекты, которые пользователь кастомизировал через Admin
+            existing_project = Project.objects.filter(github_url=item['github_url']).first()
+            if existing_project and not existing_project.sync_from_source:
+                slugs.append(existing_project.slug)
+                self.stdout.write(
+                    f'• Project: {existing_project.title_ru} (skipped: manual)'
+                )
+                continue
+
             readme = ''
             if not opts['no_readme']:
                 readme = fetch_readme(item['github_url'], item['branch'])

@@ -7,8 +7,8 @@ from .models import Project
 
 @admin.register(Project)
 class ProjectAdmin(admin.ModelAdmin):
-    list_display = ['title_ru', 'slug', 'is_featured', 'visibility', 'views_count', 'likes_count', 'created_at']
-    list_filter = ['is_featured', 'visibility', 'created_at']
+    list_display = ['title_ru', 'slug', 'is_featured', 'visibility', 'sync_from_source', 'views_count', 'likes_count']
+    list_filter = ['is_featured', 'visibility', 'created_at', 'sync_from_source']
     search_fields = ['title_ru', 'title_en', 'description_ru', 'description_en', 'technologies']
     prepopulated_fields = {'slug': ('title_ru',)}
     filter_horizontal = []
@@ -39,6 +39,11 @@ class ProjectAdmin(admin.ModelAdmin):
             'fields': ('views_count', 'likes_count'),
         }),
         ('Настройки', {
-            'fields': ('order', 'is_featured'),
+            'fields': ('order', 'is_featured', 'sync_from_source'),
         }),
     )
+
+    def save_model(self, request, obj, form, change):
+        if change:
+            obj.sync_from_source = False
+        super().save_model(request, obj, form, change)

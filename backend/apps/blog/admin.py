@@ -7,8 +7,8 @@ from .models import Post
 
 @admin.register(Post)
 class PostAdmin(admin.ModelAdmin):
-    list_display = ['title_ru', 'slug', 'status', 'published_at', 'views_count', 'likes_count', 'reading_time_minutes']
-    list_filter = ['status', 'published_at', 'created_at']
+    list_display = ['title_ru', 'slug', 'status', 'published_at', 'sync_from_source', 'views_count', 'likes_count']
+    list_filter = ['status', 'published_at', 'created_at', 'sync_from_source']
     search_fields = ['title_ru', 'title_en', 'excerpt_ru', 'excerpt_en', 'content_ru', 'tags']
     prepopulated_fields = {'slug': ('title_ru',)}
     filter_horizontal = []
@@ -29,7 +29,7 @@ class PostAdmin(admin.ModelAdmin):
             'fields': ('tags',),
         }),
         ('Публикация', {
-            'fields': ('status', 'published_at'),
+            'fields': ('status', 'published_at', 'sync_from_source'),
         }),
         ('Статистика', {
             'fields': ('views_count', 'likes_count'),
@@ -38,3 +38,8 @@ class PostAdmin(admin.ModelAdmin):
             'fields': ('tts_audio_url', 'tts_generated_at'),
         }),
     )
+
+    def save_model(self, request, obj, form, change):
+        if change:
+            obj.sync_from_source = False
+        super().save_model(request, obj, form, change)

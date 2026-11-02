@@ -58,6 +58,11 @@ class Project(models.Model):
 
     order = models.PositiveIntegerField('Порядок', default=0)
     is_featured = models.BooleanField('Избранное', default=False)
+    sync_from_source = models.BooleanField(
+        'Синхронизировать с GitHub',
+        default=True,
+        help_text='Если выкл. — seed_portfolio не перезаписывает README/описание при следующем запуске.',
+    )
 
     created_at = models.DateTimeField('Создан', auto_now_add=True)
     updated_at = models.DateTimeField('Обновлён', auto_now=True)

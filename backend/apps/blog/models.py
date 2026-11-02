@@ -42,6 +42,11 @@ class Post(models.Model):
         default=Status.DRAFT,
     )
     published_at = models.DateTimeField('Дата публикации', blank=True, null=True)
+    sync_from_source = models.BooleanField(
+        'Синхронизировать с Хабром',
+        default=True,
+        help_text='Если выкл. — seed_portfolio не перезаписывает контент при следующем запуске.',
+    )
 
     views_count = models.PositiveIntegerField('Просмотры', default=0)
     likes_count = models.PositiveIntegerField('Лайки', default=0)
