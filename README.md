@@ -150,7 +150,7 @@ docker compose -f docker-compose.dev.yml exec backend python manage.py seed_port
 | **GitHub** | Запушиваете репозиторий | Название, описание, язык, README, превью — всё сам |
 | **Хабр** | Публикуете статью | Текст, картинки, обложка, slug, дата — всё сам |
 
-Кастомизация (опционально): добавьте запись в `backend/apps/core/data/portfolio_content.py` — в `PROJECTS` для кастомного описания / featured / обложки, в `ARTICLES` для своих slug и тегов.
+Кастомизация (опционально): через Django Admin (`http://localhost:8000/admin/`) — названия, описания, featured, порядок, обложки, теги, переводы EN. Или статически в `backend/apps/core/data/portfolio_content.py` (`PROJECTS` / `ARTICLES`), если хотите чтобы кастомные описания переживали `--flush`.
 
 ### Флаги
 
