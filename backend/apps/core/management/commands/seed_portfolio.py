@@ -380,6 +380,85 @@ def fetch_habr_article(article_url: str) -> tuple:
         return ('', '')
 
 
+def list_habr_articles(author_url: str) -> list:
+    """Возвращает список статей со страницы автора Хабра.
+
+    Каждый элемент — dict:
+    id (str), title (str), url (str), date (str ISO или ''), tags (list).
+    Pустой список при ошибке (недоступность/403) — сид работает
+    по статическому ARTICLES.
+    """
+    articles = []
+    try:
+        from bs4 import BeautifulSoup
+
+        resp = requests.get(
+            author_url, timeout=REQUEST_TIMEOUT,
+            headers={'User-Agent': USER_AGENT},
+        )
+        if resp.status_code != 200:
+            logger.warning('Habr author page: HTTP %s', resp.status_code)
+            return []
+
+        soup = BeautifulSoup(resp.text, 'html.parser')
+        for card in soup.find_all('article', class_='tm-articles-list__item'):
+            aid = card.get('id')
+            if not aid:
+                continue
+            h2 = card.find('h2')
+            if not h2:
+                continue
+            title = h2.get_text(strip=True)
+            link_el = h2.find('a')
+            href = link_el.get('href', '') if link_el else ''
+            if not href:
+                continue
+            if href.startswith('/'):
+                href = 'https://habr.com' + href
+            # Дата
+            date_el = card.find(class_='tm-article-datetime-published')
+            date_str = ''
+            if date_el:
+                raw_date = date_el.get_text(strip=True)
+                date_str = _parse_habr_date(raw_date)
+            articles.append({
+                'habr_article_id': aid,
+                'title': title,
+                'habr_url': href,
+                'date': date_str,
+                'tags': [],
+            })
+    except Exception as exc:
+        logger.warning('Habr author page error %s: %s', author_url, exc)
+    return articles
+
+
+def _parse_habr_date(raw: str) -> str:
+    """Парсит дату из строки Хабра (например '7 окт в 21:01' или '6 окт 2024 в 12:16').
+
+    Возвращает ISO-строку 'YYYY-MM-DD' или '' если не распознать.
+    """
+    import re as _re
+    months = {
+        'янв': 1, 'фев': 2, 'мар': 3, 'апр': 4,
+        'май': 5, 'июн': 6, 'июл': 7, 'авг': 8,
+        'сен': 9, 'окт': 10, 'ноя': 11, 'дек': 12,
+    }
+    m = _re.search(
+        r'(\d{1,2})\s+(\w{3})\s*(\d{4})?\s+в\s+(\d{1,2}):(\d{2})', raw
+    )
+    if not m:
+        return ''
+    day = int(m.group(1))
+    month = months.get(m.group(2).lower(), 0)
+    if month == 0:
+        return ''
+    year = int(m.group(3)) if m.group(3) else datetime.now().year
+    if year > datetime.now().year + 1:
+        year = datetime.now().year
+    return f'{year:04d}-{month:02d}-{day:02d}'
+
+
 def _is_badge(src: str) -> bool:
     low = src.lower()
     return 'shields.io' in low or '/badge/' in low or low.endswith('.svg')
@@ -527,7 +606,41 @@ class Command(BaseCommand):
     def _seed_articles(self, opts) -> list:
         created = 0
         images_ok = 0
-        for article in ARTICLES:
+
+        # --- Динамическое перечисление статей со страницы автора -------- #
+        # Статический ARTICLES задаёт slug, tags, кастомные названия.
+        # Авторассознавание добавляет статьи, которых нет в ARTICLES.
+        all_articles = list(ARTICLES)
+        known_ids = {a.get('habr_article_id') for a in all_articles if a.get('habr_article_id')}
+
+        habr_list = list_habr_articles(HABR_AUTHOR_URL)
+        if habr_list:
+            new_from_habr = 0
+            for h in habr_list:
+                if h['habr_article_id'] in known_ids:
+                    continue
+                from django.utils.text import slugify
+                all_articles.append({
+                    'file': f"{h['habr_article_id']}.md",
+                    'slug': slugify(h['title']),
+                    'title_ru': h['title'],
+                    'published_at': h['date'] or '2026-01-01',
+                    'tags': h['tags'],
+                    'habr_url': h['habr_url'],
+                    'habr_article_id': h['habr_article_id'],
+                })
+                known_ids.add(h['habr_article_id'])
+                new_from_habr += 1
+            if new_from_habr:
+                self.stdout.write(
+                    f'• Habr sync: +{new_from_habr} new article(s) from author page'
+                )
+        else:
+            self.stdout.write(self.style.WARNING(
+                '• Habr sync: unavailable (author page error), using static list only'
+            ))
+
+        for article in all_articles:
             # Сначала пытаемся скачать контент с Хабра (если есть habr_url)
             content = ''
             first_image_url = ''
