@@ -41,5 +41,12 @@ class PostAdmin(admin.ModelAdmin):
 
     def save_model(self, request, obj, form, change):
         if change:
-            obj.sync_from_source = False
+            original = self.model.objects.filter(
+                pk=obj.pk
+            ).values_list('sync_from_source', flat=True).first()
+            submitted = form.cleaned_data.get('sync_from_source')
+            # Явное включение в этой же форме (False -> True) — уважаем.
+            # Любое другое сохранение — ручная правка, синк отключаем,
+            # чтобы seed_portfolio не затёр правку пользователя.
+            obj.sync_from_source = (original is False and submitted is True)
         super().save_model(request, obj, form, change)
