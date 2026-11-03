@@ -76,7 +76,7 @@ export default function HomePage() {
   }, [locale]);
 
   const dateLocale = locale === 'ru' ? 'ru-RU' : 'en-US';
-  const featuredProjects = projects.filter((p) => p.is_featured).slice(0, 4);
+  const featuredProjects = projects.filter((p) => p.is_featured).slice(0, 6);
   const latestPosts = posts.slice(0, 3);
 
   const modules = [
@@ -238,7 +238,7 @@ export default function HomePage() {
                   whileInView={{opacity: 1, y: 0}}
                   viewport={{once: true}}
                   transition={{delay: i * 0.08}}
-                  className={`cyber-frame group ${i % 4 === 0 ? 'bento-lg' : 'bento-sm'}`}
+                  className={`cyber-frame group ${i === 0 ? 'bento-lg' : 'bento-sm'}`}
                 >
                   <div className="cyber-frame-body overflow-hidden flex flex-col h-full">
                     <span className="cb cb-tl" />
