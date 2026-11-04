@@ -831,6 +831,19 @@ body {
 .bento-lg { grid-column: span 4; grid-row: span 2; }
 .bento-md { grid-column: span 3; }
 .bento-sm { grid-column: span 2; }
+/* Project cards: cover image takes exactly half of the card height */
+.bento-grid .cyber-frame-body > a > div:first-child,
+.bento-grid .cyber-frame-body > div.relative:first-of-type {
+  flex: 0 0 50%;
+  height: auto;
+  min-height: 0;
+}
+.bento-grid .cyber-frame-body > a > div:last-child,
+.bento-grid .cyber-frame-body > div[class*="flex-1"]:last-child {
+  flex: 0 1 50%;
+  min-height: 0;
+  overflow: hidden;
+}
 @media (max-width: 1023px) {
   .bento-grid { grid-template-columns: repeat(2, 1fr); }
   .bento-lg { grid-column: span 2; grid-row: span 2; }
