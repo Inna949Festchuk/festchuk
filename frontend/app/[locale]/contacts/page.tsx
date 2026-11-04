@@ -148,31 +148,31 @@ export default function ContactsPage() {
           ))}
         </div>
 
-        <div className="mt-10 max-w-5xl mx-auto cyber-frame">
+        {/* Ширина как у блока статистики на главной (max-w-6xl) */}
+        <div className="mt-10 max-w-6xl mx-auto cyber-frame">
           {/* Та же внутренняя сетка, что у блока статистики на главной */}
           <div className="cyber-frame-body px-6 py-9 relative">
             <span className="cb cb-tl" />
             <span className="cb cb-br" />
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-y-8 items-start">
-              <div className="md:col-span-2">
-                <div className="font-mono text-xs tracking-[0.24em] text-neon-magenta mb-2">
-                  {t('protocol')}
-                </div>
-                <h2 className="text-xl font-display font-bold text-white mb-5">
-                  {t('protocolTitle')}
-                </h2>
+            <div>
+              <div className="font-mono text-xs tracking-[0.24em] text-neon-magenta mb-2">
+                {t('protocol')}
               </div>
-              <ul className="space-y-3.5 text-sm text-zinc-300 md:col-span-2">
-              {rules.map((rule) => (
-                <li key={rule.n} className="flex items-start gap-3">
-                  <span
-                    className={`px-2 py-0.5 text-xs font-mono border ${rule.cls}`}
-                  >
-                    {rule.n}
-                  </span>
-                  <span>{rule.text}</span>
-                </li>
-              ))}
+              <h2 className="text-xl font-display font-bold text-white mb-5">
+                {t('protocolTitle')}
+              </h2>
+              {/* Список правил — под заголовком, а не справа */}
+              <ul className="space-y-3.5 text-sm text-zinc-300">
+                {rules.map((rule) => (
+                  <li key={rule.n} className="flex items-start gap-3">
+                    <span
+                      className={`px-2 py-0.5 text-xs font-mono border ${rule.cls}`}
+                    >
+                      {rule.n}
+                    </span>
+                    <span>{rule.text}</span>
+                  </li>
+                ))}
               </ul>
             </div>
           </div>
