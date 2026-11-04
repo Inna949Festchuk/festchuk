@@ -208,6 +208,32 @@ export default function HomePage() {
               </motion.div>
             ))}
           </div>
+
+          {/* Agent portrait slots — same width as the module cards above,
+              one third taller. Empty for now: agent artwork will be added
+              inside each frame later. */}
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5 mt-16 lg:mt-24 mb-16 lg:mb-24">
+            {modules.map((m, i) => (
+              <motion.div
+                key={`agent-${m.name}`}
+                initial={{opacity: 0, y: 30}}
+                whileInView={{opacity: 1, y: 0}}
+                viewport={{once: true}}
+                transition={{delay: i * 0.1}}
+                className="cyber-frame group"
+                style={{aspectRatio: '1 / 1.33'}}
+              >
+                <div className="cyber-frame-body flex flex-col items-center justify-center relative overflow-hidden">
+                  <span className="cb cb-tl" />
+                  <span className="cb cb-br" />
+                  {/* Placeholder watermark — removed once the artwork arrives */}
+                  <span className="font-mono text-[10px] tracking-[0.22em] text-zinc-700 select-none">
+                    {m.name} // AGENT
+                  </span>
+                </div>
+              </motion.div>
+            ))}
+          </div>
         </div>
       </section>
 
