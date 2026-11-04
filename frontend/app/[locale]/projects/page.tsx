@@ -92,13 +92,13 @@ export default function ProjectsPage() {
                 transition={{delay: i * 0.08}}
                 className={`cyber-frame group ${sizeClass}`}
               >
-                <div className="cyber-frame-body overflow-hidden flex flex-col">
+                <div className="cyber-frame-body overflow-hidden flex flex-col h-full">
                   <span className="cb cb-tl" />
                   <span className="cb cb-br" />
 
                   {/* Cover */}
                   <div
-                    className={`relative ${coverClass} bg-[#070b18] overflow-hidden border-b border-neon-cyan/20`}
+                    className={`relative shrink-0 ${coverClass} bg-[#070b18] overflow-hidden border-b border-neon-cyan/20`}
                   >
                     {project.cover_image ? (
                       <img
@@ -125,17 +125,17 @@ export default function ProjectsPage() {
                     )}
                   </div>
 
-                  {/* Content */}
-                  <div className="p-6 flex-1 flex flex-col">
-                    <h3 className="text-xl font-display font-bold text-white mb-2.5 group-hover:text-neon-cyan transition-colors">
+                  {/* Content — flex-1 + min-h-0 so the footer never spills below the frame */}
+                  <div className="p-6 flex-1 min-h-0 flex flex-col">
+                    <h3 className="text-xl font-display font-bold text-white mb-2.5 group-hover:text-neon-cyan transition-colors line-clamp-2">
                       {project.title}
                     </h3>
-                    <p className="text-sm text-zinc-300/90 mb-5 line-clamp-3 leading-relaxed">
+                    <p className="text-sm text-zinc-300/90 mb-5 line-clamp-2 leading-relaxed">
                       {project.summary}
                     </p>
 
                     {/* Tech badges */}
-                    <div className="flex flex-wrap gap-2 mb-6">
+                    <div className="flex flex-wrap gap-2 mb-6 max-h-[4.5rem] overflow-hidden">
                       {project.technologies?.slice(0, isLarge ? 7 : 4).map((tech) => (
                         <span
                           key={tech}

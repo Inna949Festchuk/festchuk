@@ -291,7 +291,7 @@ export default function HomePage() {
                     <span className="cb cb-tl" />
                     <span className="cb cb-br" />
                     <Link href={`/projects/${project.slug}`} className="flex flex-col h-full">
-                      <div className="h-40 sm:h-48 bg-[#070b18] overflow-hidden border-b border-neon-cyan/20 relative">
+                      <div className="h-40 sm:h-48 shrink-0 bg-[#070b18] overflow-hidden border-b border-neon-cyan/20 relative">
                         {project.cover_image ? (
                           <img src={project.cover_image} alt={project.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                         ) : (
@@ -303,7 +303,7 @@ export default function HomePage() {
                           </div>
                         )}
                       </div>
-                      <div className="p-5 flex-1 flex flex-col">
+                      <div className="p-5 flex-1 min-h-0 flex flex-col">
                         <h3 className="text-lg font-display font-bold text-white mb-2 group-hover:text-neon-cyan transition-colors line-clamp-1">
                           {project.title}
                         </h3>
