@@ -80,14 +80,13 @@ export default function HomePage() {
   const featuredProjects = projects.filter((p) => p.is_featured).slice(0, 6);
   const latestPosts = posts.slice(0, 3);
 
-  // `fit`/`pos` tune how the artwork fills its card (object-fit/object-position).
-  // neural-sync: original asset untouched, just scaled up a touch and shifted
-  // up ~7 mm via object-position so the legs aren't cut off.
+  // All four agent cards render identically: object-cover filling the frame,
+  // same hover zoom (group-hover:scale-[1.04]).
   const modules = [
-    {icon: Brain, code: t('moduleAiCode'), name: t('moduleAiName'), desc: t('moduleAiDesc'), hex: 'hex-cyan', image: '/assets/agents/neural-sync.png', fit: 'cover' as const, scale: 0.94, pos: '50% 16%'},
-    {icon: Shield, code: t('moduleSecCode'), name: t('moduleSecName'), desc: t('moduleSecDesc'), hex: 'hex-purple', image: '/assets/agents/agent-2.webp', fit: 'cover' as const, scale: 1, pos: '50% 50%'},
-    {icon: Eye, code: t('moduleFrontCode'), name: t('moduleFrontName'), desc: t('moduleFrontDesc'), hex: 'hex-cyan', image: '/assets/agents/agent-3.webp', fit: 'cover' as const, scale: 1, pos: '50% 50%'},
-    {icon: Cpu, code: t('moduleBackCode'), name: t('moduleBackName'), desc: t('moduleBackDesc'), hex: 'hex-purple', image: '/assets/agents/agent-4.webp', fit: 'cover' as const, scale: 1, pos: '50% 50%'},
+    {icon: Brain, code: t('moduleAiCode'), name: t('moduleAiName'), desc: t('moduleAiDesc'), hex: 'hex-cyan', image: '/assets/agents/neural-sync.webp'},
+    {icon: Shield, code: t('moduleSecCode'), name: t('moduleSecName'), desc: t('moduleSecDesc'), hex: 'hex-purple', image: '/assets/agents/agent-2.webp'},
+    {icon: Eye, code: t('moduleFrontCode'), name: t('moduleFrontName'), desc: t('moduleFrontDesc'), hex: 'hex-cyan', image: '/assets/agents/agent-3.webp'},
+    {icon: Cpu, code: t('moduleBackCode'), name: t('moduleBackName'), desc: t('moduleBackDesc'), hex: 'hex-purple', image: '/assets/agents/agent-4.webp'},
   ];
 
   // Project and article counts come from the API once loaded; the rest are
@@ -237,8 +236,7 @@ export default function HomePage() {
                         alt={m.name}
                         fill
                         sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-                        style={{objectFit: m.fit, objectPosition: m.pos, transform: `scale(${m.scale})`}}
-                        className="transition-transform duration-500 group-hover:scale-[1.04]"
+                        className="object-cover transition-transform duration-500 group-hover:scale-[1.04]"
                       />
                     ) : (
                       /* Placeholder watermark — removed once the artwork arrives */
