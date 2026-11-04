@@ -831,23 +831,50 @@ body {
 .bento-lg { grid-column: span 4; grid-row: span 2; }
 .bento-md { grid-column: span 3; }
 .bento-sm { grid-column: span 2; }
-/* Project cards: cover image takes exactly half of the card height */
-.bento-grid .cyber-frame-body > a > div:first-child,
-.bento-grid .cyber-frame-body > div.relative:first-of-type {
-  flex: 0 0 50%;
-  height: auto;
-  min-height: 0;
+
+/* ------------------------------------------------------------------
+   Bento project cards — layout contract:
+   The grid stretches every card to the row height, but the inner
+   flex column used to keep its natural (content) height and simply
+   overflow the bottom of the clip-path frame — the text block and
+   the stats/«ОТКРЫТЬ» footer visibly "crawled down" out of the card.
+
+   Fix: make cyber-frame-body (and the <Link>/<a> wrapper inside it)
+   fill the full card height, let the cover keep its fixed height and
+   let the content block absorb ALL the remaining space (flex-grow),
+   so the footer always sits flush at the bottom edge of the frame.
+   ------------------------------------------------------------------ */
+.bento-grid .cyber-frame {
+  display: flex; /* body can now stretch to the full grid cell height */
 }
-.bento-grid .cyber-frame-body > a > div:last-child,
-.bento-grid .cyber-frame-body > div[class*="flex-1"]:last-child {
-  flex: 0 1 50%;
+.bento-grid .cyber-frame-body {
+  height: 100%;
+}
+/* The whole card is a link on some pages — propagate the height chain */
+.bento-grid .cyber-frame-body > a,
+.bento-grid .cyber-frame-body > button {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+/* Cover strip: fixed height from markup, never stretches, never shrinks */
+.bento-grid .cyber-frame-body [class*="h-4"],
+.bento-grid .cyber-frame-body [class*="h-5"] {
+  flex-shrink: 0;
+}
+/* Content block: grows to fill all the space left under the cover */
+.bento-grid .cyber-frame-body .flex-1,
+.bento-grid .cyber-frame-body > a > .flex-1,
+.bento-grid .cyber-frame-body > button > .flex-1 {
+  flex: 1 1 auto;
   min-height: 0;
-  overflow: hidden;
 }
 /* Safety net: content blocks inside bento cards must be able to shrink.
    Without this, long titles / descriptions / rows of stat buttons push the
    footer out of the clipped card area (buttons look "eaten" or shifted). */
-.bento-grid .cyber-frame-body > div[class*="flex-1"] {
+.bento-grid .cyber-frame-body > div[class*="flex-1"],
+.bento-grid .cyber-frame-body > a > div[class*="flex-1"],
+.bento-grid .cyber-frame-body > button > div[class*="flex-1"] {
   min-width: 0;
 }
 .bento-grid .cyber-frame-body p {
