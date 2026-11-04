@@ -216,8 +216,10 @@ export default function HomePage() {
               one third taller. Each card is fully filled with the agent
               artwork (object-cover), hover zoom included. The name sits
               below the card, in the same muted gray as the code labels. */}
-          {/* Bottom margin reduced by 24px (2rem) so the gap to FEATURED PROJECTS is tighter */}
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5 mt-10 lg:mt-16 mb-8 lg:mb-10">
+          {/* Bottom margin reduced by 24px (2rem) so the gap to FEATURED PROJECTS is tighter.
+              align-items:start — each cell wraps its own content; without it the wrapper
+              stretches to the row height and the "… // module" caption crawls downward. */}
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5 mt-10 lg:mt-16 mb-8 lg:mb-10 items-start">
             {modules.map((m, i) => (
               <motion.div
                 key={`agent-${m.name}`}
@@ -259,8 +261,10 @@ export default function HomePage() {
 
       {/* ============ FEATURED PROJECTS ============ */}
       {featuredProjects.length > 0 && (
-        /* Bottom padding cut to match the 32px/40px gap used above the grid -> FEATURED heading */
-        <section className="relative px-4 pt-8 pb-8 lg:pb-10">
+        /* Top gap kept identical to the previous section's bottom margin (mb-8/lg:mb-10).
+           Bottom padding is now symmetric so FEATURED -> ARTICLES and ARTICLES -> STATS
+           have exactly the same rhythm. */
+        <section className="relative px-4 pt-8 pb-8 lg:pt-10 lg:pb-10">
           <div className="max-w-7xl mx-auto">
             <div className="flex items-end justify-between mb-8 gap-4">
               <div>
@@ -329,8 +333,9 @@ export default function HomePage() {
 
       {/* ============ LATEST ARTICLES ============ */}
       {latestPosts.length > 0 && (
-        /* Same tightened bottom spacing as FEATURED PROJECTS -> gap to the stats block matches */
-        <section className="relative px-4 pt-8 pb-8 lg:pb-10">
+        /* Identical vertical rhythm to the FEATURED PROJECTS section:
+           pt-8/pb-8 (lg:pt-10/lg:pb-10) — gaps before and after this block match. */
+        <section className="relative px-4 pt-8 pb-8 lg:pt-10 lg:pb-10">
           <div className="max-w-5xl mx-auto">
             <div className="flex items-end justify-between mb-8 gap-4">
               <div>
@@ -391,7 +396,9 @@ export default function HomePage() {
       )}
 
       {/* ============ STATS ============ */}
-      <section className="relative px-4 pt-12 pb-16">
+      {/* pt matches the symmetric pb-8/lg:pb-10 of the sections above,
+          so ARTICLES -> STATS gap equals every other inter-section gap. */}
+      <section className="relative px-4 pt-8 pb-16 lg:pt-10">
         <div className="max-w-6xl mx-auto cyber-frame">
           <div className="cyber-frame-body px-6 py-9">
             <span className="cb cb-tl" />
