@@ -65,16 +65,21 @@ export default function ContactsPage() {
             <Radio className="w-3.5 h-3.5 animate-pulse" />
             <span>{t('headerCode')}</span>
           </div>
-          <h1 className="text-4xl sm:text-5xl font-display font-black tracking-wide mb-3">
-            <span className="text-white">{t('title1')}</span>{' '}
-            <span className="text-neon-cyan text-glow-cyan">{t('title2')}</span>
-          </h1>
-          <p className="text-zinc-300 font-mono text-xs sm:text-sm max-w-xl">
-            {t('headerDesc')}
-          </p>
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+            <div>
+              <h1 className="text-4xl sm:text-5xl font-display font-black tracking-wide">
+                <span className="text-white">{t('title1')}</span>{' '}
+                <span className="text-neon-cyan text-glow-cyan">{t('title2')}</span>
+              </h1>
+            </div>
+            <p className="text-zinc-300 font-mono text-xs sm:text-sm max-w-md md:text-right">
+              {t('headerDesc')}
+            </p>
+          </div>
         </div>
 
-        <div className="space-y-4">
+        {/* Узкая колонка, как карточки статей на /blog/: 1024px вместо 1280px */}
+        <div className="max-w-5xl mx-auto space-y-4">
           {contactCards.map((card, i) => (
             <motion.div
               key={card.title}
@@ -143,17 +148,21 @@ export default function ContactsPage() {
           ))}
         </div>
 
-        <div className="mt-10 cyber-frame">
-          <div className="cyber-frame-body p-6 md:p-8 relative">
+        <div className="mt-10 max-w-5xl mx-auto cyber-frame">
+          {/* Та же внутренняя сетка, что у блока статистики на главной */}
+          <div className="cyber-frame-body px-6 py-9 relative">
             <span className="cb cb-tl" />
             <span className="cb cb-br" />
-            <div className="font-mono text-xs tracking-[0.24em] text-neon-magenta mb-2">
-              {t('protocol')}
-            </div>
-            <h2 className="text-xl font-display font-bold text-white mb-5">
-              {t('protocolTitle')}
-            </h2>
-            <ul className="space-y-3.5 text-sm text-zinc-300">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-y-8 items-start">
+              <div className="md:col-span-2">
+                <div className="font-mono text-xs tracking-[0.24em] text-neon-magenta mb-2">
+                  {t('protocol')}
+                </div>
+                <h2 className="text-xl font-display font-bold text-white mb-5">
+                  {t('protocolTitle')}
+                </h2>
+              </div>
+              <ul className="space-y-3.5 text-sm text-zinc-300 md:col-span-2">
               {rules.map((rule) => (
                 <li key={rule.n} className="flex items-start gap-3">
                   <span
@@ -164,7 +173,8 @@ export default function ContactsPage() {
                   <span>{rule.text}</span>
                 </li>
               ))}
-            </ul>
+              </ul>
+            </div>
           </div>
         </div>
       </div>
