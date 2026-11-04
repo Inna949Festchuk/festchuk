@@ -334,35 +334,55 @@ export default function ChatWidget() {
     setMessages([]);
   };
 
-  // Track the launcher button so the mascot can sit right above it
-  // (its bottom edge touches the button's top edge, offset = mascot height).
-  // Desktop (sm+, ≥640px): mascot is w-[184px] → offset 192px.
-  // Mobile: unchanged — mascot stays w-[46px] → offset 68px.
+  // Track the launcher button so the mascot "stands" slightly above it:
+  // its feet are MASCOT_FOOT_GAP (~10px) higher than the button's top edge —
+  // the same rule on mobile and desktop. The offset is computed from the
+  // rendered image height (read live from the <img>, with a fallback based
+  // on the responsive width), so it stays correct for any breakpoint.
+  const MASCOT_FOOT_GAP = 10;
+  const mascotWrapRef = useRef<HTMLDivElement>(null);
+  const mascotImgRef = useRef<HTMLImageElement>(null);
   const [mascotTop, setMascotTop] = useState<number | null>(null);
 
   useEffect(() => {
     if (!mascotVisible || isOpen) return;
+    const getRenderedHeight = () => {
+      const img = mascotImgRef.current;
+      if (img && img.clientHeight > 0) return img.clientHeight;
+      // Fallback before the image has laid out: aspect ratio 1440/1080.
+      return (window.matchMedia('(min-width: 640px)').matches ? 184 : 46) * (1440 / 1080);
+    };
     const measure = () => {
       const el = launcherRef.current;
       if (!el) return;
-      const isDesktop = window.matchMedia('(min-width: 640px)').matches;
-      setMascotTop(el.getBoundingClientRect().top - (isDesktop ? 192 : 68));
+      setMascotTop(Math.round(el.getBoundingClientRect().top - getRenderedHeight() - MASCOT_FOOT_GAP));
     };
     measure();
     window.addEventListener('scroll', measure, {passive: true});
     window.addEventListener('resize', measure);
     const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(measure) : null;
     if (ro && launcherRef.current) ro.observe(launcherRef.current);
+    // Re-measure once the mascot image itself has been laid out/loaded so
+    // its real rendered height is used for the offset.
+    const imgEl = mascotImgRef.current;
+    const onLoad = () => measure();
+    if (imgEl) {
+      imgEl.addEventListener('load', onLoad);
+      if (imgEl.complete && imgEl.naturalHeight > 0) measure();
+    }
+    if (ro && mascotWrapRef.current) ro.observe(mascotWrapRef.current);
     return () => {
       window.removeEventListener('scroll', measure);
       window.removeEventListener('resize', measure);
+      if (imgEl) imgEl.removeEventListener('load', onLoad);
       ro?.disconnect();
     };
   }, [mascotVisible, isOpen]);
 
   return (
     <>
-      {/* Little robot mascot — hovers right above the NEURAL ASSIST launcher.
+      {/* Little robot mascot — stands with its feet ~10px above the top edge
+          of the NEURAL ASSIST launcher (same rule on mobile and desktop).
           Desktop (sm+): w-[184px] (×4 larger); mobile: w-[46px] as before
           (proportions preserved). Hidden until revealed (home page: after
           scrolling past the agent grid; other pages: immediately). Fades away
@@ -372,6 +392,7 @@ export default function ChatWidget() {
         {mascotVisible && !isOpen && mascotTop !== null && (
           <motion.div
             key="mascot"
+            ref={mascotWrapRef}
             initial={{opacity: 0, scale: 0.7}}
             animate={{opacity: 1, y: [0, -6, 0], scale: 1}}
             exit={{opacity: 0, scale: 0.8}}
@@ -384,6 +405,7 @@ export default function ChatWidget() {
             style={{top: mascotTop}}
           >
             <Image
+              ref={mascotImgRef as never}
               src="/assets/neural-mascot.webp"
               alt=""
               width={1080}
