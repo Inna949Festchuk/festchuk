@@ -4,6 +4,7 @@ import {useEffect, useState} from 'react';
 import {useTranslations, useLocale} from 'next-intl';
 import {Link} from '@/i18n/navigation';
 import {motion} from 'framer-motion';
+import Image from 'next/image';
 import {
   Github,
   Mail,
@@ -80,10 +81,10 @@ export default function HomePage() {
   const latestPosts = posts.slice(0, 3);
 
   const modules = [
-    {icon: Brain, code: t('moduleAiCode'), name: t('moduleAiName'), desc: t('moduleAiDesc'), hex: 'hex-cyan'},
-    {icon: Shield, code: t('moduleSecCode'), name: t('moduleSecName'), desc: t('moduleSecDesc'), hex: 'hex-purple'},
-    {icon: Eye, code: t('moduleFrontCode'), name: t('moduleFrontName'), desc: t('moduleFrontDesc'), hex: 'hex-cyan'},
-    {icon: Cpu, code: t('moduleBackCode'), name: t('moduleBackName'), desc: t('moduleBackDesc'), hex: 'hex-purple'},
+    {icon: Brain, code: t('moduleAiCode'), name: t('moduleAiName'), desc: t('moduleAiDesc'), hex: 'hex-cyan', image: '/assets/agents/neural-sync.png'},
+    {icon: Shield, code: t('moduleSecCode'), name: t('moduleSecName'), desc: t('moduleSecDesc'), hex: 'hex-purple', image: null},
+    {icon: Eye, code: t('moduleFrontCode'), name: t('moduleFrontName'), desc: t('moduleFrontDesc'), hex: 'hex-cyan', image: null},
+    {icon: Cpu, code: t('moduleBackCode'), name: t('moduleBackName'), desc: t('moduleBackDesc'), hex: 'hex-purple', image: null},
   ];
 
   // Project and article counts come from the API once loaded; the rest are
@@ -226,10 +227,27 @@ export default function HomePage() {
                 <div className="cyber-frame-body flex flex-col items-center justify-center relative overflow-hidden">
                   <span className="cb cb-tl" />
                   <span className="cb cb-br" />
-                  {/* Placeholder watermark — removed once the artwork arrives */}
-                  <span className="font-mono text-[10px] tracking-[0.22em] text-zinc-700 select-none">
-                    {m.name} // AGENT
-                  </span>
+                  {m.image ? (
+                    <>
+                      {/* Agent artwork */}
+                      <Image
+                        src={m.image}
+                        alt={m.name}
+                        fill
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                        className="object-contain p-3 transition-transform duration-500 group-hover:scale-[1.04]"
+                      />
+                      {/* Name tag at the bottom of the frame */}
+                      <span className="absolute bottom-3 left-0 right-0 text-center font-mono text-[10px] tracking-[0.22em] text-zinc-500 pointer-events-none">
+                        {m.name} // AGENT
+                      </span>
+                    </>
+                  ) : (
+                    /* Placeholder watermark — removed once the artwork arrives */
+                    <span className="font-mono text-[10px] tracking-[0.22em] text-zinc-700 select-none">
+                      {m.name} // AGENT
+                    </span>
+                  )}
                 </div>
               </motion.div>
             ))}
