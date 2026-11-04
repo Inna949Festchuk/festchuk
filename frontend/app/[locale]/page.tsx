@@ -216,7 +216,8 @@ export default function HomePage() {
               one third taller. Each card is fully filled with the agent
               artwork (object-cover), hover zoom included. The name sits
               below the card, in the same muted gray as the code labels. */}
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5 mt-10 lg:mt-16 mb-16 lg:mb-24">
+          {/* Bottom margin reduced by 24px (2rem) so the gap to FEATURED PROJECTS is tighter */}
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5 mt-10 lg:mt-16 mb-8 lg:mb-10">
             {modules.map((m, i) => (
               <motion.div
                 key={`agent-${m.name}`}
