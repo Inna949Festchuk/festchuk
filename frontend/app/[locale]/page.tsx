@@ -219,7 +219,7 @@ export default function HomePage() {
           {/* Bottom margin reduced by 24px (2rem) so the gap to FEATURED PROJECTS is tighter.
               align-items:start — each cell wraps its own content; without it the wrapper
               stretches to the row height and the "… // module" caption crawls downward. */}
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5 mt-10 lg:mt-16 mb-8 lg:mb-10 items-start">
+          <div data-agent-grid className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5 mt-10 lg:mt-16 mb-8 lg:mb-10 items-start">
             {modules.map((m, i) => (
               <motion.div
                 key={`agent-${m.name}`}
