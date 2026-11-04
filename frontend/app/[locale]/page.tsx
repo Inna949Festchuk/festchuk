@@ -80,11 +80,14 @@ export default function HomePage() {
   const featuredProjects = projects.filter((p) => p.is_featured).slice(0, 6);
   const latestPosts = posts.slice(0, 3);
 
+  // `fit`/`pos` tune how the artwork fills its card (object-fit/object-position).
+  // neural-sync is zoomed out a touch and shifted up so the legs aren't cut off
+  // and the head sits at (or slightly below) the level of the other agents.
   const modules = [
-    {icon: Brain, code: t('moduleAiCode'), name: t('moduleAiName'), desc: t('moduleAiDesc'), hex: 'hex-cyan', image: '/assets/agents/neural-sync.png'},
-    {icon: Shield, code: t('moduleSecCode'), name: t('moduleSecName'), desc: t('moduleSecDesc'), hex: 'hex-purple', image: '/assets/agents/agent-2.webp'},
-    {icon: Eye, code: t('moduleFrontCode'), name: t('moduleFrontName'), desc: t('moduleFrontDesc'), hex: 'hex-cyan', image: '/assets/agents/agent-3.webp'},
-    {icon: Cpu, code: t('moduleBackCode'), name: t('moduleBackName'), desc: t('moduleBackDesc'), hex: 'hex-purple', image: '/assets/agents/agent-4.webp'},
+    {icon: Brain, code: t('moduleAiCode'), name: t('moduleAiName'), desc: t('moduleAiDesc'), hex: 'hex-cyan', image: '/assets/agents/neural-sync.png', fit: 'contain' as const, pos: '50% 18%'},
+    {icon: Shield, code: t('moduleSecCode'), name: t('moduleSecName'), desc: t('moduleSecDesc'), hex: 'hex-purple', image: '/assets/agents/agent-2.webp', fit: 'cover' as const, pos: '50% 50%'},
+    {icon: Eye, code: t('moduleFrontCode'), name: t('moduleFrontName'), desc: t('moduleFrontDesc'), hex: 'hex-cyan', image: '/assets/agents/agent-3.webp', fit: 'cover' as const, pos: '50% 50%'},
+    {icon: Cpu, code: t('moduleBackCode'), name: t('moduleBackName'), desc: t('moduleBackDesc'), hex: 'hex-purple', image: '/assets/agents/agent-4.webp', fit: 'cover' as const, pos: '50% 50%'},
   ];
 
   // Project and article counts come from the API once loaded; the rest are
@@ -214,7 +217,7 @@ export default function HomePage() {
               one third taller. Each card is fully filled with the agent
               artwork (object-cover), hover zoom included. The name sits
               below the card, in the same muted gray as the code labels. */}
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5 mt-16 lg:mt-24 mb-16 lg:mb-24">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5 mt-10 lg:mt-16 mb-16 lg:mb-24">
             {modules.map((m, i) => (
               <motion.div
                 key={`agent-${m.name}`}
@@ -234,7 +237,8 @@ export default function HomePage() {
                         alt={m.name}
                         fill
                         sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-                        className="object-cover transition-transform duration-500 group-hover:scale-[1.04]"
+                        style={{objectFit: m.fit, objectPosition: m.pos}}
+                        className="transition-transform duration-500 group-hover:scale-[1.04]"
                       />
                     ) : (
                       /* Placeholder watermark — removed once the artwork arrives */
