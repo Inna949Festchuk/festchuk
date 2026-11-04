@@ -82,9 +82,9 @@ export default function HomePage() {
 
   const modules = [
     {icon: Brain, code: t('moduleAiCode'), name: t('moduleAiName'), desc: t('moduleAiDesc'), hex: 'hex-cyan', image: '/assets/agents/neural-sync.png'},
-    {icon: Shield, code: t('moduleSecCode'), name: t('moduleSecName'), desc: t('moduleSecDesc'), hex: 'hex-purple', image: null},
-    {icon: Eye, code: t('moduleFrontCode'), name: t('moduleFrontName'), desc: t('moduleFrontDesc'), hex: 'hex-cyan', image: null},
-    {icon: Cpu, code: t('moduleBackCode'), name: t('moduleBackName'), desc: t('moduleBackDesc'), hex: 'hex-purple', image: null},
+    {icon: Shield, code: t('moduleSecCode'), name: t('moduleSecName'), desc: t('moduleSecDesc'), hex: 'hex-purple', image: '/assets/agents/agent-2.webp'},
+    {icon: Eye, code: t('moduleFrontCode'), name: t('moduleFrontName'), desc: t('moduleFrontDesc'), hex: 'hex-cyan', image: '/assets/agents/agent-3.webp'},
+    {icon: Cpu, code: t('moduleBackCode'), name: t('moduleBackName'), desc: t('moduleBackDesc'), hex: 'hex-purple', image: '/assets/agents/agent-4.webp'},
   ];
 
   // Project and article counts come from the API once loaded; the rest are
@@ -211,8 +211,8 @@ export default function HomePage() {
           </div>
 
           {/* Agent portrait slots — same width as the module cards above,
-              one third taller. Empty for now: agent artwork will be added
-              inside each frame later. */}
+              one third taller. Each card is fully filled with the agent
+              artwork (object-cover), hover zoom included. */}
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5 mt-16 lg:mt-24 mb-16 lg:mb-24">
             {modules.map((m, i) => (
               <motion.div
