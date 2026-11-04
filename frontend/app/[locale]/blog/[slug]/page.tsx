@@ -134,7 +134,7 @@ export default function BlogPostPage() {
 
   return (
     <main className="min-h-screen px-4 py-10">
-      <article className="max-w-3xl mx-auto">
+      <article className="max-w-5xl mx-auto">
         <Link
           href="/blog"
           className="cyber-btn btn-ghost px-4 py-2 text-xs font-bold mb-8 inline-flex"
