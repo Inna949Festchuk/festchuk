@@ -92,7 +92,7 @@ export default function ProjectsPage() {
                 transition={{delay: i * 0.08}}
                 className={`cyber-frame group ${sizeClass}`}
               >
-                <div className="cyber-frame-body overflow-hidden flex flex-col h-full">
+                <div className="cyber-frame-body overflow-hidden flex flex-col">
                   <span className="cb cb-tl" />
                   <span className="cb cb-br" />
 
@@ -147,8 +147,8 @@ export default function ProjectsPage() {
                     </div>
 
                     {/* Stats & actions */}
-                    <div className="mt-auto flex items-center justify-between gap-3 pt-4 border-t border-cyber-border">
-                      <div className="flex items-center gap-4 text-xs font-mono text-zinc-400">
+                    <div className="mt-auto flex flex-wrap items-center justify-between gap-x-3 gap-y-2 pt-4 border-t border-cyber-border">
+                      <div className="flex items-center gap-4 text-xs font-mono text-zinc-400 min-w-0 shrink">
                         <span className="flex items-center gap-1.5" title="views">
                           <Eye className="w-4 h-4 text-neon-cyan" />
                           {project.views_count}
@@ -177,7 +177,7 @@ export default function ProjectsPage() {
 
                       <Link
                         href={`/projects/${project.slug}`}
-                        className="cyber-btn btn-ghost px-4 py-2 text-xs font-bold"
+                        className="cyber-btn btn-ghost px-4 py-2 text-xs font-bold shrink-0"
                       >
                         <span>{t('open')}</span>
                         <ArrowUpRight className="w-3.5 h-3.5" />
