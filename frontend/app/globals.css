@@ -318,6 +318,109 @@ body {
     brightness(1.06);
 }
 
+.hero-robot-img--neon {
+  pointer-events: none;
+  animation: hero-robot-neon-pulse 12s ease-in-out infinite;
+}
+
+/* ============================================================
+   Пульсация неона в элементах ТЕЛА робота (кольца в голове,
+   руках, тулове, ногах, суставах, экран ноутбука):
+   плавный подъём яркости (увеличенный блюр) -> плавное
+   угасание -> изредка хаотичное мерцание, как у неисправной
+   люминесцентной лампы
+   ============================================================ */
+@keyframes hero-robot-neon-pulse {
+  0% {
+    opacity: 0.55;
+    filter: brightness(0.85) blur(0.3px) drop-shadow(0 0 3px rgba(0, 243, 255, 0.2));
+  }
+  18% {
+    opacity: 0.85;
+    filter: brightness(1.1) blur(0.7px) drop-shadow(0 0 7px rgba(0, 243, 255, 0.4));
+  }
+  34% {
+    opacity: 1;
+    filter: brightness(1.35) blur(1.5px) drop-shadow(0 0 13px rgba(0, 243, 255, 0.6)) drop-shadow(0 0 22px rgba(188, 19, 254, 0.35));
+  }
+  52% {
+    opacity: 0.85;
+    filter: brightness(1.1) blur(0.7px) drop-shadow(0 0 7px rgba(0, 243, 255, 0.4));
+  }
+  68% {
+    opacity: 0.55;
+    filter: brightness(0.85) blur(0.3px) drop-shadow(0 0 3px rgba(0, 243, 255, 0.2));
+  }
+  70% {
+    animation-timing-function: steps(1, end);
+    opacity: 1;
+    filter: brightness(1.4) blur(1.6px) drop-shadow(0 0 15px rgba(0, 243, 255, 0.7)) drop-shadow(0 0 24px rgba(188, 19, 254, 0.4));
+  }
+  71.5% {
+    animation-timing-function: steps(1, end);
+    opacity: 0.3;
+    filter: brightness(0.7) blur(0.2px) drop-shadow(0 0 2px rgba(0, 243, 255, 0.15));
+  }
+  73% {
+    animation-timing-function: steps(1, end);
+    opacity: 0.95;
+    filter: brightness(1.3) blur(1.4px) drop-shadow(0 0 13px rgba(0, 243, 255, 0.6));
+  }
+  74.5% {
+    animation-timing-function: steps(1, end);
+    opacity: 0.35;
+    filter: brightness(0.75) blur(0.2px) drop-shadow(0 0 2px rgba(0, 243, 255, 0.15));
+  }
+  75.5% {
+    animation-timing-function: steps(1, end);
+    opacity: 0.9;
+    filter: brightness(1.25) blur(1.2px) drop-shadow(0 0 11px rgba(0, 243, 255, 0.55));
+  }
+  77% {
+    animation-timing-function: steps(1, end);
+    opacity: 0.4;
+    filter: brightness(0.8) blur(0.3px) drop-shadow(0 0 3px rgba(0, 243, 255, 0.2));
+  }
+  78% {
+    animation-timing-function: steps(1, end);
+    opacity: 0.8;
+    filter: brightness(1.15) blur(0.9px) drop-shadow(0 0 8px rgba(0, 243, 255, 0.45));
+  }
+  79.5% {
+    opacity: 0.55;
+    filter: brightness(0.85) blur(0.3px) drop-shadow(0 0 3px rgba(0, 243, 255, 0.2));
+  }
+  86% {
+    animation-timing-function: steps(1, end);
+    opacity: 0.9;
+    filter: brightness(1.25) blur(1.2px) drop-shadow(0 0 11px rgba(0, 243, 255, 0.55));
+  }
+  87.5% {
+    animation-timing-function: steps(1, end);
+    opacity: 0.3;
+    filter: brightness(0.7) blur(0.2px) drop-shadow(0 0 2px rgba(0, 243, 255, 0.15));
+  }
+  89% {
+    animation-timing-function: steps(1, end);
+    opacity: 0.85;
+    filter: brightness(1.2) blur(1.1px) drop-shadow(0 0 10px rgba(0, 243, 255, 0.5));
+  }
+  90.5% {
+    opacity: 0.55;
+    filter: brightness(0.85) blur(0.3px) drop-shadow(0 0 3px rgba(0, 243, 255, 0.2));
+  }
+  100% {
+    opacity: 0.55;
+    filter: brightness(0.85) blur(0.3px) drop-shadow(0 0 3px rgba(0, 243, 255, 0.2));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-robot-img--neon {
+    animation: none;
+  }
+}
+
 /* ============================================================
    Modules / stats
    ============================================================ */
@@ -495,8 +598,7 @@ body {
 .cyber-audio-dock {
   position: fixed;
   left: 1.25rem;
-  /* футер ~52px + зазор 20px: плеер парит НАД футером */
-  bottom: 72px;
+  bottom: var(--hud-bottom, 1.25rem);
   z-index: 50;
 }
 
@@ -642,8 +744,7 @@ body {
 @media (max-width: 640px) {
   .cyber-audio-dock {
     left: 0.75rem;
-    /* мобильный футер ~112px + зазор 20px */
-    bottom: 132px;
+    bottom: var(--hud-bottom, 0.75rem);
   }
   .cyber-audio-meta {
     display: none;

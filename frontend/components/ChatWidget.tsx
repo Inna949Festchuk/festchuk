@@ -280,7 +280,7 @@ export default function ChatWidget() {
         whileHover={{scale: 1.06}}
         whileTap={{scale: 0.96}}
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed right-5 bottom-[132px] sm:bottom-[72px] z-50 group flex items-center gap-3 px-4 py-3
+        className="fixed right-5 bottom-[var(--hud-bottom,0.75rem)] sm:bottom-[var(--hud-bottom,1.25rem)] z-50 group flex items-center gap-3 px-4 py-3
                    bg-[#090e20]/95 backdrop-blur-md border border-neon-cyan/70
                    shadow-[0_0_24px_rgba(0,243,255,0.35)] hover:shadow-[0_0_34px_rgba(255,43,214,0.55)]
                    hover:border-neon-magenta transition-all"
@@ -316,7 +316,7 @@ export default function ChatWidget() {
             animate={{opacity: 1, y: 0, scale: 1}}
             exit={{opacity: 0, y: 24, scale: 0.96}}
             transition={{duration: 0.22}}
-            className={`fixed right-5 top-[76px] bottom-[198px] sm:bottom-[138px] z-50 drop-shadow-[0_0_24px_rgba(0,243,255,0.22)] ${
+            className={`fixed right-5 top-[76px] bottom-[calc(var(--hud-bottom,0.75rem)+66px)] sm:bottom-[calc(var(--hud-bottom,1.25rem)+66px)] z-50 drop-shadow-[0_0_24px_rgba(0,243,255,0.22)] ${
               expanded ? 'w-[calc(100vw-2.5rem)] max-w-2xl' : 'w-[calc(100vw-2.5rem)] max-w-[430px]'
             }`}
           >

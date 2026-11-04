@@ -21,7 +21,8 @@
       "Bash(tail *)",
       "Bash(date)",
       "WebFetch(api.github.com)",
-      "WebFetch(habr.com)"
+      "WebFetch(habr.com)",
+      "Bash(cp *)"
     ]
   },
   "$version": 4

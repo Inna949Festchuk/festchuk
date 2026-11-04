@@ -5,6 +5,7 @@ import {getMessages, getTranslations, setRequestLocale} from 'next-intl/server';
 import '../globals.css';
 import Header from '@/components/Header';
 import ChatWidget from '@/components/ChatWidget';
+import HudBottomGuard from '@/components/HudBottomGuard';
 import Cityscape from '@/components/Cityscape';
 import CyberMusicPlayer from '@/components/CyberMusicPlayer';
 import Footer from '@/components/Footer';
@@ -64,6 +65,7 @@ export default async function LocaleLayout({
           <Footer />
           <CyberMusicPlayer />
           <ChatWidget />
+          <HudBottomGuard />
         </NextIntlClientProvider>
       </body>
     </html>
