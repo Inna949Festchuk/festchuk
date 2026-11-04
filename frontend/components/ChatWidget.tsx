@@ -426,7 +426,7 @@ export default function ChatWidget() {
         whileHover={{scale: 1.06}}
         whileTap={{scale: 0.96}}
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed right-5 bottom-[var(--hud-bottom,0.75rem)] sm:bottom-[var(--hud-bottom,1.25rem)] z-50 group flex items-center gap-3 px-4 py-3
+        className="h-[62px] fixed right-5 bottom-[var(--hud-bottom,0.75rem)] sm:bottom-[var(--hud-bottom,1.25rem)] z-50 group flex items-center gap-3 px-4 py-3
                    bg-[#090e20]/95 backdrop-blur-md border border-neon-cyan/70
                    shadow-[0_0_24px_rgba(0,243,255,0.35)] hover:shadow-[0_0_34px_rgba(255,43,214,0.55)]
                    hover:border-neon-magenta transition-all"
@@ -493,9 +493,6 @@ export default function ChatWidget() {
                     <div className="flex items-center gap-2">
                       <span className="font-display font-bold text-xs tracking-wider text-white truncate">
                         NEURAL LINK // QWEN-RAG
-                      </span>
-                      <span className="px-1.5 py-0.5 text-[9px] font-mono bg-neon-cyan/15 text-neon-cyan border border-neon-cyan/40">
-                        v3.5
                       </span>
                     </div>
                     <div className="font-mono text-[10px] tracking-widest text-zinc-400 flex items-center gap-1.5 mt-0.5">
@@ -683,7 +680,11 @@ export default function ChatWidget() {
                     type="button"
                     onClick={() => sendMessage()}
                     disabled={loading || !input.trim()}
-                    className="cyber-btn btn-primary px-4 py-2.5 text-xs font-bold shrink-0 disabled:opacity-35 disabled:pointer-events-none"
+                    className="cyber-btn btn-primary p-2.5 shrink-0 flex items-center justify-center disabled:opacity-35 disabled:pointer-events-none"
+                    style={{
+                      clipPath:
+                        'polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px)',
+                    }}
                     title={t('send')}
                   >
                     <Send className="w-4 h-4" />

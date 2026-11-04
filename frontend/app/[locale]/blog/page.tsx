@@ -67,7 +67,8 @@ export default function BlogPage() {
 
   return (
     <main className="min-h-screen px-4 py-12">
-      <div className="max-w-7xl mx-auto">
+      {/* Ширина как у блока «Протокол связи» / статистики (max-w-6xl) */}
+      <div className="max-w-6xl mx-auto">
         <div className="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-neon-cyan/20 pb-6">
           <div>
             <div className="inline-flex items-center gap-2 font-mono text-xs tracking-[0.25em] text-neon-magenta mb-2">
