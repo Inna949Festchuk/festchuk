@@ -212,7 +212,8 @@ export default function HomePage() {
 
           {/* Agent portrait slots — same width as the module cards above,
               one third taller. Each card is fully filled with the agent
-              artwork (object-cover), hover zoom included. */}
+              artwork (object-cover), hover zoom included. The name sits
+              below the card, in the same muted gray as the code labels. */}
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5 mt-16 lg:mt-24 mb-16 lg:mb-24">
             {modules.map((m, i) => (
               <motion.div
@@ -221,15 +222,13 @@ export default function HomePage() {
                 whileInView={{opacity: 1, y: 0}}
                 viewport={{once: true}}
                 transition={{delay: i * 0.1}}
-                className="cyber-frame group"
-                style={{aspectRatio: '1 / 1.33'}}
               >
-                <div className="cyber-frame-body flex flex-col items-center justify-center relative overflow-hidden">
-                  <span className="cb cb-tl" />
-                  <span className="cb cb-br" />
-                  {m.image ? (
-                    <>
-                      {/* Agent artwork */}
+                <div className="cyber-frame group" style={{aspectRatio: '1 / 1.33'}}>
+                  <div className="cyber-frame-body flex flex-col items-center justify-center relative overflow-hidden">
+                    <span className="cb cb-tl" />
+                    <span className="cb cb-br" />
+                    {m.image ? (
+                      /* Agent artwork */
                       <Image
                         src={m.image}
                         alt={m.name}
@@ -237,17 +236,17 @@ export default function HomePage() {
                         sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
                         className="object-cover transition-transform duration-500 group-hover:scale-[1.04]"
                       />
-                      {/* Name tag at the bottom of the frame */}
-                      <span className="absolute bottom-3 left-0 right-0 text-center font-mono text-[10px] tracking-[0.22em] text-zinc-500 pointer-events-none">
-                        {m.name} // AGENT
+                    ) : (
+                      /* Placeholder watermark — removed once the artwork arrives */
+                      <span className="font-mono text-[10px] tracking-[0.22em] text-zinc-700 select-none">
+                        {m.name} // module
                       </span>
-                    </>
-                  ) : (
-                    /* Placeholder watermark — removed once the artwork arrives */
-                    <span className="font-mono text-[10px] tracking-[0.22em] text-zinc-700 select-none">
-                      {m.name} // AGENT
-                    </span>
-                  )}
+                    )}
+                  </div>
+                </div>
+                {/* Name tag under the card */}
+                <div className="mt-2 text-center font-mono text-[10px] tracking-[0.22em] text-zinc-500">
+                  {m.name} // module
                 </div>
               </motion.div>
             ))}
