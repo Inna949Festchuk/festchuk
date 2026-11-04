@@ -845,19 +845,16 @@ body {
    filled the empty lower half with the dark body and made wide purple
    diagonal bands appear across the grid ("фиолетовые смещения").
 
-   New contract — NO artificial stretching:
-   1. Every card keeps its natural content height; the grid rows are
-      sized by their tallest card (`auto`), nothing overflows the
-      clip-path frame anymore, so the footer can't "crawl down".
-   2. `align-items: start` prevents short cards from being stretched
-      to the row height — the purple frame edge only ever appears at
-      the real bottom edge of the card's own content.
-   3. Inside a card the content column still uses flex so the footer
-      (tags / stats / «ОТКРЫТЬ») sticks to the bottom when the sibling
-      card in the same row happens to be slightly taller.
+   Contract:
+   1. Cards fill the grid cell (default `stretch`) — heights inside the
+      card are handled by the flex chain below so the footer sticks to
+      the bottom and nothing overflows the clip-path frame.
+   2. `align-items` is intentionally left disabled here (per user
+      request): disabling it removes the "фиолетовые смещения" caused
+      by short cards being pinned to the top of taller rows.
    ------------------------------------------------------------------ */
 .bento-grid {
-  align-items: start; /* no stretch => no empty purple-tinted zones */
+  /* align-items: start; */ /* disabled per request */
 }
 .bento-grid .cyber-frame {
   display: flex; /* body follows the frame box exactly */
