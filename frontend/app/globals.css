@@ -825,7 +825,11 @@ body {
   display: grid;
   gap: 1.25rem;
   grid-template-columns: repeat(6, 1fr);
-  grid-auto-rows: minmax(170px, auto);
+  /* Rows are sized by their tallest card (auto). The previous
+     minmax(170px, …) forced every row taller than the short cards'
+     content, which stretched those cards and exposed large purple
+     zones of the frame gradient ("фиолетовые смещения"). */
+  grid-auto-rows: auto;
   grid-auto-flow: dense;
 }
 .bento-lg { grid-column: span 4; grid-row: span 2; }
@@ -833,21 +837,37 @@ body {
 .bento-sm { grid-column: span 2; }
 
 /* ------------------------------------------------------------------
-   Bento project cards — layout contract:
-   The grid stretches every card to the row height, but the inner
-   flex column used to keep its natural (content) height and simply
-   overflow the bottom of the clip-path frame — the text block and
-   the stats/«ОТКРЫТЬ» footer visibly "crawled down" out of the card.
+   Bento project cards — layout contract (v2):
 
-   Fix: make cyber-frame-body (and the <Link>/<a> wrapper inside it)
-   fill the full card height, let the cover keep its fixed height and
-   let the content block absorb ALL the remaining space (flex-grow),
-   so the footer always sits flush at the bottom edge of the frame.
+   Earlier we forced `display:flex` + stretched heights here. That was
+   wrong: the gradient border of `.cyber-frame` ends in purple at the
+   bottom-right corner, so stretching a card taller than its content
+   filled the empty lower half with the dark body and made wide purple
+   diagonal bands appear across the grid ("фиолетовые смещения").
+
+   New contract — NO artificial stretching:
+   1. Every card keeps its natural content height; the grid rows are
+      sized by their tallest card (`auto`), nothing overflows the
+      clip-path frame anymore, so the footer can't "crawl down".
+   2. `align-items: start` prevents short cards from being stretched
+      to the row height — the purple frame edge only ever appears at
+      the real bottom edge of the card's own content.
+   3. Inside a card the content column still uses flex so the footer
+      (tags / stats / «ОТКРЫТЬ») sticks to the bottom when the sibling
+      card in the same row happens to be slightly taller.
    ------------------------------------------------------------------ */
+.bento-grid {
+  align-items: start; /* no stretch => no empty purple-tinted zones */
+}
 .bento-grid .cyber-frame {
-  display: flex; /* body can now stretch to the full grid cell height */
+  display: flex; /* body follows the frame box exactly */
 }
 .bento-grid .cyber-frame-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  /* The frame's gradient border ends in purple at the bottom-right;
+     keep the body's own background within the card so no stray purple
+     zones appear when a card is shorter than its row. */
   height: 100%;
 }
 /* The whole card is a link on some pages — propagate the height chain */
@@ -862,7 +882,7 @@ body {
 .bento-grid .cyber-frame-body [class*="h-5"] {
   flex-shrink: 0;
 }
-/* Content block: grows to fill all the space left under the cover */
+/* Content block: absorbs the remaining space, can shrink below content */
 .bento-grid .cyber-frame-body .flex-1,
 .bento-grid .cyber-frame-body > a > .flex-1,
 .bento-grid .cyber-frame-body > button > .flex-1 {
