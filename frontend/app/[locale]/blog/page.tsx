@@ -67,25 +67,27 @@ export default function BlogPage() {
 
   return (
     <main className="min-h-screen px-4 py-12">
-      {/* Ширина как у блока «Протокол связи» / статистики (max-w-6xl) */}
-      <div className="max-w-6xl mx-auto">
-        <div className="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-neon-cyan/20 pb-6">
-          <div>
-            <div className="inline-flex items-center gap-2 font-mono text-xs tracking-[0.25em] text-neon-magenta mb-2">
-              <BookOpen className="w-3.5 h-3.5" />
-              <span>{t('headerCode')}</span>
-            </div>
-            <h1 className="text-4xl sm:text-5xl font-display font-black tracking-wide">
-              <span className="text-white">{t('title1')}</span>{' '}
-              <span className="text-neon-purple text-glow-purple">{t('title2')}</span>
-            </h1>
+      <div className="max-w-7xl mx-auto">
+        {/* Шапка: ширина и структура как на странице контактов, текст описания выровнен по правому краю */}
+        <div className="mb-12 border-b border-neon-cyan/20 pb-6">
+          <div className="inline-flex items-center gap-2 font-mono text-xs tracking-[0.25em] text-neon-magenta mb-2">
+            <BookOpen className="w-3.5 h-3.5" />
+            <span>{t('headerCode')}</span>
           </div>
-          <p className="text-zinc-300 font-mono text-xs sm:text-sm max-w-sm">
-            {t('headerDesc')}
-          </p>
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+            <div>
+              <h1 className="text-4xl sm:text-5xl font-display font-black tracking-wide">
+                <span className="text-white">{t('title1')}</span>{' '}
+                <span className="text-neon-purple text-glow-purple">{t('title2')}</span>
+              </h1>
+            </div>
+            <p className="text-zinc-300 font-mono text-xs sm:text-sm max-w-md md:text-right">
+              {t('headerDesc')}
+            </p>
+          </div>
         </div>
 
-        {/* Tags filter */}
+        {/* Tags filter — ширина остаётся как у остальной страницы (max-w-7xl) */}
         {allTags.length > 0 && (
           <div className="flex flex-wrap gap-2.5 mb-10">
             <button
