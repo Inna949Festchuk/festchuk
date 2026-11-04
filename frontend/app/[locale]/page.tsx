@@ -235,7 +235,7 @@ export default function HomePage() {
                         alt={m.name}
                         fill
                         sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-                        className="object-contain p-3 transition-transform duration-500 group-hover:scale-[1.04]"
+                        className="object-cover transition-transform duration-500 group-hover:scale-[1.04]"
                       />
                       {/* Name tag at the bottom of the frame */}
                       <span className="absolute bottom-3 left-0 right-0 text-center font-mono text-[10px] tracking-[0.22em] text-zinc-500 pointer-events-none">
