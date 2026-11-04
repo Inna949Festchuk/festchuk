@@ -335,14 +335,18 @@ export default function ChatWidget() {
   };
 
   // Track the launcher button so the mascot can sit right above it
-  // (its top edge = button top − mascot height, measured live).
+  // (its bottom edge touches the button's top edge, offset = mascot height).
+  // Desktop (sm+, ≥640px): mascot is w-[184px] → offset 192px.
+  // Mobile: unchanged — mascot stays w-[46px] → offset 68px.
   const [mascotTop, setMascotTop] = useState<number | null>(null);
 
   useEffect(() => {
     if (!mascotVisible || isOpen) return;
     const measure = () => {
       const el = launcherRef.current;
-      if (el) setMascotTop(el.getBoundingClientRect().top - 68);
+      if (!el) return;
+      const isDesktop = window.matchMedia('(min-width: 640px)').matches;
+      setMascotTop(el.getBoundingClientRect().top - (isDesktop ? 192 : 68));
     };
     measure();
     window.addEventListener('scroll', measure, {passive: true});
@@ -358,11 +362,12 @@ export default function ChatWidget() {
 
   return (
     <>
-      {/* Little robot mascot — hovers right above the NEURAL ASSIST launcher,
-          about a quarter of the button's width wide (proportions preserved).
-          Hidden until revealed (home page: after scrolling past the agent
-          grid; other pages: immediately). Fades away when the chat opens —
-          it moves into the chat panel background instead. */}
+      {/* Little robot mascot — hovers right above the NEURAL ASSIST launcher.
+          Desktop (sm+): w-[184px] (×4 larger); mobile: w-[46px] as before
+          (proportions preserved). Hidden until revealed (home page: after
+          scrolling past the agent grid; other pages: immediately). Fades away
+          when the chat opens — it moves into the chat panel background
+          instead. */}
       <AnimatePresence>
         {mascotVisible && !isOpen && mascotTop !== null && (
           <motion.div
@@ -384,7 +389,7 @@ export default function ChatWidget() {
               width={1080}
               height={1440}
               unoptimized
-              className="w-[46px] h-auto drop-shadow-[0_0_14px_rgba(0,243,255,0.55)] select-none"
+              className="w-[46px] sm:w-[184px] h-auto drop-shadow-[0_0_14px_rgba(0,243,255,0.55)] select-none"
               draggable={false}
             />
           </motion.div>
@@ -452,7 +457,7 @@ export default function ChatWidget() {
                 height={1440}
                 unoptimized
                 aria-hidden
-                className="pointer-events-none select-none absolute bottom-2 right-3 z-0 w-[96px] sm:w-[110px] h-auto opacity-[0.14] drop-shadow-[0_0_22px_rgba(0,243,255,0.4)]"
+                className="pointer-events-none select-none absolute bottom-2 right-3 z-0 w-[192px] sm:w-[220px] h-auto opacity-[0.14] drop-shadow-[0_0_22px_rgba(0,243,255,0.4)]"
                 draggable={false}
               />
 
