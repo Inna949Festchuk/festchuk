@@ -81,10 +81,10 @@ export default function HomePage() {
   const latestPosts = posts.slice(0, 3);
 
   // `fit`/`pos` tune how the artwork fills its card (object-fit/object-position).
-  // neural-sync is zoomed out a touch and shifted up so the legs aren't cut off
-  // and the head sits at (or slightly below) the level of the other agents.
+  // The neural-sync file itself was rebuilt slightly zoomed-out with the figure
+  // shifted up (~7 mm), so it can fill the whole frame like the other cards.
   const modules = [
-    {icon: Brain, code: t('moduleAiCode'), name: t('moduleAiName'), desc: t('moduleAiDesc'), hex: 'hex-cyan', image: '/assets/agents/neural-sync.png', fit: 'contain' as const, pos: '50% 18%'},
+    {icon: Brain, code: t('moduleAiCode'), name: t('moduleAiName'), desc: t('moduleAiDesc'), hex: 'hex-cyan', image: '/assets/agents/neural-sync.jpg', fit: 'cover' as const, pos: '50% 50%'},
     {icon: Shield, code: t('moduleSecCode'), name: t('moduleSecName'), desc: t('moduleSecDesc'), hex: 'hex-purple', image: '/assets/agents/agent-2.webp', fit: 'cover' as const, pos: '50% 50%'},
     {icon: Eye, code: t('moduleFrontCode'), name: t('moduleFrontName'), desc: t('moduleFrontDesc'), hex: 'hex-cyan', image: '/assets/agents/agent-3.webp', fit: 'cover' as const, pos: '50% 50%'},
     {icon: Cpu, code: t('moduleBackCode'), name: t('moduleBackName'), desc: t('moduleBackDesc'), hex: 'hex-purple', image: '/assets/agents/agent-4.webp', fit: 'cover' as const, pos: '50% 50%'},
