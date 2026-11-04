@@ -59,8 +59,8 @@ export default function ContactsPage() {
 
   return (
     <main className="min-h-screen px-4 py-12">
-      <div className="max-w-4xl mx-auto">
-        <div className="mb-10 border-b border-neon-cyan/20 pb-6">
+      <div className="max-w-7xl mx-auto">
+        <div className="mb-12 border-b border-neon-cyan/20 pb-6">
           <div className="inline-flex items-center gap-2 font-mono text-xs tracking-[0.25em] text-neon-cyan mb-2">
             <Radio className="w-3.5 h-3.5 animate-pulse" />
             <span>{t('headerCode')}</span>
