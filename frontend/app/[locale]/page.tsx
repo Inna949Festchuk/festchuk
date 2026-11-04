@@ -259,7 +259,8 @@ export default function HomePage() {
 
       {/* ============ FEATURED PROJECTS ============ */}
       {featuredProjects.length > 0 && (
-        <section className="relative px-4 py-8">
+        /* Bottom padding cut to match the 32px/40px gap used above the grid -> FEATURED heading */
+        <section className="relative px-4 pt-8 pb-8 lg:pb-10">
           <div className="max-w-7xl mx-auto">
             <div className="flex items-end justify-between mb-8 gap-4">
               <div>
@@ -328,7 +329,8 @@ export default function HomePage() {
 
       {/* ============ LATEST ARTICLES ============ */}
       {latestPosts.length > 0 && (
-        <section className="relative px-4 py-8">
+        /* Same tightened bottom spacing as FEATURED PROJECTS -> gap to the stats block matches */
+        <section className="relative px-4 pt-8 pb-8 lg:pb-10">
           <div className="max-w-5xl mx-auto">
             <div className="flex items-end justify-between mb-8 gap-4">
               <div>
@@ -389,7 +391,7 @@ export default function HomePage() {
       )}
 
       {/* ============ STATS ============ */}
-      <section className="relative px-4 py-12">
+      <section className="relative px-4 pt-12 pb-16">
         <div className="max-w-6xl mx-auto cyber-frame">
           <div className="cyber-frame-body px-6 py-9">
             <span className="cb cb-tl" />
