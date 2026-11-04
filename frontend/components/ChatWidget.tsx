@@ -2,6 +2,8 @@
 
 import {useState, useRef, useEffect, useCallback} from 'react';
 import {useTranslations, useLocale} from 'next-intl';
+import {usePathname} from '@/i18n/navigation';
+import Image from 'next/image';
 import {motion, AnimatePresence} from 'framer-motion';
 import {
   Bot,
@@ -29,6 +31,67 @@ interface Message {
 export default function ChatWidget() {
   const t = useTranslations('chat');
   const locale = useLocale();
+  const pathname = usePathname();
+
+  // The little robot mascot hovers above the launcher button. On the home
+  // page it must NOT appear immediately — it fades in only after the user
+  // has scrolled past the agent-module grid (the block tagged via
+  // data-agent-grid below). On every other page it shows up right away.
+  const isHome = /^\/(?:[a-z]{2}(?:-[A-Z]{2})?)?\/?$/.test(pathname);
+  const [mascotVisible, setMascotVisible] = useState(!isHome);
+  const launcherRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!isHome) {
+      setMascotVisible(true);
+      return;
+    }
+    setMascotVisible(false);
+    let raf1 = 0;
+    let raf2 = 0;
+    let timer = 0;
+    const reveal = () => setMascotVisible(true);
+    const attach = () => {
+      const grid = document.querySelector('[data-agent-grid]');
+      if (grid && 'IntersectionObserver' in window) {
+        // If the block is already on screen when the widget mounts, reveal
+        // right away; otherwise wait until the user scrolls down to it.
+        const rect = grid.getBoundingClientRect();
+        if (rect.top < window.innerHeight * 0.9) {
+          reveal();
+          return;
+        }
+        const io = new IntersectionObserver(
+          (entries) => {
+            if (entries.some((e) => e.isIntersecting)) {
+              io.disconnect();
+              // Small delay so the reveal feels like a follow-up to the block.
+              timer = window.setTimeout(reveal, 450);
+            }
+          },
+          {threshold: 0.35},
+        );
+        io.observe(grid);
+      } else {
+        // Grid missing for some reason — fall back to showing the mascot.
+        reveal();
+      }
+    };
+    // Defer two frames + a safety timeout so the client-rendered home page
+    // (which fetches its data) has time to mount the agent grid first.
+    raf1 = requestAnimationFrame(() => {
+      raf2 = requestAnimationFrame(attach);
+    });
+    const safety = window.setTimeout(() => {
+      if (!document.querySelector('[data-agent-grid]')) reveal();
+    }, 3000);
+    return () => {
+      cancelAnimationFrame(raf1);
+      cancelAnimationFrame(raf2);
+      window.clearTimeout(timer);
+      window.clearTimeout(safety);
+    };
+  }, [isHome]);
 
   const [isOpen, setIsOpen] = useState(false);
   const [expanded, setExpanded] = useState(false);
@@ -271,10 +334,66 @@ export default function ChatWidget() {
     setMessages([]);
   };
 
+  // Track the launcher button so the mascot can sit right above it
+  // (its top edge = button top − mascot height, measured live).
+  const [mascotTop, setMascotTop] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!mascotVisible || isOpen) return;
+    const measure = () => {
+      const el = launcherRef.current;
+      if (el) setMascotTop(el.getBoundingClientRect().top - 68);
+    };
+    measure();
+    window.addEventListener('scroll', measure, {passive: true});
+    window.addEventListener('resize', measure);
+    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(measure) : null;
+    if (ro && launcherRef.current) ro.observe(launcherRef.current);
+    return () => {
+      window.removeEventListener('scroll', measure);
+      window.removeEventListener('resize', measure);
+      ro?.disconnect();
+    };
+  }, [mascotVisible, isOpen]);
+
   return (
     <>
+      {/* Little robot mascot — hovers right above the NEURAL ASSIST launcher,
+          about a quarter of the button's width wide (proportions preserved).
+          Hidden until revealed (home page: after scrolling past the agent
+          grid; other pages: immediately). Fades away when the chat opens —
+          it moves into the chat panel background instead. */}
+      <AnimatePresence>
+        {mascotVisible && !isOpen && mascotTop !== null && (
+          <motion.div
+            key="mascot"
+            initial={{opacity: 0, scale: 0.7}}
+            animate={{opacity: 1, y: [0, -6, 0], scale: 1}}
+            exit={{opacity: 0, scale: 0.8}}
+            transition={{
+              opacity: {duration: 0.45},
+              scale: {duration: 0.45},
+              y: {duration: 3.2, repeat: Infinity, ease: 'easeInOut', delay: 0.45},
+            }}
+            className="fixed right-9 z-50 pointer-events-none"
+            style={{top: mascotTop}}
+          >
+            <Image
+              src="/assets/neural-mascot.webp"
+              alt=""
+              width={1080}
+              height={1440}
+              unoptimized
+              className="w-[46px] h-auto drop-shadow-[0_0_14px_rgba(0,243,255,0.55)] select-none"
+              draggable={false}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Floating HUD launcher button */}
       <motion.button
+        ref={launcherRef}
         initial={{scale: 0}}
         animate={{scale: 1}}
         whileHover={{scale: 1.06}}
@@ -325,8 +444,20 @@ export default function ChatWidget() {
               <span className="cb cb-tl" />
               <span className="cb cb-br" />
 
+              {/* Robot mascot sitting in the chat background (behind all panels) */}
+              <Image
+                src="/assets/neural-mascot.webp"
+                alt=""
+                width={1080}
+                height={1440}
+                unoptimized
+                aria-hidden
+                className="pointer-events-none select-none absolute bottom-2 right-3 z-0 w-[96px] sm:w-[110px] h-auto opacity-[0.14] drop-shadow-[0_0_22px_rgba(0,243,255,0.4)]"
+                draggable={false}
+              />
+
               {/* Top HUD Header */}
-              <div className="px-4 py-3.5 border-b border-neon-cyan/25 bg-[#060a18]/90 flex items-center justify-between gap-2">
+              <div className="px-4 py-3.5 border-b border-neon-cyan/25 bg-[#060a18]/70 flex items-center justify-between gap-2">
                 <div className="flex items-center gap-3 min-w-0">
                   <div className="hex-icon hex-cyan !w-10 !h-10 shrink-0">
                     <Bot className="w-5 h-5 text-neon-cyan" />
@@ -408,7 +539,7 @@ export default function ChatWidget() {
               </div>
 
               {/* Messages Feed */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-3.5 bg-gradient-to-b from-[#070b18]/80 to-[#050813]/95">
+              <div className="flex-1 overflow-y-auto p-4 space-y-3.5 bg-gradient-to-b from-[#070b18]/45 to-[#050813]/65">
                 {messages.length === 0 && (
                   <div className="py-4 px-2">
                     <div className="p-4 border border-neon-cyan/25 bg-neon-cyan/5 mb-4 relative">
@@ -489,7 +620,7 @@ export default function ChatWidget() {
               </div>
 
               {/* Input Bar */}
-              <div className="p-3 border-t border-neon-cyan/25 bg-[#060a18]/95">
+              <div className="p-3 border-t border-neon-cyan/25 bg-[#060a18]/80">
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
