@@ -844,6 +844,15 @@ body {
   min-height: 0;
   overflow: hidden;
 }
+/* Safety net: content blocks inside bento cards must be able to shrink.
+   Without this, long titles / descriptions / rows of stat buttons push the
+   footer out of the clipped card area (buttons look "eaten" or shifted). */
+.bento-grid .cyber-frame-body > div[class*="flex-1"] {
+  min-width: 0;
+}
+.bento-grid .cyber-frame-body p {
+  overflow-wrap: anywhere;
+}
 @media (max-width: 1023px) {
   .bento-grid { grid-template-columns: repeat(2, 1fr); }
   .bento-lg { grid-column: span 2; grid-row: span 2; }
