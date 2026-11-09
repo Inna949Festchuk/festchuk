@@ -83,10 +83,10 @@ export default function HomePage() {
   // All four agent cards render identically: object-cover filling the frame,
   // same hover zoom (group-hover:scale-[1.04]).
   const modules = [
-    {icon: Brain, code: t('moduleAiCode'), name: t('moduleAiName'), desc: t('moduleAiDesc'), hex: 'hex-cyan', image: '/assets/agents/neural-sync.webp'},
-    {icon: Shield, code: t('moduleSecCode'), name: t('moduleSecName'), desc: t('moduleSecDesc'), hex: 'hex-purple', image: '/assets/agents/agent-2.webp'},
-    {icon: Eye, code: t('moduleFrontCode'), name: t('moduleFrontName'), desc: t('moduleFrontDesc'), hex: 'hex-cyan', image: '/assets/agents/agent-3.webp'},
-    {icon: Cpu, code: t('moduleBackCode'), name: t('moduleBackName'), desc: t('moduleBackDesc'), hex: 'hex-purple', image: '/assets/agents/agent-4.webp'},
+    {icon: Brain, code: t('moduleAiCode'), name: t('moduleAiName'), desc: t('moduleAiDesc'), hex: 'hex-cyan', image: '/assets/agents/neural-sync.webp', slug: 'neural-sync'},
+    {icon: Shield, code: t('moduleSecCode'), name: t('moduleSecName'), desc: t('moduleSecDesc'), hex: 'hex-purple', image: '/assets/agents/agent-2.webp', slug: 'quantum-shield'},
+    {icon: Eye, code: t('moduleFrontCode'), name: t('moduleFrontName'), desc: t('moduleFrontDesc'), hex: 'hex-cyan', image: '/assets/agents/agent-3.webp', slug: 'omni-vision'},
+    {icon: Cpu, code: t('moduleBackCode'), name: t('moduleBackName'), desc: t('moduleBackDesc'), hex: 'hex-purple', image: '/assets/agents/agent-4.webp', slug: 'hyper-drive'},
   ];
 
   // Project and article counts come from the API once loaded; the rest are
@@ -191,23 +191,25 @@ export default function HomePage() {
                 transition={{delay: i * 0.1}}
                 className="cyber-frame group"
               >
-                <div className="cyber-frame-body p-6 h-full flex flex-col">
-                  <span className="cb cb-tl" />
-                  <span className="cb cb-br" />
-                  <div className="flex items-center justify-between mb-5">
-                    <div className={`hex-icon ${m.hex}`}>
-                      <m.icon className="w-6 h-6" />
+                <Link href={`/modules/${m.slug}`} className="block h-full">
+                  <div className="cyber-frame-body p-6 h-full flex flex-col">
+                    <span className="cb cb-tl" />
+                    <span className="cb cb-br" />
+                    <div className="flex items-center justify-between mb-5">
+                      <div className={`hex-icon ${m.hex}`}>
+                        <m.icon className="w-6 h-6" />
+                      </div>
+                      <span className="font-mono text-[10px] tracking-[0.22em] text-zinc-500">
+                        0{i + 1} // MOD
+                      </span>
                     </div>
-                    <span className="font-mono text-[10px] tracking-[0.22em] text-zinc-500">
-                      0{i + 1} // MOD
-                    </span>
+                    <div className="module-eyebrow mb-2">{m.code}</div>
+                    <h3 className="font-display font-bold text-lg text-white mb-2 group-hover:text-neon-cyan transition-colors">
+                      {m.name}
+                    </h3>
+                    <p className="text-sm text-zinc-300/90 leading-relaxed">{m.desc}</p>
                   </div>
-                  <div className="module-eyebrow mb-2">{m.code}</div>
-                  <h3 className="font-display font-bold text-lg text-white mb-2 group-hover:text-neon-cyan transition-colors">
-                    {m.name}
-                  </h3>
-                  <p className="text-sm text-zinc-300/90 leading-relaxed">{m.desc}</p>
-                </div>
+                </Link>
               </motion.div>
             ))}
           </div>
@@ -228,27 +230,27 @@ export default function HomePage() {
                 viewport={{once: true}}
                 transition={{delay: i * 0.1}}
               >
-                <div className="cyber-frame group" style={{aspectRatio: '1 / 1.33'}}>
-                  <div className="cyber-frame-body flex flex-col items-center justify-center relative overflow-hidden">
-                    <span className="cb cb-tl" />
-                    <span className="cb cb-br" />
-                    {m.image ? (
-                      /* Agent artwork */
-                      <Image
-                        src={m.image}
-                        alt={m.name}
-                        fill
-                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-                        className="object-cover transition-transform duration-500 group-hover:scale-[1.04]"
-                      />
-                    ) : (
-                      /* Placeholder watermark — removed once the artwork arrives */
-                      <span className="font-mono text-[10px] tracking-[0.22em] text-zinc-700 select-none">
-                        {m.name} // module
-                      </span>
-                    )}
+                <Link href={`/modules/${m.slug}`} className="block">
+                  <div className="cyber-frame group" style={{aspectRatio: '1 / 1.33'}}>
+                    <div className="cyber-frame-body flex flex-col items-center justify-center relative overflow-hidden">
+                      <span className="cb cb-tl" />
+                      <span className="cb cb-br" />
+                      {m.image ? (
+                        <Image
+                          src={m.image}
+                          alt={m.name}
+                          fill
+                          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                          className="object-cover transition-transform duration-500 group-hover:scale-[1.04]"
+                        />
+                      ) : (
+                        <span className="font-mono text-[10px] tracking-[0.22em] text-zinc-700 select-none">
+                          {m.name} // module
+                        </span>
+                      )}
+                    </div>
                   </div>
-                </div>
+                </Link>
                 {/* Name tag under the card */}
                 <div className="mt-2 text-center font-mono text-[10px] tracking-[0.22em] text-zinc-500">
                   {m.name} // module

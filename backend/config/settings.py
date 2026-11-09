@@ -149,6 +149,12 @@ CELERY_BEAT_SCHEDULE = {
 REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 20,
+    # This API is fully anonymous (IP-based chat sessions, AllowAny everywhere).
+    # DRF's DEFAULT would include SessionAuthentication, which — when the visitor
+    # is logged into Django admin on the same host — authenticates the request and
+    # then enforces CSRF on every POST. The SPA sends no X-CSRFToken, so chat/STT
+    # would 403 while GETs pass. Disable auth entirely to remove that trap.
+    'DEFAULT_AUTHENTICATION_CLASSES': (),
     'DEFAULT_RENDERER_CLASSES': [
         'rest_framework.renderers.JSONRenderer',
     ],
@@ -211,13 +217,14 @@ ROUTERAI_API_KEY = os.getenv('ROUTERAI_API_KEY', '')
 ROUTERAI_BASE_URL = os.getenv('ROUTERAI_BASE_URL', 'https://routerai.ru/api/v1')
 ROUTERAI_LLM_MODEL = os.getenv('ROUTERAI_LLM_MODEL', 'qwen-2.5-plus')
 ROUTERAI_EMBEDDINGS_MODEL = os.getenv('ROUTERAI_EMBEDDINGS_MODEL', 'bge-m3')
-# MiniMax speech is multilingual (Russian included) and accepts the OpenAI
-# `voice` names; HeyGen/Gemini/Qwen voices are provider-specific and 400 here.
-ROUTERAI_TTS_MODEL = os.getenv('ROUTERAI_TTS_MODEL', 'minimax/speech-2.8-turbo')
+# TTS voice names are provider-specific: minimax/speech-* take OpenAI names
+# (alloy/nova/echo) while google/gemini-*-tts take Gemini names (Kore/Puck/Zephyr/...).
+# A mismatched name 400s. Google TTS always returns WAV regardless of the requested format.
+ROUTERAI_TTS_MODEL = os.getenv('ROUTERAI_TTS_MODEL', 'google/gemini-3.8-flash-lite-tts')
 # The OpenAI SDK treats `voice` as required, so this must always be non-empty.
-ROUTERAI_TTS_VOICE = os.getenv('ROUTERAI_TTS_VOICE', 'alloy')
+ROUTERAI_TTS_VOICE = os.getenv('ROUTERAI_TTS_VOICE', 'Kore')
 # Must be explicit: the default is raw PCM, which a browser cannot play.
-ROUTERAI_TTS_FORMAT = os.getenv('ROUTERAI_TTS_FORMAT', 'mp3')
+ROUTERAI_TTS_FORMAT = os.getenv('ROUTERAI_TTS_FORMAT', 'wav')
 ROUTERAI_STT_MODEL = os.getenv('ROUTERAI_STT_MODEL', 'whisper-large-v3')
 
 # ============================================================
@@ -229,6 +236,15 @@ MAX_CHAT_HISTORY = 50  # messages to keep in context
 RAG_TOP_K = 5  # number of similar documents to retrieve
 # Upper bound on characters handed to the synthesizer per request.
 TTS_MAX_CHARS = int(os.getenv('TTS_MAX_CHARS', '4000'))
+
+# ============================================================
+# Context7 — live library documentation for module-specific AI
+# ============================================================
+
+CONTEXT7_API_KEY = os.getenv('CONTEXT7_API_KEY', '')
+CONTEXT7_BASE_URL = os.getenv('CONTEXT7_BASE_URL', 'https://context7.com/api/v1')
+CONTEXT7_MCP_URL = os.getenv('CONTEXT7_MCP_URL', 'https://mcp.context7.com/mcp')
+CONTEXT7_TIMEOUT = int(os.getenv('CONTEXT7_TIMEOUT', '15'))
 
 # ============================================================
 # Analytics

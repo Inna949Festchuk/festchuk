@@ -164,5 +164,15 @@
     "title": "Signal lost",
     "desc": "The requested node was not found in the matrix. Return to the main terminal.",
     "home": "BACK TO HOME"
+  },
+  "modules": {
+    "loading": "DECODING MODULE...",
+    "notFound": "Module not found in system.",
+    "backHome": "BACK TO HOME",
+    "terminalAccess": "// MODULE:",
+    "competencies": "COMPETENCIES",
+    "noVideo": "Video unavailable",
+    "talkToMe": "TALK TO ME",
+    "chooseNext": "CHOOSE NEXT MODULE:"
   }
 }

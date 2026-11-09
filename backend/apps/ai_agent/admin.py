@@ -2,7 +2,29 @@
 AI Agent admin configuration.
 """
 from django.contrib import admin
-from .models import ChatSession, ChatMessage, DocumentEmbedding
+from .models import AgentModule, ChatSession, ChatMessage, DocumentEmbedding
+
+
+@admin.register(AgentModule)
+class AgentModuleAdmin(admin.ModelAdmin):
+    list_display = ['slug', 'code_name', 'name_ru', 'is_active']
+    list_filter = ['is_active']
+    search_fields = ['slug', 'code_name', 'name_ru']
+    fieldsets = (
+        (None, {
+            'fields': ('slug', 'code_name', 'name_ru', 'name_en', 'description_ru', 'description_en', 'is_active'),
+        }),
+        ('Видео и контент', {
+            'fields': ('video_url', 'video_file', 'skills_text_ru', 'skills_text_en'),
+        }),
+        ('Тексты терминала', {
+            'fields': ('init_text_ru', 'init_text_en', 'shutdown_text_ru', 'shutdown_text_en'),
+        }),
+        ('Чат / SKILL', {
+            'fields': ('tts_voice', 'greeting_ru', 'greeting_en', 'system_prompt_ru', 'system_prompt_en'),
+        }),
+    )
+    readonly_fields = ['created_at', 'updated_at']
 
 
 @admin.register(ChatSession)

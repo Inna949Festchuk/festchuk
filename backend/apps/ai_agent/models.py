@@ -8,6 +8,67 @@ from django.utils import timezone
 from pgvector.django import VectorField
 
 
+class AgentModule(models.Model):
+    """Core agent module (NEURAL SYNC, QUANTUM SHIELD, OMNI VISION, HYPER DRIVE)."""
+
+    slug = models.SlugField('Slug', max_length=50, unique=True, db_index=True)
+    code_name = models.CharField('Кодовое имя', max_length=50)
+    name_ru = models.CharField('Название (RU)', max_length=100)
+    name_en = models.CharField('Название (EN)', max_length=100, blank=True, default='')
+    description_ru = models.TextField('Описание (RU)', blank=True, default='')
+    description_en = models.TextField('Описание (EN)', blank=True, default='')
+    video_url = models.URLField('URL видео', blank=True, default='')
+    video_file = models.FileField(
+        'Видео-файл', upload_to='agent_videos/', blank=True, default='',
+        help_text='Загрузка видео с хоста. Если задано — имеет приоритет над URL видео.',
+    )
+    skills_text_ru = models.TextField('Компетенции (RU)', blank=True, default='')
+    skills_text_en = models.TextField('Компетенции (EN)', blank=True, default='')
+    tts_voice = models.CharField(
+        'TTS голос', max_length=50, blank=True, default='',
+        help_text='Имя голоса для синтеза речи модуля (пусто — голос по умолчанию из .env)',
+    )
+    greeting_ru = models.TextField('Приветствие чата (RU)', blank=True, default='')
+    greeting_en = models.TextField('Приветствие чата (EN)', blank=True, default='')
+    system_prompt_ru = models.TextField(
+        'System prompt / SKILL (RU)', blank=True, default='',
+        help_text='Линия поведения ИИ-ассистента для этого модуля',
+    )
+    system_prompt_en = models.TextField(
+        'System prompt / SKILL (EN)', blank=True, default='',
+    )
+    init_text_ru = models.TextField(
+        'Текст инициализации терминала (RU)', blank=True, default='',
+    )
+    init_text_en = models.TextField(
+        'Текст инициализации терминала (EN)', blank=True, default='',
+    )
+    shutdown_text_ru = models.TextField(
+        'Текст завершения экрана (RU)', blank=True, default='',
+    )
+    shutdown_text_en = models.TextField(
+        'Текст завершения экрана (EN)', blank=True, default='',
+    )
+    is_active = models.BooleanField('Активен', default=True)
+    created_at = models.DateTimeField('Создан', auto_now_add=True)
+    updated_at = models.DateTimeField('Обновлён', auto_now=True)
+
+    class Meta:
+        verbose_name = 'Модуль агента'
+        verbose_name_plural = 'Модули агентов'
+        ordering = ['slug']
+
+    def __str__(self):
+        return f'{self.code_name} ({self.slug})'
+
+    def get_field(self, field: str, lang: str) -> str:
+        """Return localized field value with RU fallback."""
+        value = getattr(self, f'{field}_{lang}', '')
+        if not value and lang != 'ru':
+            value = getattr(self, f'{field}_ru', '')
+        return value
+
+
 class ChatSession(models.Model):
     """AI chat session for a user (identified by IP hash)."""
 

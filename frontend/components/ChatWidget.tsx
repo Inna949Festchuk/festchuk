@@ -103,6 +103,7 @@ export default function ChatWidget() {
   const [speaking, setSpeaking] = useState(false);
   const [ttsEnabled, setTtsEnabled] = useState(true);
   const [sessionError, setSessionError] = useState(false);
+  const [activeModuleSlug, setActiveModuleSlug] = useState<string | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -151,7 +152,14 @@ export default function ChatWidget() {
     (text: string) => {
       if (!ttsEnabled) return;
       stopSpeaking();
-      fetch(`/api/chat/tts/?text=${encodeURIComponent(text.slice(0, 500))}&lang=${locale}`)
+      const ttsParams = new URLSearchParams({
+        text: text.slice(0, 500),
+        lang: locale,
+      });
+      if (activeModuleSlug) {
+        ttsParams.set('module_slug', activeModuleSlug);
+      }
+      fetch(`/api/chat/tts/?${ttsParams.toString()}`)
         .then((r) => (r.ok ? r.blob() : null))
         .then((blob) => {
           if (!blob) return;
@@ -169,8 +177,35 @@ export default function ChatWidget() {
         })
         .catch(() => setSpeaking(false));
     },
-    [stopSpeaking, ttsEnabled, locale],
+    [stopSpeaking, ttsEnabled, locale, activeModuleSlug],
   );
+
+  // Listen for module-specific chat activation from module pages
+  useEffect(() => {
+    const handleModuleChatOpen = (e: Event) => {
+      const { slug, greeting } = (e as CustomEvent).detail || {};
+      if (slug) {
+        setActiveModuleSlug(slug);
+        setIsOpen(true);
+
+        if (greeting) {
+          const greetMsg: Message = {
+            id: crypto.randomUUID(),
+            role: 'assistant',
+            content: greeting,
+            timestamp: new Date(),
+          };
+          setMessages(prev => [...prev, greetMsg]);
+          playResponse(greeting);
+        }
+      }
+    };
+
+    window.addEventListener('openModuleChat', handleModuleChatOpen);
+    return () => {
+      window.removeEventListener('openModuleChat', handleModuleChatOpen);
+    };
+  }, [playResponse]);
 
   const sendMessage = useCallback(
     async (text?: string) => {
@@ -220,6 +255,7 @@ export default function ChatWidget() {
             session_id: sessionId,
             message,
             lang: locale,
+            module_slug: activeModuleSlug || '',
           }),
         });
 
@@ -248,7 +284,7 @@ export default function ChatWidget() {
         setLoading(false);
       }
     },
-    [input, loading, sessionId, playResponse, stopSpeaking, locale, t, initSession],
+    [input, loading, sessionId, playResponse, stopSpeaking, locale, t, initSession, activeModuleSlug],
   );
 
   const startRecording = useCallback(async () => {

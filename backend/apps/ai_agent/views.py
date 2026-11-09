@@ -15,11 +15,12 @@ from rest_framework.permissions import AllowAny
 
 from config.throttling import ClientIPScopedRateThrottle
 
-from .models import ChatSession, ChatMessage
+from .models import ChatSession, ChatMessage, AgentModule
 from .serializers import (
     ChatMessageSendSerializer,
     ChatMessageSerializer,
     ChatHistorySerializer,
+    AgentModuleSerializer,
 )
 from .services.agent import AIAgent
 from .services.router_ai import RouterAIClient, tts_content_type
@@ -85,6 +86,7 @@ class ChatMessageView(APIView):
         session_id = serializer.validated_data['session_id']
         user_message = serializer.validated_data['message']
         lang = serializer.validated_data.get('lang', 'ru')
+        module_slug = serializer.validated_data.get('module_slug', '')
 
         try:
             session = ChatSession.objects.get(session_id=session_id)
@@ -102,7 +104,7 @@ class ChatMessageView(APIView):
         )
 
         # Process through AI agent
-        agent = AIAgent(session, lang=lang)
+        agent = AIAgent(session, lang=lang, module_slug=module_slug)
         try:
             response_text, tokens_used = agent.process_message(user_message)
         except Exception as e:
@@ -141,8 +143,20 @@ class ChatTTSView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        voice = request.query_params.get('voice') or settings.ROUTERAI_TTS_VOICE
-        cache_key = 'tts:chat:{}:{}:{}'.format(
+        voice = request.query_params.get('voice')
+        if not voice:
+            # Per-module voice: each agent module has its own TTS voice
+            # (AgentModule.tts_voice), the global default covers the plain
+            # NEURAL ASSIST chat.
+            module_slug = (request.query_params.get('module_slug') or '').strip()
+            if module_slug:
+                module = AgentModule.objects.filter(
+                    slug=module_slug, is_active=True
+                ).first()
+                voice = getattr(module, 'tts_voice', '') or None
+        voice = voice or settings.ROUTERAI_TTS_VOICE
+        cache_key = 'tts:chat:{}:{}:{}:{}'.format(
+            settings.ROUTERAI_TTS_MODEL,
             settings.ROUTERAI_TTS_FORMAT,
             voice,
             hashlib.sha256(text.encode()).hexdigest()[:16],
@@ -218,3 +232,31 @@ class ChatSTTView(APIView):
                 {'error': 'Speech recognition failed'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
+
+
+class AgentModuleListView(APIView):
+    """List all active agent modules."""
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        lang = request.query_params.get('lang', 'ru')
+        modules = AgentModule.objects.filter(is_active=True)
+        serializer = AgentModuleSerializer(modules, many=True, context={'lang': lang})
+        return Response(serializer.data)
+
+
+class AgentModuleDetailView(APIView):
+    """Get a single active agent module by slug."""
+    permission_classes = [AllowAny]
+
+    def get(self, request, slug):
+        lang = request.query_params.get('lang', 'ru')
+        try:
+            module = AgentModule.objects.get(slug=slug, is_active=True)
+        except AgentModule.DoesNotExist:
+            return Response(
+                {'error': 'Module not found'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        serializer = AgentModuleSerializer(module, context={'lang': lang})
+        return Response(serializer.data)

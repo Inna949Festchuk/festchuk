@@ -18,6 +18,8 @@ from django.core.cache import cache
 
 from .router_ai import RouterAIClient
 from .rag import RAGService
+from .context7 import get_context7_client
+from .context7_mcp import get_context7_mcp_client
 
 logger = logging.getLogger(__name__)
 
@@ -37,6 +39,16 @@ SYSTEM_PROMPT = """\
 LANGUAGE_INSTRUCTIONS = {
     'ru': 'Язык ответа: отвечай строго на русском языке.',
     'en': 'Response language: respond strictly in English.',
+}
+
+# Context7 library topic per module slug, so the module-specific agent can pull
+# fresh documentation for its own stack. A missing slug means "no Context7
+# topic for this module" (the agent still answers from RAG + SKILL).
+MODULE_CONTEXT7_TOPIC = {
+    'hyper-drive': 'Django 5',
+    'neural-sync': 'LangChain',
+    'quantum-shield': 'Django REST Framework',
+    'omni-vision': 'Next.js',
 }
 
 # Tool definitions for function calling
@@ -186,11 +198,18 @@ class AIAgent:
     AI Agent with RAG, function calling, and session memory.
     """
 
-    def __init__(self, session, lang: str = 'ru'):
+    def __init__(self, session, lang: str = 'ru', module_slug: str = ''):
         self.session = session
         self.lang = lang if lang in LANGUAGE_INSTRUCTIONS else 'ru'
         self.client = RouterAIClient()
         self.rag = RAGService()
+        self.module_slug = module_slug or None
+        self.module = None
+        if self.module_slug:
+            from apps.ai_agent.models import AgentModule
+            self.module = AgentModule.objects.filter(
+                slug=self.module_slug, is_active=True
+            ).first()
 
     def _get_history_key(self) -> str:
         return f"chat_history:{self.session.session_id}"
@@ -234,9 +253,58 @@ class AIAgent:
         context = self.rag.build_context(rag_chunks)
 
         # 4. Build system prompt with context
-        system_prompt = SYSTEM_PROMPT + '\n' + LANGUAGE_INSTRUCTIONS[self.lang]
+        # If a specific module is active, use its dedicated system prompt (SKILL)
+        if self.module and self.module.system_prompt_ru:
+            base_prompt = self.module.get_field('system_prompt', self.lang)
+        else:
+            base_prompt = SYSTEM_PROMPT
+
+        system_prompt = base_prompt + '\n' + LANGUAGE_INSTRUCTIONS[self.lang]
         if context:
             system_prompt += f"\n\nКонтекст с сайта (по релевантности):\n\n{context}"
+
+        # 4b. Pull fresh library docs via Context7 (MCP primary, REST fallback)
+        if self.module:
+            topic = MODULE_CONTEXT7_TOPIC.get(self.module_slug)
+            if topic:
+                docs = ''
+                source = ''
+                # Primary: MCP protocol
+                try:
+                    mcp_client = get_context7_mcp_client()
+                    if mcp_client.enabled:
+                        lang_map = {
+                            'Django 5': 'Python',
+                            'LangChain': 'Python',
+                            'Django REST Framework': 'Python',
+                            'Next.js': 'TypeScript',
+                        }
+                        docs = mcp_client.search(
+                            topic, user_message,
+                            language=lang_map.get(topic),
+                            max_tokens=2000,
+                        )
+                        if docs:
+                            source = 'MCP'
+                except Exception as e:
+                    logger.warning(f"Context7 MCP lookup failed, falling back to REST: {e}")
+                # Fallback: legacy REST client
+                if not docs:
+                    try:
+                        c7 = get_context7_client()
+                        docs = c7.search(topic, context_ids=None, max_tokens=2000)
+                        if docs:
+                            source = 'REST'
+                    except Exception as e:
+                        logger.warning(f"Context7 REST lookup also failed: {e}")
+                if docs:
+                    logger.info(
+                        f"Context7: {len(docs)} chars via {source} "
+                        f"(topic={topic!r}, module={self.module_slug})"
+                    )
+                    system_prompt += (
+                        f"\n\nСвежая документация (Context7, {topic}):\n\n{docs}"
+                    )
 
         # 5. Build messages
         messages = [{'role': 'system', 'content': system_prompt}] + history

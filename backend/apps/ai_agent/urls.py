@@ -8,6 +8,8 @@ from .views import (
     ChatTTSView,
     ChatHistoryView,
     ChatSTTView,
+    AgentModuleListView,
+    AgentModuleDetailView,
 )
 
 urlpatterns = [
@@ -16,4 +18,6 @@ urlpatterns = [
     path('chat/tts/', ChatTTSView.as_view(), name='chat-tts'),
     path('chat/history/<uuid:session_id>/', ChatHistoryView.as_view(), name='chat-history'),
     path('chat/voice/stt/', ChatSTTView.as_view(), name='chat-stt'),
+    path('modules/', AgentModuleListView.as_view(), name='agent-modules'),
+    path('modules/<slug:slug>/', AgentModuleDetailView.as_view(), name='agent-module-detail'),
 ]

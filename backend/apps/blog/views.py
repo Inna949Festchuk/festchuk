@@ -130,7 +130,8 @@ class PostViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        cache_key = 'tts:post:{}:{}:{}:{}'.format(
+        cache_key = 'tts:post:{}:{}:{}:{}:{}'.format(
+            settings.ROUTERAI_TTS_MODEL,
             settings.ROUTERAI_TTS_FORMAT,
             post.pk,
             lang,
