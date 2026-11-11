@@ -1,5 +1,6 @@
 import type {Metadata} from 'next';
 import {notFound} from 'next/navigation';
+import {Geologica, Inter, JetBrains_Mono} from 'next/font/google';
 import {NextIntlClientProvider} from 'next-intl';
 import {getMessages, getTranslations, setRequestLocale} from 'next-intl/server';
 import '../globals.css';
@@ -10,6 +11,28 @@ import Cityscape from '@/components/Cityscape';
 import CyberMusicPlayer from '@/components/CyberMusicPlayer';
 import Footer from '@/components/Footer';
 import {locales} from '@/i18n/routing';
+
+// Self-hosted fonts (next/font): downloaded at compile time inside the
+// container and served from /_next/static/media — the browser no longer
+// depends on fonts.googleapis.com at runtime (unstable DNS/network).
+// Geologica covers both latin and cyrillic (variable 100–900), so RU/EN
+// versions stay identical; bold weights (700–900) are the display look.
+const geologica = Geologica({
+  subsets: ['latin', 'cyrillic'],
+  weight: ['500', '600', '700', '800', '900'],
+  variable: '--font-display',
+  display: 'swap',
+});
+const inter = Inter({
+  subsets: ['latin', 'cyrillic'],
+  variable: '--font-inter',
+  display: 'swap',
+});
+const jbMono = JetBrains_Mono({
+  subsets: ['latin', 'cyrillic'],
+  variable: '--font-jbmono',
+  display: 'swap',
+});
 
 export function generateStaticParams() {
   return locales.map((locale) => ({locale}));
@@ -52,7 +75,7 @@ export default async function LocaleLayout({
   const messages = await getMessages();
 
   return (
-    <html lang={locale} className="dark">
+    <html lang={locale} className={`dark ${geologica.variable} ${inter.variable} ${jbMono.variable}`}>
       <body className="antialiased flex min-h-screen flex-col">
         <NextIntlClientProvider locale={locale} messages={messages}>
           <div className="cyber-grid-bg" />

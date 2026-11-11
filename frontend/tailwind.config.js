@@ -18,9 +18,9 @@ module.exports = {
         'cyber-border': '#232F4E',
       },
       fontFamily: {
-        'display': ['Orbitron', 'Unbounded', 'Rajdhani', 'sans-serif'],
-        'body': ['Inter', 'system-ui', 'sans-serif'],
-        'mono': ['JetBrains Mono', 'Fira Code', 'monospace'],
+        'display': ['var(--font-display)', 'sans-serif'],
+        'body': ['var(--font-inter)', 'system-ui', 'sans-serif'],
+        'mono': ['var(--font-jbmono)', 'Fira Code', 'monospace'],
       },
       boxShadow: {
         'neon-cyan': '0 0 18px rgba(0, 243, 255, 0.35)',
