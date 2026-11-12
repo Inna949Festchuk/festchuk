@@ -116,6 +116,12 @@ export default function HomePage() {
     setActiveAgent((prev) => (prev === index ? (prev + 1) % modules.length : prev));
   }, [modules.length]);
 
+  // Hover priority: the hovered card becomes the current one; the previously
+  // active card is interrupted by its own interrupt effect (glitch → idle).
+  const handleActivate = useCallback((index: number) => {
+    setActiveAgent(index);
+  }, []);
+
   // Project and article counts come from the API once loaded; the rest are
   // static by nature (years, uptime) and can't be derived from the database.
   const stats = [
@@ -264,6 +270,7 @@ export default function HomePage() {
                   slug={m.slug}
                   active={gridInView && i === activeAgent}
                   onComplete={() => handleSequenceComplete(i)}
+                  onActivate={() => handleActivate(i)}
                 />
               </motion.div>
             ))}

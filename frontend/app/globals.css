@@ -945,16 +945,16 @@ body {
   100% { opacity: 0.3; transform: translateY(-1px); }
 }
 
-/* White noise / static — SVG feTurbulence as background */
-.agent-noise {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='256' height='256'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  background-size: 256px 256px;
-  opacity: 0;
-  animation: static-fade 1.2s ease-in-out forwards;
+/* Continuous white-noise for idle agent cards */
+.agent-static {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='256' height='256'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 180px 180px;
+  animation: static-flicker 0.18s steps(3) infinite;
+  opacity: 0.92;
 }
-@keyframes static-fade {
-  0%   { opacity: 0; }
-  15%  { opacity: 0.9; }
-  70%  { opacity: 0.7; }
-  100% { opacity: 0; }
+@keyframes static-flicker {
+  0%   { background-position: 0 0; }
+  33%  { background-position: -60px 40px; }
+  66%  { background-position: 50px -45px; }
+  100% { background-position: -30px -20px; }
 }

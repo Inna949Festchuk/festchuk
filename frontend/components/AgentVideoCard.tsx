@@ -1,11 +1,11 @@
 'use client';
 
-import { useRef, useState, useEffect, useCallback } from 'react';
+import {useRef, useState, useEffect, useCallback} from 'react';
 import Image from 'next/image';
 import {Link} from '@/i18n/navigation';
 import {useTranslations} from 'next-intl';
 
-type CardState = 'idle' | 'loading' | 'playing' | 'glitch' | 'static';
+type CardState = 'idle' | 'loading' | 'playing' | 'glitch';
 
 interface AgentVideoCardProps {
   name: string;
@@ -14,20 +14,32 @@ interface AgentVideoCardProps {
   slug: string;
   active: boolean;
   onComplete?: () => void;
+  onActivate?: () => void;
 }
 
 /**
- * A single agent "demo" card. Lifecycle:
- *   idle  -> loading (cyberpunk progress bar 0..100%)
- *        -> playing (muted video)
- *        -> glitch  (RGB-split + shake)
- *        -> static  (white-noise + "SIGNAL LOST")
- *        -> idle
- * Triggered either by hover, or when this card is the active one in the
- * auto-cycle. `onComplete` fires when a sequence finishes so the parent can
- * advance to the next card.
+ * Agent "demo" card.
+ *
+ * idle    — continuous white-noise + "SIGNAL LOST" (image barely visible)
+ * loading — cyberpunk progress bar 0→100% (only when it's this card's turn)
+ * playing — muted video
+ * glitch  — 0.8 s RGB-split + shake, then back to idle
+ *
+ * Triggers:
+ *  – hover  → onActivate() tells the parent "I'm the current card"; the
+ *             previously active card is interrupted (glitch → idle).
+ *  – auto-cycle → parent sets `active` on the current card; `onComplete`
+ *             fires on natural end so the parent can advance.
  */
-export default function AgentVideoCard({name, image, video, slug, active, onComplete}: AgentVideoCardProps) {
+export default function AgentVideoCard({
+  name,
+  image,
+  video,
+  slug,
+  active,
+  onComplete,
+  onActivate,
+}: AgentVideoCardProps) {
   const t = useTranslations('home');
   const [state, setState] = useState<CardState>('idle');
   const [progress, setProgress] = useState(0);
@@ -35,34 +47,38 @@ export default function AgentVideoCard({name, image, video, slug, active, onComp
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   const isRunningRef = useRef(false);
 
-  // Keep a stable ref to the latest onComplete so the timer callbacks never
-  // capture a stale closure.
   const onCompleteRef = useRef(onComplete);
   useEffect(() => {
     onCompleteRef.current = onComplete;
   }, [onComplete]);
+
+  const onActivateRef = useRef(onActivate);
+  useEffect(() => {
+    onActivateRef.current = onActivate;
+  }, [onActivate]);
 
   const clearTimers = useCallback(() => {
     timersRef.current.forEach((tm) => clearTimeout(tm));
     timersRef.current = [];
   }, []);
 
-  const finishSequence = useCallback(() => {
+  /**
+   * Transition to glitch, then idle.
+   * @param natural — true when the video ended naturally (call onComplete to
+   *                  advance the cycle); false when interrupted (no advance).
+   */
+  const finishSequence = useCallback((natural: boolean) => {
+    clearTimers();
     setState('glitch');
     timersRef.current.push(
       setTimeout(() => {
-        setState('static');
-        timersRef.current.push(
-          setTimeout(() => {
-            setState('idle');
-            setProgress(0);
-            isRunningRef.current = false;
-            onCompleteRef.current?.();
-          }, 1200),
-        );
+        setState('idle');
+        setProgress(0);
+        isRunningRef.current = false;
+        if (natural) onCompleteRef.current?.();
       }, 800),
     );
-  }, []);
+  }, [clearTimers]);
 
   const startSequence = useCallback(() => {
     if (isRunningRef.current) return;
@@ -85,9 +101,9 @@ export default function AgentVideoCard({name, image, video, slug, active, onComp
             const v = videoRef.current;
             if (v) {
               v.currentTime = 0;
-              v.play().catch(() => finishSequence());
+              v.play().catch(() => finishSequence(true));
             } else {
-              finishSequence();
+              finishSequence(true);
             }
           }, 300),
         );
@@ -99,19 +115,33 @@ export default function AgentVideoCard({name, image, video, slug, active, onComp
   }, [clearTimers, finishSequence]);
 
   const handleVideoEnd = useCallback(() => {
-    finishSequence();
+    finishSequence(true);
   }, [finishSequence]);
 
   const handleMouseEnter = () => {
-    if (state === 'idle') startSequence();
+    onActivateRef.current?.();
+    if (state === 'idle' && !isRunningRef.current) {
+      startSequence();
+    }
   };
 
-  // Auto-cycle trigger: run the sequence when this card becomes the active one.
+  // Auto-trigger: start when this card becomes the active one.
   useEffect(() => {
     if (active && state === 'idle' && !isRunningRef.current) {
       startSequence();
     }
   }, [active, state, startSequence]);
+
+  // Interrupt: if this card is no longer active but is mid-sequence,
+  // stop the video and show interference (glitch → idle) without advancing
+  // the cycle.
+  useEffect(() => {
+    if (!active && isRunningRef.current && (state === 'loading' || state === 'playing')) {
+      const v = videoRef.current;
+      if (v) v.pause();
+      finishSequence(false);
+    }
+  }, [active, state, finishSequence]);
 
   // Cleanup on unmount.
   useEffect(() => {
@@ -122,9 +152,18 @@ export default function AgentVideoCard({name, image, video, slug, active, onComp
     };
   }, [clearTimers]);
 
+  // Image opacity: barely visible in idle, dimmed in loading, gone in play/glitch.
+  const imgClass =
+    state === 'playing' || state === 'glitch'
+      ? 'opacity-0'
+      : state === 'loading'
+        ? 'opacity-25'
+        : 'opacity-10';
+
   return (
-    <Link href={`/modules/${slug}`} className="block">
-      <div className="cyber-frame group relative" style={{aspectRatio: '1 / 1.33'}}>
+    <>
+      <Link href={`/modules/${slug}`} className="block" onMouseEnter={handleMouseEnter}>
+        <div className="cyber-frame group relative" style={{aspectRatio: '1 / 1.33'}}>
         <div
           className={`cyber-frame-body relative overflow-hidden h-full w-full ${
             state === 'glitch' ? 'agent-glitch' : ''
@@ -133,33 +172,41 @@ export default function AgentVideoCard({name, image, video, slug, active, onComp
           <span className="cb cb-tl" />
           <span className="cb cb-br" />
 
-          {/* Base artwork — always present, fades out while the video plays */}
+          {/* Base artwork — barely visible under the noise in idle */}
           {image && (
             <Image
               src={image}
               alt={name}
               fill
               sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-              className={`object-cover transition-all duration-500 ${
-                state === 'playing' ? 'opacity-0 scale-105' : 'opacity-100 group-hover:scale-[1.04]'
-              }`}
+              className={`object-cover transition-opacity duration-500 ${imgClass}`}
             />
           )}
 
-          {/* Video layer — visible only during the playing phase */}
+          {/* Video layer */}
           <video
             ref={videoRef}
             src={video}
             muted
             playsInline
-            preload="metadata"
+            preload="auto"
             onEnded={handleVideoEnd}
             className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${
-              state === 'playing' ? 'opacity-100' : 'opacity-0'
+              state === 'playing' || state === 'glitch' ? 'opacity-100' : 'opacity-0'
             }`}
           />
 
-          {/* Loading overlay — cyberpunk progress bar with percentage */}
+          {/* Idle — continuous white noise + SIGNAL LOST */}
+          {state === 'idle' && (
+            <div className="absolute inset-0 z-10 flex items-center justify-center">
+              <div className="agent-static absolute inset-0" />
+              <span className="relative z-20 font-mono text-[11px] tracking-[0.3em] text-white/70 animate-pulse">
+                {t('signalLost')}
+              </span>
+            </div>
+          )}
+
+          {/* Loading — cyberpunk progress bar */}
           {state === 'loading' && (
             <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-black/70 backdrop-blur-[2px]">
               <div className="scanline-overlay absolute inset-0 opacity-30" />
@@ -178,23 +225,15 @@ export default function AgentVideoCard({name, image, video, slug, active, onComp
             </div>
           )}
 
-          {/* Glitch overlay — RGB channel split flash */}
+          {/* Glitch — RGB channel split flash (also used for interruptions) */}
           {state === 'glitch' && <div className="absolute inset-0 z-10 agent-glitch-overlay" />}
-
-          {/* Static / white noise — SVG turbulence + "SIGNAL LOST" */}
-          {state === 'static' && (
-            <div className="absolute inset-0 z-20 flex items-center justify-center">
-              <div className="agent-noise absolute inset-0" />
-              <span className="relative z-30 font-mono text-xs tracking-[0.3em] text-white/80 animate-pulse">
-                {t('signalLost')}
-              </span>
-            </div>
-          )}
+          </div>
         </div>
-      </div>
+      </Link>
+      {/* Name tag under the card */}
       <div className="mt-2 text-center font-mono text-[10px] tracking-[0.22em] text-zinc-500">
         {name} // module
       </div>
-    </Link>
+    </>
   );
 }
