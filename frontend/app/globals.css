@@ -907,3 +907,54 @@ body {
 
 /* Odometer (tabular digits, no width jump while counting) */
 .odometer { font-variant-numeric: tabular-nums; display: inline-block; }
+
+/* ============================================================
+   Agent Video Card — Glitch & Static effects
+   ============================================================ */
+
+/* Glitch shake + RGB split on the card body */
+.agent-glitch {
+  animation: agent-shake 0.08s infinite linear alternate;
+}
+@keyframes agent-shake {
+  0%   { transform: translate(0, 0) skewX(0deg); }
+  20%  { transform: translate(-3px, 2px) skewX(1deg); }
+  40%  { transform: translate(3px, -1px) skewX(-1.5deg); }
+  60%  { transform: translate(-2px, -2px) skewX(0.5deg); }
+  80%  { transform: translate(2px, 1px) skewX(-0.5deg); }
+  100% { transform: translate(-1px, 0) skewX(0deg); }
+}
+
+/* Overlay during glitch — RGB channels split */
+.agent-glitch-overlay {
+  pointer-events: none;
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    rgba(255, 0, 80, 0.25) 30%,
+    transparent 50%,
+    rgba(0, 243, 255, 0.25) 70%,
+    transparent 100%
+  );
+  mix-blend-mode: screen;
+  animation: glitch-flash 0.12s infinite alternate;
+}
+@keyframes glitch-flash {
+  0%   { opacity: 0.4; transform: translateY(-2px); }
+  50%  { opacity: 0.9; transform: translateY(3px); }
+  100% { opacity: 0.3; transform: translateY(-1px); }
+}
+
+/* White noise / static — SVG feTurbulence as background */
+.agent-noise {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='256' height='256'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 256px 256px;
+  opacity: 0;
+  animation: static-fade 1.2s ease-in-out forwards;
+}
+@keyframes static-fade {
+  0%   { opacity: 0; }
+  15%  { opacity: 0.9; }
+  70%  { opacity: 0.7; }
+  100% { opacity: 0; }
+}

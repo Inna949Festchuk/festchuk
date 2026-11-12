@@ -52,7 +52,9 @@
     "latestTitle1": "LATEST",
     "latestTitle2": "ARTICLES",
     "latestAll": "ALL ARTICLES",
-    "min": "MIN"
+    "min": "MIN",
+    "signalLost": "SIGNAL LOST",
+    "signalDecoding": "DECODING SIGNAL"
   },
   "projects": {
     "headerCode": "PORTFOLIO // DEPLOYED SYSTEMS",

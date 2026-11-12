@@ -1,10 +1,9 @@
 'use client';
 
-import {useEffect, useState} from 'react';
+import {useCallback, useEffect, useRef, useState} from 'react';
 import {useTranslations, useLocale} from 'next-intl';
 import {Link} from '@/i18n/navigation';
 import {motion} from 'framer-motion';
-import Image from 'next/image';
 import {
   Github,
   Mail,
@@ -20,6 +19,7 @@ import {
 } from 'lucide-react';
 import Hologram from '@/components/Hologram';
 import Odometer from '@/components/Odometer';
+import AgentVideoCard from '@/components/AgentVideoCard';
 
 interface Project {
   id: number;
@@ -80,14 +80,41 @@ export default function HomePage() {
   const featuredProjects = projects.filter((p) => p.is_featured).slice(0, 6);
   const latestPosts = posts.slice(0, 3);
 
-  // All four agent cards render identically: object-cover filling the frame,
-  // same hover zoom (group-hover:scale-[1.04]).
+  // Each agent card plays its demo video (in URL-encoded public asset paths);
+  // the webp artwork stays as the idle/poster frame.
   const modules = [
-    {icon: Brain, code: t('moduleAiCode'), name: t('moduleAiName'), desc: t('moduleAiDesc'), hex: 'hex-cyan', image: '/assets/agents/neural-sync.webp', slug: 'neural-sync'},
-    {icon: Shield, code: t('moduleSecCode'), name: t('moduleSecName'), desc: t('moduleSecDesc'), hex: 'hex-purple', image: '/assets/agents/agent-2.webp', slug: 'quantum-shield'},
-    {icon: Eye, code: t('moduleFrontCode'), name: t('moduleFrontName'), desc: t('moduleFrontDesc'), hex: 'hex-cyan', image: '/assets/agents/agent-3.webp', slug: 'omni-vision'},
-    {icon: Cpu, code: t('moduleBackCode'), name: t('moduleBackName'), desc: t('moduleBackDesc'), hex: 'hex-purple', image: '/assets/agents/agent-4.webp', slug: 'hyper-drive'},
+    {icon: Brain, code: t('moduleAiCode'), name: t('moduleAiName'), desc: t('moduleAiDesc'), hex: 'hex-cyan', image: '/assets/agents/neural-sync.webp', video: '/assets/agents/NEURAL%20SYNC.mp4', slug: 'neural-sync'},
+    {icon: Shield, code: t('moduleSecCode'), name: t('moduleSecName'), desc: t('moduleSecDesc'), hex: 'hex-purple', image: '/assets/agents/agent-2.webp', video: '/assets/agents/QUANTUM%20SHIELD.mp4', slug: 'quantum-shield'},
+    {icon: Eye, code: t('moduleFrontCode'), name: t('moduleFrontName'), desc: t('moduleFrontDesc'), hex: 'hex-cyan', image: '/assets/agents/agent-3.webp', video: '/assets/agents/OMNI%20VISION.mp4', slug: 'omni-vision'},
+    {icon: Cpu, code: t('moduleBackCode'), name: t('moduleBackName'), desc: t('moduleBackDesc'), hex: 'hex-purple', image: '/assets/agents/agent-4.webp', video: '/assets/agents/HYPER%20DRIVE.mp4', slug: 'hyper-drive'},
   ];
+
+  // Auto-cycle: the agent demo cards play in sequence (0 -> 1 -> 2 -> 3 -> 0)
+  // while the grid is on screen; hovering a card triggers its own sequence.
+  const [activeAgent, setActiveAgent] = useState(0);
+  const [gridInView, setGridInView] = useState(false);
+  const gridRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = gridRef.current;
+    if (!el || typeof IntersectionObserver === 'undefined') {
+      setGridInView(true);
+      return;
+    }
+    const obs = new IntersectionObserver(
+      (entries) => {
+        const inView = entries.some((e) => e.isIntersecting);
+        setGridInView(inView);
+      },
+      { threshold: 0.25 },
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+
+  const handleSequenceComplete = useCallback((index: number) => {
+    setActiveAgent((prev) => (prev === index ? (prev + 1) % modules.length : prev));
+  }, [modules.length]);
 
   // Project and article counts come from the API once loaded; the rest are
   // static by nature (years, uptime) and can't be derived from the database.
@@ -221,7 +248,7 @@ export default function HomePage() {
           {/* Bottom margin reduced by 24px (2rem) so the gap to FEATURED PROJECTS is tighter.
               align-items:start — each cell wraps its own content; without it the wrapper
               stretches to the row height and the "… // module" caption crawls downward. */}
-          <div data-agent-grid className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5 mt-10 lg:mt-16 mb-8 lg:mb-10 items-start">
+          <div ref={gridRef} data-agent-grid className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5 mt-10 lg:mt-16 mb-8 lg:mb-10 items-start">
             {modules.map((m, i) => (
               <motion.div
                 key={`agent-${m.name}`}
@@ -230,31 +257,14 @@ export default function HomePage() {
                 viewport={{once: true}}
                 transition={{delay: i * 0.1}}
               >
-                <Link href={`/modules/${m.slug}`} className="block">
-                  <div className="cyber-frame group" style={{aspectRatio: '1 / 1.33'}}>
-                    <div className="cyber-frame-body flex flex-col items-center justify-center relative overflow-hidden">
-                      <span className="cb cb-tl" />
-                      <span className="cb cb-br" />
-                      {m.image ? (
-                        <Image
-                          src={m.image}
-                          alt={m.name}
-                          fill
-                          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-                          className="object-cover transition-transform duration-500 group-hover:scale-[1.04]"
-                        />
-                      ) : (
-                        <span className="font-mono text-[10px] tracking-[0.22em] text-zinc-700 select-none">
-                          {m.name} // module
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </Link>
-                {/* Name tag under the card */}
-                <div className="mt-2 text-center font-mono text-[10px] tracking-[0.22em] text-zinc-500">
-                  {m.name} // module
-                </div>
+                <AgentVideoCard
+                  name={m.name}
+                  image={m.image}
+                  video={m.video}
+                  slug={m.slug}
+                  active={gridInView && i === activeAgent}
+                  onComplete={() => handleSequenceComplete(i)}
+                />
               </motion.div>
             ))}
           </div>

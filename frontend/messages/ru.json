@@ -52,7 +52,9 @@
     "latestTitle1": "ПОСЛЕДНИЕ",
     "latestTitle2": "СТАТЬИ",
     "latestAll": "ВЕСЬ БЛОГ",
-    "min": "МИН"
+    "min": "МИН",
+    "signalLost": "СИГНАЛ ПОТЕРЯН",
+    "signalDecoding": "ДЕКОДИРОВАНИЕ СИГНАЛА"
   },
   "projects": {
     "headerCode": "PORTFOLIO // DEPLOYED SYSTEMS",

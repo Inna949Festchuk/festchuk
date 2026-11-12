@@ -105,11 +105,13 @@ export default function ModulePage() {
 
   if (!loaded) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <span className={`font-mono text-sm tracking-widest animate-pulse ${c.eyebrow}`}>
-          {t('loading')}
-        </span>
-      </div>
+      <main className="min-h-screen flex items-center justify-center">
+        <div className="cyber-frame">
+          <div className={`cyber-frame-body px-8 py-5 font-mono tracking-[0.2em] animate-pulse ${c.eyebrow}`}>
+            {t('loading')}
+          </div>
+        </div>
+      </main>
     );
   }
 
