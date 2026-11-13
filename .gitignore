@@ -2,3 +2,16 @@
 .env.local
 .env.*.local
 .qwen/
+__pycache__
+
+# Next.js build artifacts
+frontend/.next/
+frontend/out/
+
+# TypeScript build info
+frontend/tsconfig.tsbuildinfo
+*.tsbuildinfo
+
+# dependencies
+node_modules/
+frontend/node_modules/
