@@ -1,5 +1,5 @@
 """
-Analytics application for Festchuk project.
+Analytics application for Feshchuk project.
 """
 from django.apps import AppConfig
 

@@ -1,5 +1,5 @@
 # ============================================================
-# Festchuk — Development Docker Compose
+# Feshchuk — Development Docker Compose
 # Volume mounts для hot-reload
 # ============================================================
 version: '3.8'
@@ -7,25 +7,25 @@ version: '3.8'
 services:
   postgres:
     image: pgvector/pgvector:pg15
-    container_name: festchuk-dev-postgres
+    container_name: feshchuk-dev-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-festchuk}
-      POSTGRES_USER: ${POSTGRES_USER:-festchuk}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-festchuk}
+      POSTGRES_DB: ${POSTGRES_DB:-feshchuk}
+      POSTGRES_USER: ${POSTGRES_USER:-feshchuk}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-feshchuk}
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-festchuk}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-feshchuk}"]
       interval: 5s
       timeout: 5s
       retries: 5
 
   redis:
     image: redis:7-alpine
-    container_name: festchuk-dev-redis
+    container_name: feshchuk-dev-redis
     restart: unless-stopped
     command: redis-server --appendonly yes
     ports:
@@ -43,7 +43,7 @@ services:
       context: ./backend
       dockerfile: Dockerfile
       target: development
-    container_name: festchuk-dev-backend
+    container_name: feshchuk-dev-backend
     restart: unless-stopped
     env_file: .env
     environment:
@@ -74,7 +74,7 @@ services:
       context: ./backend
       dockerfile: Dockerfile
       target: development
-    container_name: festchuk-dev-celery
+    container_name: feshchuk-dev-celery
     restart: unless-stopped
     env_file: .env
     environment:
@@ -101,7 +101,7 @@ services:
       context: ./backend
       dockerfile: Dockerfile
       target: development
-    container_name: festchuk-dev-celery-beat
+    container_name: feshchuk-dev-celery-beat
     restart: unless-stopped
     env_file: .env
     environment:
@@ -128,7 +128,7 @@ services:
       target: development
       args:
         - NEXT_PUBLIC_API_URL=http://localhost:8000/api
-    container_name: festchuk-dev-frontend
+    container_name: feshchuk-dev-frontend
     restart: unless-stopped
     ports:
       - "3000:3000"

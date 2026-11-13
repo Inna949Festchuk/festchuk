@@ -175,13 +175,13 @@ export default function HomePage() {
             </div>
 
             <div className="flex items-center gap-3">
-              <a href="https://github.com/Inna949Festchuk" target="_blank" rel="noopener noreferrer" className="cyber-btn btn-ghost !p-3" aria-label="GitHub" title="GitHub">
+              <a href="https://github.com/Inna949Feshchuk" target="_blank" rel="noopener noreferrer" className="cyber-btn btn-ghost !p-3" aria-label="GitHub" title="GitHub">
                 <Github className="w-5 h-5" />
               </a>
-              <a href="mailto:contact@festchuk.dev" className="cyber-btn btn-ghost !p-3" aria-label="Email" title="Email">
+              <a href="mailto:contact@feshchuk.dev" className="cyber-btn btn-ghost !p-3" aria-label="Email" title="Email">
                 <Mail className="w-5 h-5" />
               </a>
-              <a href="https://t.me/festchuk" target="_blank" rel="noopener noreferrer" className="cyber-btn btn-ghost !p-3" aria-label="Telegram" title="Telegram">
+              <a href="https://t.me/feshchuk" target="_blank" rel="noopener noreferrer" className="cyber-btn btn-ghost !p-3" aria-label="Telegram" title="Telegram">
                 <Send className="w-5 h-5" />
               </a>
               <span className="ml-2 font-mono text-[11px] tracking-[0.2em] text-zinc-400 hidden sm:inline">

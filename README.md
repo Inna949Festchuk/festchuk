@@ -1,4 +1,4 @@
-# Festchuk — AI-Driven Cyberpunk Portfolio
+# Feshchuk — AI-Driven Cyberpunk Portfolio
 
 Персональный сайт-портфолио уровня Middle+/Senior Fullstack-разработчика с интегрированным AI-ассистентом. Строго тёмная киберпанк-тема.
 
@@ -24,7 +24,7 @@
 ## 📁 Структура (monorepo)
 
 ```
-festchuk/
+feshchuk/
 ├── backend/                # Django
 │   ├── apps/
 │   │   ├── core/           # health check, базовые utils
@@ -139,7 +139,7 @@ docker compose -f docker-compose.dev.yml exec backend python manage.py seed_port
 
 ### Что делает
 
-1. **Проекты (GitHub)** — перечисляет все публичные не-форк репозитории `Inna949Festchuk` через GitHub API, скачивает README и превью. Новые репозитории подхватываются автоматически.
+1. **Проекты (GitHub)** — перечисляет все публичные не-форк репозитории `Inna949Feshchuk` через GitHub API, скачивает README и превью. Новые репозитории подхватываются автоматически.
 2. **Статьи (Хабр)** — парсит страницу автора `habr.com/ru/users/dilmah949/articles/`, скачивает контент (HTML → markdown с картинками) и обложки. Новые статьи подхватываются автоматически.
 3. **RAG-эмбеддинги** — генерирует vector embeddings для AI-ассистента (pgvector).
 

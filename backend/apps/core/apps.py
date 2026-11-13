@@ -1,5 +1,5 @@
 """
-Core application for Festchuk project.
+Core application for Feshchuk project.
 """
 from django.apps import AppConfig
 

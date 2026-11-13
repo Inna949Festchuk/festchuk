@@ -1,3 +1,3 @@
 """
-Blog application for Festchuk project.
+Blog application for Feshchuk project.
 """

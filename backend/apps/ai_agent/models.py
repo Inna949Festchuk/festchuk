@@ -1,5 +1,5 @@
 """
-AI Agent models for Festchuk portfolio.
+AI Agent models for Feshchuk portfolio.
 """
 import uuid
 

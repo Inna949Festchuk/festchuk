@@ -1,5 +1,5 @@
 """
-ASGI config for Festchuk project.
+ASGI config for Feshchuk project.
 """
 import os
 

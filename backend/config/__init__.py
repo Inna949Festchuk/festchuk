@@ -1,5 +1,5 @@
 """
-Festchuk Django project configuration.
+Feshchuk Django project configuration.
 """
 from .celery import app as celery_app
 

@@ -1,5 +1,5 @@
 # ============================================================
-# Festchuk Backend — Python Dependencies
+# Feshchuk Backend — Python Dependencies
 # ============================================================
 
 # --- Core ---

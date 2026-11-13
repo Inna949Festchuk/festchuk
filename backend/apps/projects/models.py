@@ -1,5 +1,5 @@
 """
-Projects models for Festchuk portfolio.
+Projects models for Feshchuk portfolio.
 """
 from django.db import models
 from django.utils.text import slugify

@@ -131,4 +131,4 @@ bbox = out_img.getbbox()
 out_cropped = out_img.crop(bbox)
 print('Saved native-contour cyber-robot.webp, size:', out_cropped.size)
 
-out_cropped.save('/home/mygis/Документы/festchuk/frontend/public/assets/cyber-robot.webp', 'WEBP', lossless=True, quality=100, method=6)
+out_cropped.save('/home/mygis/Документы/feshchuk/frontend/public/assets/cyber-robot.webp', 'WEBP', lossless=True, quality=100, method=6)
