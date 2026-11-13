@@ -1,3 +1,3 @@
 """
-Analytics application for Festchuk project.
+Analytics application for Feshchuk project.
 """

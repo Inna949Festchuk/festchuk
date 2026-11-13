@@ -1,5 +1,5 @@
 """
-WSGI config for Festchuk project.
+WSGI config for Feshchuk project.
 """
 import os
 

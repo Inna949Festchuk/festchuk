@@ -71,7 +71,7 @@ ARTICLES = [
 # --------------------------------------------------------------------------- #
 # Проекты (GitHub, все не-форки). order: 1 — первый в бенто-сетке.
 # --------------------------------------------------------------------------- #
-GITHUB_OWNER = "Inna949Festchuk"
+GITHUB_OWNER = "Inna949Feshchuk"
 
 
 def _repo(name, description, language, branch, featured=False, cover_image=''):
@@ -108,7 +108,7 @@ PROJECTS = [
         cover_image="blog.png",
     ),
     _repo(
-        "festchuk",
+        "feshchuk",
         "Этот сайт: AI-Driven Cyberpunk Portfolio на Next.js + Django + pgvector",
         "TypeScript", "master", featured=True,
     ),
@@ -236,7 +236,7 @@ PROJECTS = [
         "HTML", "main",
     ),
     _repo(
-        "Inna949Festchuk",
+        "Inna949Feshchuk",
         "Config files for my GitHub profile",
         None, "main",
     ),

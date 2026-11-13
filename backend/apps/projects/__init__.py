@@ -1,3 +1,3 @@
 """
-Projects application for Festchuk project.
+Projects application for Feshchuk project.
 """

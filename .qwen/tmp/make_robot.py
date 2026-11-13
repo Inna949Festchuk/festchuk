@@ -168,5 +168,5 @@ rgba_out = np.dstack([
 out_img = Image.fromarray(rgba_out, mode='RGBA')
 bbox = out_img.getbbox()
 out_cropped = out_img.crop(bbox)
-out_cropped.save('/home/mygis/Документы/festchuk/frontend/public/assets/cyber-robot.webp', 'WEBP', quality=96, method=6)
+out_cropped.save('/home/mygis/Документы/feshchuk/frontend/public/assets/cyber-robot.webp', 'WEBP', quality=96, method=6)
 print('Saved clean cyber-robot.webp, size:', out_cropped.size)

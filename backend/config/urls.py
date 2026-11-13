@@ -1,5 +1,5 @@
 """
-URL configuration for Festchuk project.
+URL configuration for Feshchuk project.
 """
 from django.contrib import admin
 from django.urls import path, include

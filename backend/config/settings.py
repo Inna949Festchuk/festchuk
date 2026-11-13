@@ -1,5 +1,5 @@
 """
-Django settings for Festchuk project.
+Django settings for Feshchuk project.
 """
 import os
 from pathlib import Path
@@ -104,9 +104,9 @@ ASGI_APPLICATION = 'config.asgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv('POSTGRES_DB', 'festchuk'),
-        'USER': os.getenv('POSTGRES_USER', 'festchuk'),
-        'PASSWORD': os.getenv('POSTGRES_PASSWORD', 'festchuk'),
+        'NAME': os.getenv('POSTGRES_DB', 'feshchuk'),
+        'USER': os.getenv('POSTGRES_USER', 'feshchuk'),
+        'PASSWORD': os.getenv('POSTGRES_PASSWORD', 'feshchuk'),
         'HOST': os.getenv('POSTGRES_HOST', 'localhost'),
         'PORT': os.getenv('POSTGRES_PORT', '5432'),
     }

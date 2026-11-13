@@ -1,3 +1,3 @@
 """
-AI Agent application for Festchuk project.
+AI Agent application for Feshchuk project.
 """

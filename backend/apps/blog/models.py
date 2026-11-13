@@ -1,5 +1,5 @@
 """
-Blog models for Festchuk portfolio.
+Blog models for Feshchuk portfolio.
 """
 from django.db import models
 from django.utils.text import slugify

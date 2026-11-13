@@ -50,7 +50,7 @@ PROJECT_README = """\
 ### Установка
 
 ```bash
-git clone https://github.com/Inna949Festchuk/neural-grid.git
+git clone https://github.com/Inna949Feshchuk/neural-grid.git
 cd neural-grid
 docker compose up --build
 ```
@@ -145,8 +145,8 @@ class Command(BaseCommand):
     def _ensure_superuser(self):
         User = get_user_model()
         username = os.getenv('SEED_ADMIN_USER', 'admin')
-        email = os.getenv('SEED_ADMIN_EMAIL', 'admin@festchuk.dev')
-        password = os.getenv('SEED_ADMIN_PASSWORD', 'festchuk-dev-2026')
+        email = os.getenv('SEED_ADMIN_EMAIL', 'admin@feshchuk.dev')
+        password = os.getenv('SEED_ADMIN_PASSWORD', 'feshchuk-dev-2026')
 
         if User.objects.filter(username=username).exists():
             self.stdout.write(self.style.WARNING(
@@ -179,7 +179,7 @@ class Command(BaseCommand):
                 'title_ru': DEMO_PROJECT_TITLE,
                 'summary_ru': 'AI-платформа мониторинга сетевой инфраструктуры в реальном времени.',
                 'description_ru': PROJECT_README.split('\n', 1)[-1],
-                'github_url': 'https://github.com/Inna949Festchuk/neural-grid',
+                'github_url': 'https://github.com/Inna949Feshchuk/neural-grid',
                 'demo_url': '',
                 'technologies': [
                     'Next.js', 'Django', 'Python', 'Celery',
