@@ -149,8 +149,8 @@ export default function HomePage() {
             </div>
 
             <h1 className="font-display font-black leading-[0.94] mb-5 text-5xl sm:text-7xl lg:text-8xl tracking-tight">
-              <span className="glitch block" data-text="FESHCHEUK">
-                FESHCHEUK
+              <span className="glitch block" data-text="FESHCHUK">
+                FESHCHUK
               </span>
             </h1>
 

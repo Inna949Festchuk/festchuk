@@ -47,7 +47,7 @@ export default function Header() {
           </span>
           <div className="flex flex-col">
             <span className="font-display font-black text-white text-lg tracking-widest leading-none">
-              FESHCHEUK
+              FESHCHUK
               <span className="text-neon-cyan">.DEV</span>
             </span>
             <span className="font-mono text-[9px] tracking-[0.24em] text-zinc-400 mt-0.5">
