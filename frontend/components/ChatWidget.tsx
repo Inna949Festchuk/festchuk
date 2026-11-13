@@ -2,9 +2,10 @@
 
 import {useState, useRef, useEffect, useCallback} from 'react';
 import {useTranslations, useLocale} from 'next-intl';
-import {usePathname} from '@/i18n/navigation';
-import Image from 'next/image';
 import {motion, AnimatePresence} from 'framer-motion';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import rehypeHighlight from 'rehype-highlight';
 import {
   Bot,
   X,
@@ -31,67 +32,6 @@ interface Message {
 export default function ChatWidget() {
   const t = useTranslations('chat');
   const locale = useLocale();
-  const pathname = usePathname();
-
-  // The little robot mascot hovers above the launcher button. On the home
-  // page it must NOT appear immediately — it fades in only after the user
-  // has scrolled past the agent-module grid (the block tagged via
-  // data-agent-grid below). On every other page it shows up right away.
-  const isHome = /^\/(?:[a-z]{2}(?:-[A-Z]{2})?)?\/?$/.test(pathname);
-  const [mascotVisible, setMascotVisible] = useState(!isHome);
-  const launcherRef = useRef<HTMLButtonElement>(null);
-
-  useEffect(() => {
-    if (!isHome) {
-      setMascotVisible(true);
-      return;
-    }
-    setMascotVisible(false);
-    let raf1 = 0;
-    let raf2 = 0;
-    let timer = 0;
-    const reveal = () => setMascotVisible(true);
-    const attach = () => {
-      const grid = document.querySelector('[data-agent-grid]');
-      if (grid && 'IntersectionObserver' in window) {
-        // If the block is already on screen when the widget mounts, reveal
-        // right away; otherwise wait until the user scrolls down to it.
-        const rect = grid.getBoundingClientRect();
-        if (rect.top < window.innerHeight * 0.9) {
-          reveal();
-          return;
-        }
-        const io = new IntersectionObserver(
-          (entries) => {
-            if (entries.some((e) => e.isIntersecting)) {
-              io.disconnect();
-              // Small delay so the reveal feels like a follow-up to the block.
-              timer = window.setTimeout(reveal, 450);
-            }
-          },
-          {threshold: 0.35},
-        );
-        io.observe(grid);
-      } else {
-        // Grid missing for some reason — fall back to showing the mascot.
-        reveal();
-      }
-    };
-    // Defer two frames + a safety timeout so the client-rendered home page
-    // (which fetches its data) has time to mount the agent grid first.
-    raf1 = requestAnimationFrame(() => {
-      raf2 = requestAnimationFrame(attach);
-    });
-    const safety = window.setTimeout(() => {
-      if (!document.querySelector('[data-agent-grid]')) reveal();
-    }, 3000);
-    return () => {
-      cancelAnimationFrame(raf1);
-      cancelAnimationFrame(raf2);
-      window.clearTimeout(timer);
-      window.clearTimeout(safety);
-    };
-  }, [isHome]);
 
   const [isOpen, setIsOpen] = useState(false);
   const [expanded, setExpanded] = useState(false);
@@ -370,93 +310,10 @@ export default function ChatWidget() {
     setMessages([]);
   };
 
-  // Track the launcher button so the mascot "stands" slightly above it:
-  // its feet are MASCOT_FOOT_GAP (~10px) higher than the button's top edge —
-  // the same rule on mobile and desktop. The offset is computed from the
-  // rendered image height (read live from the <img>, with a fallback based
-  // on the responsive width), so it stays correct for any breakpoint.
-  const MASCOT_FOOT_GAP = 10;
-  const mascotWrapRef = useRef<HTMLDivElement>(null);
-  const mascotImgRef = useRef<HTMLImageElement>(null);
-  const [mascotTop, setMascotTop] = useState<number | null>(null);
-
-  useEffect(() => {
-    if (!mascotVisible || isOpen) return;
-    const getRenderedHeight = () => {
-      const img = mascotImgRef.current;
-      if (img && img.clientHeight > 0) return img.clientHeight;
-      // Fallback before the image has laid out: aspect ratio 1440/1080.
-      return (window.matchMedia('(min-width: 640px)').matches ? 184 : 46) * (1440 / 1080);
-    };
-    const measure = () => {
-      const el = launcherRef.current;
-      if (!el) return;
-      setMascotTop(Math.round(el.getBoundingClientRect().top - getRenderedHeight() - MASCOT_FOOT_GAP));
-    };
-    measure();
-    window.addEventListener('scroll', measure, {passive: true});
-    window.addEventListener('resize', measure);
-    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(measure) : null;
-    if (ro && launcherRef.current) ro.observe(launcherRef.current);
-    // Re-measure once the mascot image itself has been laid out/loaded so
-    // its real rendered height is used for the offset.
-    const imgEl = mascotImgRef.current;
-    const onLoad = () => measure();
-    if (imgEl) {
-      imgEl.addEventListener('load', onLoad);
-      if (imgEl.complete && imgEl.naturalHeight > 0) measure();
-    }
-    if (ro && mascotWrapRef.current) ro.observe(mascotWrapRef.current);
-    return () => {
-      window.removeEventListener('scroll', measure);
-      window.removeEventListener('resize', measure);
-      if (imgEl) imgEl.removeEventListener('load', onLoad);
-      ro?.disconnect();
-    };
-  }, [mascotVisible, isOpen]);
-
   return (
     <>
-      {/* Little robot mascot — stands with its feet ~10px above the top edge
-          of the NEURAL ASSIST launcher (same rule on mobile and desktop).
-          Desktop (sm+): w-[184px] (×4 larger); mobile: w-[46px] as before
-          (proportions preserved). Hidden until revealed (home page: after
-          scrolling past the agent grid; other pages: immediately). Fades away
-          when the chat opens — it moves into the chat panel background
-          instead. */}
-      <AnimatePresence>
-        {mascotVisible && !isOpen && mascotTop !== null && (
-          <motion.div
-            key="mascot"
-            ref={mascotWrapRef}
-            initial={{opacity: 0, scale: 0.7}}
-            animate={{opacity: 1, y: [0, -6, 0], scale: 1}}
-            exit={{opacity: 0, scale: 0.8}}
-            transition={{
-              opacity: {duration: 0.45},
-              scale: {duration: 0.45},
-              y: {duration: 3.2, repeat: Infinity, ease: 'easeInOut', delay: 0.45},
-            }}
-            className="fixed right-9 z-50 pointer-events-none"
-            style={{top: mascotTop}}
-          >
-            <Image
-              ref={mascotImgRef as never}
-              src="/assets/neural-mascot.webp"
-              alt=""
-              width={1080}
-              height={1440}
-              unoptimized
-              className="w-[46px] sm:w-[184px] h-auto drop-shadow-[0_0_14px_rgba(0,243,255,0.55)] select-none"
-              draggable={false}
-            />
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       {/* Floating HUD launcher button */}
       <motion.button
-        ref={launcherRef}
         initial={{scale: 0}}
         animate={{scale: 1}}
         whileHover={{scale: 1.06}}
@@ -506,18 +363,6 @@ export default function ChatWidget() {
               <div className="cyber-frame-body flex flex-col h-full relative overflow-hidden">
               <span className="cb cb-tl" />
               <span className="cb cb-br" />
-
-              {/* Robot mascot sitting in the chat background (behind all panels) */}
-              <Image
-                src="/assets/neural-mascot.webp"
-                alt=""
-                width={1080}
-                height={1440}
-                unoptimized
-                aria-hidden
-                className="pointer-events-none select-none absolute bottom-2 right-3 z-0 w-[192px] sm:w-[220px] h-auto opacity-[0.14] drop-shadow-[0_0_22px_rgba(0,243,255,0.4)]"
-                draggable={false}
-              />
 
               {/* Top HUD Header */}
               <div className="px-4 py-3.5 border-b border-neon-cyan/25 bg-[#060a18]/70 flex items-center justify-between gap-2">
@@ -607,7 +452,7 @@ export default function ChatWidget() {
                         <Terminal className="w-3.5 h-3.5" />
                         {t('sysInit')}
                       </div>
-                      <p className="text-xs text-zinc-300 leading-relaxed">
+                      <p className="text-xs font-mono text-zinc-300 leading-relaxed">
                         {t('greeting')}
                       </p>
                     </div>
@@ -661,7 +506,18 @@ export default function ChatWidget() {
                           'polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px)',
                       }}
                     >
-                      {msg.content}
+                      {msg.role === 'assistant' ? (
+                        <div className="chat-md">
+                          <ReactMarkdown
+                            remarkPlugins={[remarkGfm]}
+                            rehypePlugins={[rehypeHighlight]}
+                          >
+                            {msg.content}
+                          </ReactMarkdown>
+                        </div>
+                      ) : (
+                        <span className="whitespace-pre-wrap break-words">{msg.content}</span>
+                      )}
                     </div>
                   </motion.div>
                 ))}

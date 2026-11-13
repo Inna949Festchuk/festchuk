@@ -24,7 +24,7 @@ from .context7_mcp import get_context7_mcp_client
 logger = logging.getLogger(__name__)
 
 SYSTEM_PROMPT = """\
-Ты — AI-ассистент на персональном сайте-портфолио разработчика Константина Фестчука.
+Ты — AI-ассистент на персональном сайте-портфолио разработчика Константина Фещука.
 Твоя задача — помогать посетителям узнать о проектах и статьях на сайте.
 
 Правила:
@@ -40,6 +40,19 @@ LANGUAGE_INSTRUCTIONS = {
     'ru': 'Язык ответа: отвечай строго на русском языке.',
     'en': 'Response language: respond strictly in English.',
 }
+
+# Markdown formatting rules appended to every response (global assistant and
+# module SKILLs). The frontend renders chat answers as GFM markdown, so the
+# model should structure answers that way (same convention as the geoscan
+# AI assistant).
+MARKDOWN_FORMAT_INSTRUCTIONS = """
+Форматирование (ответ рендерится как Markdown, GFM):
+- Пиши ответы в формате Markdown: заголовки (##) для структуры, маркированные/нумерованные списки, **жирный** для ключевых значений, таблицы для сравнения вариантов и списков объектов.
+- Таблица: заголовок с колонками через | и строка-разделитель после заголовка; не шире 4-5 колонок.
+- Встроенный код (`имя`, `путь`) — в обратных кавычках; блоки кода ``` только при необходимости.
+- Не используй HTML-теги, эмодзи-разметку и горизонтальные линии без надобности.
+- Если ответ короткий (1-2 предложения) — без заголовков и таблиц.
+"""
 
 # Context7 library topic per module slug, so the module-specific agent can pull
 # fresh documentation for its own stack. A missing slug means "no Context7
@@ -259,7 +272,7 @@ class AIAgent:
         else:
             base_prompt = SYSTEM_PROMPT
 
-        system_prompt = base_prompt + '\n' + LANGUAGE_INSTRUCTIONS[self.lang]
+        system_prompt = base_prompt + '\n' + MARKDOWN_FORMAT_INSTRUCTIONS + '\n' + LANGUAGE_INSTRUCTIONS[self.lang]
         if context:
             system_prompt += f"\n\nКонтекст с сайта (по релевантности):\n\n{context}"
 

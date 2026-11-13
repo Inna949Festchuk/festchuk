@@ -1,6 +1,6 @@
 {
   "meta": {
-    "title": "Константин Фестчук — AI-Driven Fullstack Developer",
+    "title": "Константин Фещук — AI-Driven Fullstack Developer",
     "description": "Персональный сайт-портфолио: проекты, технический блог, AI-ассистент. Киберпанк-стиль.",
     "keywords": ["portfolio", "fullstack", "django", "nextjs", "ai", "cyberpunk"]
   },
@@ -20,7 +20,7 @@
   "home": {
     "heroBadge": "AI-DRIVEN FULLSTACK ARCHITECT // NODE 44-A",
     "nameFirst": "Константин",
-    "nameLast": "Фестчук",
+    "nameLast": "Фещук",
     "heroText": "Проектирую и запускаю интеллектуальные веб-системы на стыке Python, React / Next.js и автономных AI-агентов.",
     "ctaProjects": "СМОТРЕТЬ ПРОЕКТЫ",
     "ctaBlog": "ТЕХНИЧЕСКИЙ БЛОГ",
@@ -132,7 +132,7 @@
     "expand": "Развернуть окно",
     "close": "Закрыть",
     "sysInit": "SYSTEM INITIALIZED",
-    "greeting": "Привет! Я нейросетевой ассистент Константина Фестчука с доступом к базе проектов, GitHub README и статьям блога через RAG.",
+    "greeting": "Привет! Я нейросетевой ассистент Константина Фещука с доступом к базе проектов, GitHub README и статьям блога через RAG.",
     "quickLabel": "БЫСТРЫЕ КОМАНДЫ:",
     "q1": "Расскажи про проекты",
     "q2": "Какой стек технологий?",

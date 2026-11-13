@@ -556,6 +556,85 @@ body {
 .prose-cyber li::marker { color: var(--neon-cyan); }
 
 /* ============================================================
+   Chat markdown — compact cyberpunk prose for AI chat bubbles
+   ============================================================ */
+.chat-md { line-height: inherit; color: #e4e9f2; overflow-wrap: break-word; }
+.chat-md > *:first-child { margin-top: 0; }
+.chat-md > *:last-child { margin-bottom: 0; }
+.chat-md p { margin: 5px 0; }
+.chat-md h1, .chat-md h2, .chat-md h3, .chat-md h4 {
+  font-family: var(--font-display), sans-serif;
+  color: var(--neon-cyan);
+  margin: 10px 0 4px;
+  line-height: 1.25;
+  letter-spacing: 0.03em;
+}
+.chat-md h1 { font-size: 1.05rem; }
+.chat-md h2 { font-size: 0.95rem; }
+.chat-md h3, .chat-md h4 { font-size: 0.85rem; }
+.chat-md ul, .chat-md ol { margin: 5px 0; padding-left: 1.1em; }
+.chat-md li { margin: 2px 0; }
+.chat-md li::marker { color: var(--neon-cyan); }
+.chat-md strong { color: #fff; font-weight: 700; }
+.chat-md em { color: var(--neon-magenta); font-style: normal; }
+.chat-md a { color: var(--neon-cyan); text-decoration: underline; text-underline-offset: 2px; }
+.chat-md a:hover { color: var(--neon-magenta); }
+.chat-md code {
+  font-family: var(--font-jbmono), monospace;
+  background: rgba(0, 243, 255, 0.10);
+  border: 1px solid rgba(0, 243, 255, 0.25);
+  color: var(--neon-cyan);
+  border-radius: 3px;
+  padding: 0.1em 0.35em;
+  font-size: 0.78em;
+}
+.chat-md pre {
+  background: #060a18;
+  border: 1px solid rgba(0, 243, 255, 0.3);
+  border-radius: 5px;
+  padding: 8px 10px;
+  overflow-x: auto;
+  margin: 7px 0;
+}
+.chat-md pre code {
+  background: none;
+  border: none;
+  padding: 0;
+  color: #e8edf7;
+  font-size: 0.75em;
+}
+.chat-md table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 7px 0;
+  font-size: 0.78em;
+  display: block;
+  overflow-x: auto;
+}
+.chat-md th, .chat-md td {
+  border: 1px solid rgba(0, 243, 255, 0.3);
+  padding: 4px 7px;
+  text-align: left;
+}
+.chat-md th {
+  background: rgba(0, 243, 255, 0.10);
+  color: var(--neon-cyan);
+  font-weight: 700;
+}
+.chat-md blockquote {
+  margin: 7px 0;
+  padding: 4px 10px;
+  border-left: 2px solid var(--neon-purple);
+  color: #cbd5e1;
+  background: rgba(188, 19, 254, 0.06);
+}
+.chat-md hr {
+  border: none;
+  border-top: 1px solid rgba(0, 243, 255, 0.3);
+  margin: 8px 0;
+}
+
+/* ============================================================
    Cityscape — high-res cyber city artwork, data streams, beams, orbit
    ============================================================ */
 .cityscape { will-change: transform; }

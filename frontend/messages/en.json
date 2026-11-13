@@ -1,6 +1,6 @@
 {
   "meta": {
-    "title": "Konstantin Festchuk — AI-Driven Fullstack Developer",
+    "title": "Konstantin Feshchuk — AI-Driven Fullstack Developer",
     "description": "Personal portfolio: projects, technical blog, AI assistant. Cyberpunk style.",
     "keywords": ["portfolio", "fullstack", "django", "nextjs", "ai", "cyberpunk"]
   },
@@ -20,7 +20,7 @@
   "home": {
     "heroBadge": "AI-DRIVEN FULLSTACK ARCHITECT // NODE 44-A",
     "nameFirst": "Konstantin",
-    "nameLast": "Festchuk",
+    "nameLast": "Feshchuk",
     "heroText": "I design and ship intelligent web systems at the intersection of Python, React / Next.js and autonomous AI agents.",
     "ctaProjects": "VIEW PROJECTS",
     "ctaBlog": "TECH BLOG",
@@ -132,7 +132,7 @@
     "expand": "Expand the window",
     "close": "Close",
     "sysInit": "SYSTEM INITIALIZED",
-    "greeting": "Hi! I'm Konstantin Festchuk's neural assistant with RAG access to his project base, GitHub READMEs and blog articles.",
+    "greeting": "Hi! I'm Konstantin Feshchuk's neural assistant with RAG access to his project base, GitHub READMEs and blog articles.",
     "quickLabel": "QUICK COMMANDS:",
     "q1": "Tell me about your projects",
     "q2": "What's the tech stack?",
