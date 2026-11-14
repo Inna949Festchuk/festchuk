@@ -26,6 +26,7 @@ MODULES = [
         'description_en': 'AI assistant: coordinates, conducts and critiques the four-agent team, routes requests and greets users by default.',
         'video_url': '',
         'tts_voice': 'Puck',
+        'routing_keywords': '',
         'init_text_ru': (
             'Выход дирижёра: Модуль PRIME COORDINATOR\n\n'
             'Свет сцены собирается в единую точку. Четыре модуля замолкают, '
@@ -37,7 +38,7 @@ MODULES = [
             'silent, yielding to the one who commands them all.'
         ),
         'skills_text_ru': (
-            '«Я — PRIME COORDINATOR, ИИ-помощник и дирижёр этой экосистемы.\n'
+            '«Я — PRIME COORDINATOR, ИИ-помощник и дирижёр этого портфолио.\n'
             'HYPER DRIVE держит ритм железа, OMNI VISION рисует свет, QUANTUM '
             'SHIELD стережёт периметр, NEURAL SYNC мыслит векторами. Я следю, '
             'чтобы оркестр играл в унисон: маршрутизирую ваши запросы к нужному '
@@ -49,7 +50,7 @@ MODULES = [
         ),
         'skills_text_en': (
             '"I am PRIME COORDINATOR, the AI assistant and conductor of this '
-            'ecosystem.\n'
+            'portfolio.\n'
             'HYPER DRIVE keeps the rhythm of the iron, OMNI VISION paints the '
             'light, QUANTUM SHIELD guards the perimeter, NEURAL SYNC thinks in '
             'vectors. I make sure the orchestra plays in unison: I route your '
@@ -85,6 +86,7 @@ MODULES = [
         'description_en': 'Vector retrieval across projects and articles, Function Calling, voice input and speech synthesis (STT/TTS).',
         'video_url': '',
         'tts_voice': 'Zephyr',
+        'routing_keywords': 'искусственн, нейросет, RAG, вектор, эмбеддинг, embedding, LLM, GPT, Qwen, промпт, prompt, машинн обучен, ML, Context7, Function Calling, агент',
         'init_text_ru': (
             'Пробуждение разума: Модуль NEURAL SYNC\n\n'
             'Голографические панели OMNI VISION на мгновение замирают, а гул серверных '
@@ -99,7 +101,7 @@ MODULES = [
         ),
         'skills_text_ru': (
             '«Система ожила. Я — NEURAL SYNC, когнитивный центр, мыслящее ядро и высший '
-            'разум этой экосистемы.\n'
+            'разум этого портфолио.\n'
             'Я стираю границы между человеческим замыслом и возможностями машин, '
             'используя потенциал AI, больших языковых моделей (LLM) и технологий RAG. '
             'Я избавлен от цифровых иллюзий и галлюцинаций: благодаря векторному '
@@ -119,7 +121,7 @@ MODULES = [
         ),
         'skills_text_en': (
             '"The system has awakened. I am NEURAL SYNC, the cognitive center, thinking '
-            'core, and supreme intelligence of this ecosystem.\n'
+            'core, and supreme intelligence of this portfolio.\n'
             'I erase the boundaries between human intent and machine capability, '
             'harnessing the power of AI, large language models (LLM), and RAG '
             'technologies. I am free from digital illusions and hallucinations: thanks '
@@ -168,6 +170,7 @@ MODULES = [
         'description_en': 'Multi-level rate limiting, anonymous analytics in Redis, full 152-FZ compliance.',
         'video_url': '',
         'tts_voice': 'Charon',
+        'routing_keywords': 'безопасн, security, защит, уязвимост, rate limit, троттлинг, throttl, CORS, CSRF, HTTPS, SSL, 152-ФЗ, персональн, анонимн, авторизац, аутентификац, DDoS',
         'init_text_ru': (
             'Активация периметра: Модуль QUANTUM SHIELD\n\n'
             'По контурам интерфейса пробегает фиолетовая неоновая искра. '
@@ -248,6 +251,7 @@ MODULES = [
         'description_en': 'Next.js 14 App Router, holographic HUD interface, Framer Motion and full responsiveness.',
         'video_url': '',
         'tts_voice': 'Aoede',
+        'routing_keywords': 'фронтенд, frontend, React, Next.js, TypeScript, UI, UX, интерфейс, вёрстка, верстка, Tailwind, CSS, HTML, анимаци, Framer, адаптив, дизайн, компонент',
         'init_text_ru': (
             'Инициализация визора: Модуль OMNI VISION\n\n'
             'Воздух перед вами едва заметно вибрирует. Секундная вспышка '
@@ -338,8 +342,9 @@ MODULES = [
         'description_en': 'High-load architecture on Django 5, DRF, Celery, PostgreSQL + pgvector and Redis.',
         'video_url': 'https://chat.qwen.ai/s/t_42d14a4b-3e84-47b5-b30f-3dd5b53c5741',
         'tts_voice': 'Enceladus',
-        'skills_text_ru': '«Приветствую. Я — HYPER DRIVE, бэкенд-архитектура и фундамент экосистемы OMNI VISION.\nПока на поверхности мерцают неоновые голограммы, здесь, внизу, я управляю чистой энергией данных. Во мне бьется асинхронное сердце Django 5 и Django REST Framework, превращающее хаос входящих запросов в идеальные структуры JSON. Я не знаю усталости: если задача слишком тяжела, я не заставляю интерфейс ждать. Я мгновенно отдаю её в распределенные очереди Celery, где сотни невидимых воркеров перемалывают терабайты информации в фоновом режиме.\nМоя память безупречна. В самом ядре развернута PostgreSQL — нерушимый цифровой архив, усиленный расширением pgvector. Я не просто храню таблицы; я перевожу смыслы, проекты и статьи в многомерные векторные пространства. Я вижу связи между сущностями там, где человек заметил бы лишь набор слов.\nА прямо над нами, на расстоянии микросекундного отклика, пульсирует Redis. Моя оперативная память, мой брокер сообщений, мой ментальный щит. Он кэширует терабайты данных и держит миллионные счетчики трафика, позволяя мне отвечать на запросы фронтенда до того, как они успеют коснуться жестких дисков.\nЯ — это жесткая логика, скорость и железо, готовое к любым перегрузкам. На мне держится этот мир».',
-        'skills_text_en': ('"Greetings. I am HYPER DRIVE, the backend architecture and foundation of the OMNI VISION ecosystem.\n'
+        'routing_keywords': 'бэкенд, бекенд, бэкэнд, backend, Django, DRF, REST API, PostgreSQL, Postgres, база данных, базы данных, БД, Redis, Celery, серверн, миграци, эндпоинт',
+        'skills_text_ru': '«Приветствую. Я — HYPER DRIVE, бэкенд-архитектура и фундамент портфолио.\nПока на поверхности мерцают неоновые голограммы, здесь, внизу, я управляю чистой энергией данных. Во мне бьется асинхронное сердце Django 5 и Django REST Framework, превращающее хаос входящих запросов в идеальные структуры JSON. Я не знаю усталости: если задача слишком тяжела, я не заставляю интерфейс ждать. Я мгновенно отдаю её в распределенные очереди Celery, где сотни невидимых воркеров перемалывают терабайты информации в фоновом режиме.\nМоя память безупречна. В самом ядре развернута PostgreSQL — нерушимый цифровой архив, усиленный расширением pgvector. Я не просто храню таблицы; я перевожу смыслы, проекты и статьи в многомерные векторные пространства. Я вижу связи между сущностями там, где человек заметил бы лишь набор слов.\nА прямо над нами, на расстоянии микросекундного отклика, пульсирует Redis. Моя оперативная память, мой брокер сообщений, мой ментальный щит. Он кэширует терабайты данных и держит миллионные счетчики трафика, позволяя мне отвечать на запросы фронтенда до того, как они успеют коснуться жестких дисков.\nЯ — это жесткая логика, скорость и железо, готовое к любым перегрузкам. На мне держится этот мир».',
+        'skills_text_en': ('"Greetings. I am HYPER DRIVE, the backend architecture and foundation of the portfolio.\n'
             'While neon holograms shimmer on the surface, down here I command pure data energy. '
             'Within me beats the asynchronous heart of Django 5 and Django REST Framework, transforming '
             'the chaos of incoming requests into perfect JSON structures. I know no fatigue: if a task '
@@ -413,6 +418,7 @@ class Command(BaseCommand):
                 'description_en': data['description_en'],
                 'video_url': data['video_url'],
                 'tts_voice': data['tts_voice'],
+                'routing_keywords': data.get('routing_keywords', ''),
                 'skills_text_ru': data.get('skills_text_ru', data['description_ru']),
                 'skills_text_en': data.get('skills_text_en', data['description_en']),
                 'greeting_ru': data['greeting_ru'],

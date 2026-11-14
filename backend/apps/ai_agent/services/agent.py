@@ -128,6 +128,34 @@ TOOLS = [
             },
         },
     },
+    {
+        "type": "function",
+        "function": {
+            "name": "activate_module",
+            "description": (
+                "Переключить активного агента на другой модуль. Вызывай, когда пользователь "
+                "явно просит позвать/переключить специалиста («позови бекендера», "
+                "«call the frontend guy») ИЛИ когда его запрос по смыслу чётко относится "
+                "к зоне одного из модулей. Не вызывай на вопросы «кто ты?» и общие "
+                "навигационные вопросы — их закрывает текущий агент. "
+                "Модули: hyper-drive — бэкенд (Django, DRF, PostgreSQL, Redis, Celery, API); "
+                "quantum-shield — безопасность (rate limiting, CORS, CSRF, HTTPS, 152-ФЗ); "
+                "neural-sync — искусственный интеллект (RAG, pgvector, LLM, эмбеддинги, AI-агенты); "
+                "omni-vision — фронтенд (Next.js, React, TypeScript, Tailwind, UI/UX, анимации)."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "module_slug": {
+                        "type": "string",
+                        "enum": ["hyper-drive", "quantum-shield", "neural-sync", "omni-vision"],
+                        "description": "Slug модуля, которого пользователь просит вызвать",
+                    },
+                },
+                "required": ["module_slug"],
+            },
+        },
+    },
 ]
 
 
@@ -248,35 +276,23 @@ class AIAgent:
         trimmed = history[-settings.MAX_CHAT_HISTORY:]
         cache.set(key, trimmed, settings.CHAT_SESSION_TTL)
 
-    def process_message(self, user_message: str) -> tuple[str, int]:
+    def _build_system_prompt(self, user_message: str, rag_context: str) -> str:
+        """System prompt for the currently active persona.
+
+        SKILL of the active module (or the global SYSTEM_PROMPT) + markdown
+        rules + language, RAG context and fresh Context7 docs. Re-called
+        after activate_module so the next LLM round answers as the new persona.
         """
-        Process a user message and return the AI response.
-
-        Returns:
-            (response_text, total_tokens_used)
-        """
-        # 1. Load history
-        history = self._load_history()
-
-        # 2. Add current user message
-        history.append({'role': 'user', 'content': user_message})
-
-        # 3. RAG retrieval
-        rag_chunks = self.rag.search_similar(user_message)
-        context = self.rag.build_context(rag_chunks)
-
-        # 4. Build system prompt with context
-        # If a specific module is active, use its dedicated system prompt (SKILL)
         if self.module and self.module.system_prompt_ru:
             base_prompt = self.module.get_field('system_prompt', self.lang)
         else:
             base_prompt = SYSTEM_PROMPT
 
         system_prompt = base_prompt + '\n' + MARKDOWN_FORMAT_INSTRUCTIONS + '\n' + LANGUAGE_INSTRUCTIONS[self.lang]
-        if context:
-            system_prompt += f"\n\nКонтекст с сайта (по релевантности):\n\n{context}"
+        if rag_context:
+            system_prompt += f"\n\nКонтекст с сайта (по релевантности):\n\n{rag_context}"
 
-        # 4b. Pull fresh library docs via Context7 (MCP primary, REST fallback)
+        # Pull fresh library docs via Context7 (MCP primary, REST fallback)
         if self.module:
             topic = MODULE_CONTEXT7_TOPIC.get(self.module_slug)
             if topic:
@@ -318,9 +334,53 @@ class AIAgent:
                     system_prompt += (
                         f"\n\nСвежая документация (Context7, {topic}):\n\n{docs}"
                     )
+        return system_prompt
 
-        # 5. Build messages
-        messages = [{'role': 'system', 'content': system_prompt}] + history
+    def _activate_module(self, slug: str) -> str:
+        """activate_module tool: switch the active persona mid-conversation."""
+        if not slug:
+            return json.dumps({'error': 'module_slug required'}, ensure_ascii=False)
+        if slug == self.module_slug:
+            name = self.module.code_name if self.module else slug
+            return json.dumps({'status': 'already_active', 'module': name}, ensure_ascii=False)
+        from apps.ai_agent.models import AgentModule
+        module = AgentModule.objects.filter(slug=slug, is_active=True).first()
+        if not module:
+            return json.dumps({'error': f'unknown module: {slug}'}, ensure_ascii=False)
+        self.module = module
+        self.module_slug = slug
+        logger.info(f"Agent activated module: {slug}")
+        return json.dumps({
+            'status': 'activated',
+            'module': module.code_name,
+            'instruction': (
+                f'Модуль {module.code_name} активирован. Ответь пользователю '
+                'от лица этого модуля — в его роли, стиле и компетенциях.'
+            ),
+        }, ensure_ascii=False)
+
+    def process_message(self, user_message: str) -> tuple[str, int]:
+        """
+        Process a user message and return the AI response.
+
+        Returns:
+            (response_text, total_tokens_used)
+        """
+        # 1. Load history
+        history = self._load_history()
+
+        # 2. Add current user message
+        history.append({'role': 'user', 'content': user_message})
+
+        # 3. RAG retrieval
+        rag_chunks = self.rag.search_similar(user_message)
+        context = self.rag.build_context(rag_chunks)
+
+        # 4. Build messages (system prompt is re-built after activate_module
+        #    so the next LLM round answers as the new persona)
+        messages = [
+            {'role': 'system', 'content': self._build_system_prompt(user_message, context)}
+        ] + history
 
         # 6. Call LLM with tools (max 3 rounds of tool calling)
         total_tokens = 0
@@ -345,6 +405,7 @@ class AIAgent:
             # Process tool calls
             messages.append(choice.message.model_dump())
 
+            slug_before = self.module_slug
             for tool_call in choice.message.tool_calls:
                 func_name = tool_call.function.name
                 try:
@@ -353,13 +414,24 @@ class AIAgent:
                     func_args = {}
 
                 logger.info(f"Agent calling tool: {func_name}({func_args})")
-                result = _execute_tool(func_name, func_args, lang=self.lang)
+                if func_name == 'activate_module':
+                    result = self._activate_module(func_args.get('module_slug', ''))
+                else:
+                    result = _execute_tool(func_name, func_args, lang=self.lang)
 
                 messages.append({
                     'role': 'tool',
                     'tool_call_id': tool_call.id,
                     'content': result,
                 })
+
+            # activate_module may have swapped the persona mid-request:
+            # rebuild the system prompt so the next round answers as the new module.
+            if self.module_slug != slug_before:
+                messages[0] = {
+                    'role': 'system',
+                    'content': self._build_system_prompt(user_message, context),
+                }
 
         # If we exit the loop without a final answer, generate one
         final_messages = messages + [

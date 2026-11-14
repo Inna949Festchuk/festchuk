@@ -122,7 +122,17 @@ class Context7MCPClient:
                 timeout=float(self.timeout) + 15.0,
             )
         except Exception as e:
-            logger.warning('Context7 MCP search failed for "%s": %s', topic, e)
+            # anyio TaskGroup hides the real cause in .exceptions — unwrap it
+            # so the log shows what actually failed (network, timeout, server).
+            cause = e
+            depth = 0
+            while getattr(cause, 'exceptions', None) and depth < 5:
+                cause = cause.exceptions[0]
+                depth += 1
+            logger.warning(
+                'Context7 MCP search failed for "%s": %s: %s',
+                topic, type(cause).__name__, cause,
+            )
             return ''
         return self._truncate(text, max_tokens)
 

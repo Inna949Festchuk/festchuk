@@ -3,7 +3,6 @@ AI Agent views for REST API.
 """
 import hashlib
 import logging
-import re
 
 from django.conf import settings
 from django.core.cache import cache
@@ -25,47 +24,12 @@ from .serializers import (
 )
 from .services.agent import AIAgent
 from .services.router_ai import RouterAIClient, tts_content_type
+from .services.routing import resolve_module_slug
 from apps.analytics.services import _get_client_ip, _hash_ip
 
 logger = logging.getLogger(__name__)
 
 TTS_CACHE_TTL = 3600  # repeated greetings/questions should not re-bill the API
-
-
-# Phrases that hand the dialogue back to the global NEURAL ASSIST assistant
-# (voice from .env, no module SKILL). Module names take priority, so
-# "пока, позови HYPER DRIVE" still switches to HYPER DRIVE.
-GLOBAL_ASSIST_TRIGGERS = (
-    r'\bпока\b',          # "пока!" / "пока," — not "покажи"
-    r'\bbye\b',           # "bye!" / "bye,"
-    r'\bgoodbye\b',
-    r'neural[- ]?assist', # "Neural Assist"
-    r'нейро-?ассистент',  # "нейро-ассистент"
-    r'\bпомощник\w*',     # "помощник" / "помощника" / "помощником"
-    r'\bassistant\b',     # "the assistant"
-)
-
-
-def _detect_module_slug(user_message: str, fallback_slug: str = '') -> str:
-    """Resolve the effective module for this message.
-
-    The chat UI pins the slug to the module the chat was opened from and
-    never switches it; without this a "поговорить с NEURAL SYNC" inside a
-    quantum-shield chat gets NEURAL SYNC's persona voiced with Charon.
-    1) a code name mentioned in the message overrides the pin;
-    2) "пока" / "Neural Assist" / "помощник" resets to the global assistant
-       (empty slug) — per user rule 2026-11-14;
-    3) otherwise the pinned slug is kept.
-    """
-    modules = list(AgentModule.objects.filter(is_active=True)
-                   .values_list('code_name', 'slug'))
-    for code_name, slug in sorted(modules, key=lambda m: len(m[0]), reverse=True):
-        if code_name and re.search(re.escape(code_name), user_message, re.IGNORECASE):
-            return slug
-    for pattern in GLOBAL_ASSIST_TRIGGERS:
-        if re.search(pattern, user_message, re.IGNORECASE):
-            return ''
-    return fallback_slug
 
 
 def _resolve_session(ip_hash: str) -> tuple[ChatSession, bool]:
@@ -140,10 +104,10 @@ class ChatMessageView(APIView):
             content=user_message,
         )
 
-        # The UI pins module_slug to the module the chat was opened from;
-        # an explicit mention of another module in the message takes over
-        # (its SKILL prompt + Context7 topic + TTS voice follow the switch).
-        effective_slug = _detect_module_slug(user_message, module_slug)
+        # The UI pins module_slug to the module the chat was opened from.
+        # The deterministic routing layer may override it (a named module,
+        # stack keywords, or "пока"/"assistant" back to the coordinator).
+        effective_slug = resolve_module_slug(user_message, module_slug)
         agent = AIAgent(session, lang=lang, module_slug=effective_slug)
         try:
             response_text, tokens_used = agent.process_message(user_message)
@@ -166,7 +130,10 @@ class ChatMessageView(APIView):
         return Response({
             'message': ChatMessageSerializer(assistant_msg).data,
             'tokens_used': tokens_used,
-            'module_slug': effective_slug,
+            # Final slug: the agent may have switched persona mid-reply via
+            # the activate_module tool — the frontend syncs its TTS voice
+            # from this value.
+            'module_slug': agent.module_slug or '',
         })
 
 

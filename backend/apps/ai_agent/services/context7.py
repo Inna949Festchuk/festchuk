@@ -43,46 +43,55 @@ class Context7Client:
         }
 
     def resolve_context_id(self, title: str) -> Optional[str]:
-        """Resolve a library/framework title to a Context7 context id."""
+        """Resolve a library/framework title to a Context7 library ID.
+
+        Real v1 API (verified live 2026-11-09): GET /api/v1/search?query=...
+        returns {"results": [{"id": "/vercel/next.js", "title": ..., ...}]}.
+        The legacy /tokens/resolve path does not exist (404).
+        """
         if not self.enabled or not title:
             return None
         try:
             resp = self._session.get(
-                f'{self.base_url}/tokens/resolve',
-                params={'title': title},
+                f'{self.base_url}/search',
+                params={'query': title},
                 headers=self._headers(),
                 timeout=self.timeout,
             )
             resp.raise_for_status()
             data = resp.json()
-            return data.get('contextId') or data.get('context_id')
+            results = data.get('results') or []
+            if not results:
+                return None
+            return results[0].get('id') or None
         except Exception as e:
             # exc_info=True добавит traceback в логи сервера, но не сломает агент
-            logger.warning(f'Context7 resolve failed for "{title}": {e}', exc_info=True)
+            logger.warning(f'Context7 search failed for "{title}": {e}', exc_info=True)
             return None
 
-    def fetch_documentation(self, context_id: str, topic: Optional[str] = None) -> Optional[str]:
-        """Fetch documentation markdown for a context id, optionally on a topic."""
+    def fetch_documentation(self, context_id: str, topic: Optional[str] = None,
+                            tokens: int = 2000) -> Optional[str]:
+        """Fetch documentation markdown for a library ID.
+
+        Real v1 API: GET /api/v1/{owner}/{repo}?type=txt&topic=...&tokens=N
+        (library ID without the leading slash) -> plain-text markdown, not JSON.
+        """
         if not self.enabled or not context_id:
             return None
         try:
-            params = {}
+            path = context_id.lstrip('/')
+            params = {'type': 'txt', 'tokens': tokens}
             if topic:
                 params['topic'] = topic
-                
+
             resp = self._session.get(
-                f'{self.base_url}/documentation/{context_id}',
+                f'{self.base_url}/{path}',
                 params=params,
                 headers=self._headers(),
                 timeout=self.timeout,
             )
             resp.raise_for_status()
-            data = resp.json()
-            
-            for key in ('markdown', 'documentation', 'content', 'text'):
-                if data.get(key):
-                    return str(data[key])
-            return None
+            return resp.text
         except Exception as e:
             logger.warning(f'Context7 documentation fetch failed for {context_id}: {e}', exc_info=True)
             return None
@@ -102,7 +111,7 @@ class Context7Client:
         chunks = []
         # Ограничиваем количество запросов, чтобы не перегружать API и не ждать долго
         for context_id in ids[:3]:
-            doc = self.fetch_documentation(context_id, topic=topic)
+            doc = self.fetch_documentation(context_id, topic=topic, tokens=max_tokens)
             if doc:
                 chunks.append(doc)
 

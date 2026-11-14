@@ -28,6 +28,10 @@ class AgentModule(models.Model):
         'TTS голос', max_length=50, blank=True, default='',
         help_text='Имя голоса для синтеза речи модуля (пусто — голос по умолчанию из .env)',
     )
+    routing_keywords = models.TextField(
+        'Ключевые слова стека', blank=True, default='',
+        help_text='Термины через запятую: упоминание в сообщении переключает чат на этот модуль (пусто — дефолты из кода)',
+    )
     greeting_ru = models.TextField('Приветствие чата (RU)', blank=True, default='')
     greeting_en = models.TextField('Приветствие чата (EN)', blank=True, default='')
     system_prompt_ru = models.TextField(

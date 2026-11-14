@@ -21,7 +21,7 @@ class AgentModuleAdmin(admin.ModelAdmin):
             'fields': ('init_text_ru', 'init_text_en', 'shutdown_text_ru', 'shutdown_text_en'),
         }),
         ('Чат / SKILL', {
-            'fields': ('tts_voice', 'greeting_ru', 'greeting_en', 'system_prompt_ru', 'system_prompt_en'),
+            'fields': ('tts_voice', 'routing_keywords', 'greeting_ru', 'greeting_en', 'system_prompt_ru', 'system_prompt_en'),
         }),
     )
     readonly_fields = ['created_at', 'updated_at']
