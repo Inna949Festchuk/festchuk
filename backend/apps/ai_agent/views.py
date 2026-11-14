@@ -37,9 +37,12 @@ TTS_CACHE_TTL = 3600  # repeated greetings/questions should not re-bill the API
 # "пока, позови HYPER DRIVE" still switches to HYPER DRIVE.
 GLOBAL_ASSIST_TRIGGERS = (
     r'\bпока\b',          # "пока!" / "пока," — not "покажи"
+    r'\bbye\b',           # "bye!" / "bye,"
+    r'\bgoodbye\b',
     r'neural[- ]?assist', # "Neural Assist"
     r'нейро-?ассистент',  # "нейро-ассистент"
     r'\bпомощник\w*',     # "помощник" / "помощника" / "помощником"
+    r'\bassistant\b',     # "the assistant"
 )
 
 
