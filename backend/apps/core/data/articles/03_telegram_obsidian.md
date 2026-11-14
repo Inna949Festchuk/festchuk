@@ -540,8 +540,8 @@ def _is_valid_image(self, file_path: Path) -> bool:
 3. Веб-интерфейс для настройки
 4. Поддержка других мессенджеров
 
-Исходный код проекта доступен в [репозитории](https://github.com/Inna949Feshchuk/telegram_obsidian_sync/tree/main). Для вопросов и предложений используйте Issues на GitHub.
+Исходный код проекта доступен в [репозитории](https://github.com/Inna949Festchuk/telegram_obsidian_sync/tree/main). Для вопросов и предложений используйте Issues на GitHub.
 
-[БОНУС (Техническая спецификация для команды AI-агентов)](https://github.com/Inna949Feshchuk/telegram_obsidian_sync/blob/main/CLOUD.md) для создания подобной системы с помощью кодинг АИ-агента Qwen3-Coder-Next* или его аналога.
+[БОНУС (Техническая спецификация для команды AI-агентов)](https://github.com/Inna949Festchuk/telegram_obsidian_sync/blob/main/CLOUD.md) для создания подобной системы с помощью кодинг АИ-агента Qwen3-Coder-Next* или его аналога.
 
 *Qwen3-Coder-Next — это передовая специализированная модель искусственного интеллекта от команды Qwen (Alibaba), предназначенная для написания и редактирования программного кода. Она была представлена в феврале 2026 года как часть линейки Qwen3.

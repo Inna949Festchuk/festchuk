@@ -71,7 +71,7 @@ ARTICLES = [
 # --------------------------------------------------------------------------- #
 # Проекты (GitHub, все не-форки). order: 1 — первый в бенто-сетке.
 # --------------------------------------------------------------------------- #
-GITHUB_OWNER = "Inna949Feshchuk"
+GITHUB_OWNER = "Inna949Festchuk"
 
 
 def _repo(name, description, language, branch, featured=False, cover_image=''):
@@ -236,7 +236,7 @@ PROJECTS = [
         "HTML", "main",
     ),
     _repo(
-        "Inna949Feshchuk",
+        "Inna949Festchuk",
         "Config files for my GitHub profile",
         None, "main",
     ),

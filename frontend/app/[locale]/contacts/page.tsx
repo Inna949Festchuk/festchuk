@@ -5,9 +5,9 @@ import {useTranslations} from 'next-intl';
 import {motion} from 'framer-motion';
 import {Mail, Send, Github, Copy, Check, Radio, ArrowUpRight} from 'lucide-react';
 
-const EMAIL = 'contact@feshchuk.dev';
-const TELEGRAM = 'https://t.me/feshchuk';
-const GITHUB = 'https://github.com/Inna949Feshchuk';
+const EMAIL = 'festchuk@yandex.ru';
+const TELEGRAM = 'https://t.me/Dilmah949';
+const GITHUB = 'https://github.com/Inna949Festchuk';
 
 export default function ContactsPage() {
   const t = useTranslations('contacts');
@@ -35,7 +35,7 @@ export default function ContactsPage() {
       icon: Send,
       code: t('ch2Code'),
       title: t('tTelegram'),
-      value: '@feshchuk',
+      value: '@Dilmah949',
       href: TELEGRAM,
       action: 'link',
       hex: 'hex-purple',
@@ -44,7 +44,7 @@ export default function ContactsPage() {
       icon: Github,
       code: t('ch3Code'),
       title: t('tGithub'),
-      value: 'Inna949Feshchuk',
+      value: 'Inna949Festchuk',
       href: GITHUB,
       action: 'link',
       hex: 'hex-cyan',

@@ -89,15 +89,19 @@ export default function ChatWidget() {
   }, []);
 
   const playResponse = useCallback(
-    (text: string) => {
+    (text: string, moduleSlug?: string | null) => {
       if (!ttsEnabled) return;
       stopSpeaking();
       const ttsParams = new URLSearchParams({
         text: text.slice(0, 500),
         lang: locale,
       });
-      if (activeModuleSlug) {
-        ttsParams.set('module_slug', activeModuleSlug);
+      // The backend may have switched the active module by the user's text;
+      // use the fresh slug so the reply is voiced with the right module voice
+      // without waiting for setActiveModuleSlug to re-render this closure.
+      const slug = moduleSlug ?? activeModuleSlug;
+      if (slug) {
+        ttsParams.set('module_slug', slug);
       }
       fetch(`/api/chat/tts/?${ttsParams.toString()}`)
         .then((r) => (r.ok ? r.blob() : null))
@@ -136,7 +140,7 @@ export default function ChatWidget() {
             timestamp: new Date(),
           };
           setMessages(prev => [...prev, greetMsg]);
-          playResponse(greeting);
+          playResponse(greeting, slug);
         }
       }
     };
@@ -209,7 +213,16 @@ export default function ChatWidget() {
           timestamp: new Date(),
         };
         setMessages((prev) => [...prev, assistantMsg]);
-        playResponse(assistantMsg.content);
+        // The backend may have switched the active module by the user's text
+        // (e.g. "поговорить с NEURAL SYNC"), or handed the dialogue back to
+        // the global NEURAL ASSIST (empty slug after "пока" / "помощник"):
+        // sync the state in both directions and voice this reply with the
+        // effective voice, not the stale closed-over one.
+        const effectiveSlug: string = data.module_slug || '';
+        if (effectiveSlug !== (activeModuleSlug ?? '')) {
+          setActiveModuleSlug(effectiveSlug || null);
+        }
+        playResponse(assistantMsg.content, effectiveSlug);
       } catch {
         setMessages((prev) => [
           ...prev,
