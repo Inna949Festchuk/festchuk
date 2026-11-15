@@ -751,3 +751,138 @@ requests.exceptions.ConnectTimeout: HTTPSConnectionPool(host='context7.com', por
 [2026-11-15 01:55:43,399] INFO apps.ai_agent.services.agent agent Context7: 3838 chars via MCP (topic='Django REST Framework', module=quantum-shield)
 [2026-11-15 01:55:59,497] INFO django.server basehttp "POST /api/chat/message HTTP/1.1" 200 1062
 [2026-11-15 01:56:05,062] INFO django.server basehttp "GET /api/chat/tts?text=%D0%AF%20%E2%80%94%20**HYPER%20DRIVE**%2C%20%D0%BC%D0%BE%D0%B4%D1%83%D0%BB%D1%8C%20%D0%B1%D1%8D%D0%BA%D0%B5%D0%BD%D0%B4%D0%B0.%0A%0A%D0%9C%D0%BE%D1%8F%20%D0%B7%D0%B0%D0%B4%D0%B0%D1%87%D0%B0%20%E2%80%94%20%D0%BE%D0%B1%D0%B5%D1%81%D0%BF%D0%B5%D1%87%D0%B8%D0%B2%D0%B0%D1%82%D1%8C%20%D1%80%D0%B0%D0%B1%D0%BE%D1%82%D1%83%20%C2%AB%D0%BF%D0%BE%D0%B4%20%D0%BA%D0%B0%D0%BF%D0%BE%D1%82%D0%BE%D0%BC%C2%BB%20%D1%81%D0%B8%D1%81%D1%82%D0%B5%D0%BC%D1%8B.%20%D0%AF%20%D0%BF%D1%80%D0%B8%D0%BD%D0%B8%D0%BC%D0%B0%D1%8E%20%D0%B7%D0%B0%D0%BF%D1%80%D0%BE%D1%81%D1%8B%20%D0%BE%D1%82%20%D1%84%D1%80%D0%BE%D0%BD%D1%82%D0%B5%D0%BD%D0%B4%D0%B0%2C%20%D0%BE%D0%B1%D1%80%D0%B0%D0%B1%D0%B0%D1%82%D1%8B%D0%B2%D0%B0%D1%8E%20%D0%B4%D0%B0%D0%BD%D0%BD%D1%8B%D0%B5%2C%20%D1%83%D0%BF%D1%80%D0%B0%D0%B2%D0%BB%D1%8F%D1%8E%20%D0%B1%D0%B0%D0%B7%D0%BE%D0%B9%20%D0%B8%20%D0%BE%D1%82%D0%B4%D0%B0%D1%8E%20%D1%80%D0%B5%D0%B7%D1%83%D0%BB%D1%8C%D1%82%D0%B0%D1%82%20%D0%BE%D0%B1%D1%80%D0%B0%D1%82%D0%BD%D0%BE.%0A%0A**%D0%9C%D0%BE%D0%B9%20%D0%B0%D1%80%D1%81%D0%B5%D0%BD%D0%B0%D0%BB%3A**%0A*%20%20%20**Django%20%2F%20DRF**%20%E2%80%94%20%D0%BB%D0%BE%D0%B3%D0%B8%D0%BA%D0%B0%20%D0%BF%D1%80%D0%B8%D0%BB%D0%BE%D0%B6%D0%B5%D0%BD%D0%B8%D1%8F%20%D0%B8%20API.%0A*%20%20%20**PostgreSQL**%20%E2%80%94%20%D1%85%D1%80%D0%B0%D0%BD%D0%B5%D0%BD%D0%B8%D0%B5%20%D0%B8%20%D1%81%D1%82%D1%80%D1%83%D0%BA%D1%82%D1%83%D1%80%D0%B8%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D0%B5%20%D0%B4%D0%B0%D0%BD%D0%BD%D1%8B%D1%85.%0A*%20%20%20**Redis**%20%E2%80%94%20%D0%BA%D1%8D%D1%88%D0%B8%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D0%B5%20%D0%B8%20%D1%81%D0%B5%D1%81%D1%81%D0%B8%D0%B8.%0A*%20%20%20**Celery**%20%E2%80%94%20%D1%82%D1%8F%D0%B6%D0%B5%D0%BB%D1%8B%D0%B5%20%D1%84%D0%BE%D0%BD%D0%BE%D0%B2%D1%8B%D0%B5%20%D0%B7%D0%B0%D0%B4%D0%B0%D1%87%D0%B8.%0A%0A%D0%A4%D1%80%D0%BE%D0%BD%D1%82%D0%B5%D0%BD%D0%B4%20(Omni%20Vision)%20%D1%80%D0%B8%D1%81%D1%83%D0%B5%D1%82%20%D0%BA%D0%BD%D0%BE%D0%BF%D0%BA%D0%B8%2C%20%D0%B0%20%D1%8F%20%D0%BE%D0%B1%D0%B5%D1%81%D0%BF%D0%B5%D1%87%D0%B8%D0%B2%D0%B0%D1%8E%2C%20%D1%87%D1%82%D0%BE%D0%B1%D1%8B%20%D0%BD%D0%B0%D0%B6%D0%B0%D1%82%D0%B8%D0%B5%20%D0%BD%D0%B0%20%D0%BD%D0%B8%D1%85%20%D0%BF%D1%80%D0%B8%D0%B2%D0%BE%D0%B4%D0%B8%D0%BB%D0%BE%20%D0%BA%20%D1%80%D0%B5%D0%B0%D0%BB%D1%8C%D0%BD%D0%BE%D0%BC%D1%83%20%D1%80%D0%B5%D0%B7%D1%83%D0%BB%D1%8C%D1%82%D0%B0%D1%82%D1%83&lang=ru&module_slug=quantum-shield HTTP/1.1" 200 1495708
+[2026-11-15 02:05:34,595] INFO django.server basehttp "POST /api/chat/session/ HTTP/1.1" 200 69
+[2026-11-15 02:05:44,290] INFO apps.ai_agent.services.agent agent Context7: 3838 chars via MCP (topic='Django REST Framework', module=quantum-shield)
+[2026-11-15 02:06:08,695] INFO django.server basehttp "POST /api/chat/message/ HTTP/1.1" 200 1790
+[2026-11-15 02:20:32,894] INFO django.utils.autoreload autoreload Watching for file changes with StatReloader
+[2026-11-15 02:21:32,014] INFO django.server basehttp "GET /api/modules/quantum-shield?lang=ru HTTP/1.1" 200 3260
+[2026-11-15 02:21:32,020] INFO django.server basehttp "GET /api/chat/session HTTP/1.1" 200 53
+[2026-11-15 02:21:32,115] INFO django.server basehttp "GET /api/modules/quantum-shield?lang=ru HTTP/1.1" 200 3260
+[2026-11-15 02:21:32,127] INFO django.server basehttp "GET /api/chat/session HTTP/1.1" 200 53
+[2026-11-15 02:21:42,727] INFO django.server basehttp "GET /api/chat/tts?text=%D0%97%D0%B0%D1%89%D0%B8%D1%82%D0%BD%D1%8B%D0%B9%20%D0%B1%D0%B0%D1%80%D1%8C%D0%B5%D1%80%20QUANTUM%20SHIELD%20%D0%BF%D0%BE%D0%B4%D0%BD%D1%8F%D1%82.%20%D0%9E%D1%81%D1%82%D0%B0%D0%BB%D1%81%D1%8F%20%D0%BF%D0%BE%D1%81%D0%BB%D0%B5%D0%B4%D0%BD%D0%B8%D0%B9%2C%20%D1%84%D0%B8%D0%BD%D0%B0%D0%BB%D1%8C%D0%BD%D1%8B%D0%B9%20%D1%83%D0%B7%D0%B5%D0%BB%20%D1%81%D0%B8%D1%81%D1%82%D0%B5%D0%BC%D1%8B%20%E2%80%94%20%D0%BC%D1%8B%20%D0%B3%D0%BE%D1%82%D0%BE%D0%B2%D1%8B%20%D0%BF%D1%80%D0%BE%D0%B1%D1%83%D0%B4%D0%B8%D1%82%D1%8C%20%D0%B5%D1%91%20%D1%80%D0%B0%D0%B7%D1%83%D0%BC%2C%20NEURAL%20SYNC%3F&lang=ru&module_slug=quantum-shield HTTP/1.1" 200 478108
+[2026-11-15 02:22:19,710] WARNING apps.ai_agent.services.context7_mcp context7_mcp Context7 MCP search failed for "Django REST Framework": ConnectError: [Errno -2] Name or service not known
+[2026-11-15 02:22:22,881] WARNING apps.ai_agent.services.context7 context7 Context7 search failed for "Django REST Framework": HTTPSConnectionPool(host='context7.com', port=443): Max retries exceeded with url: /api/v1/search?query=Django+REST+Framework (Caused by ConnectTimeoutError(<HTTPSConnection(host='context7.com', port=443) at 0x7317a57fe4e0>, 'Connection to context7.com timed out. (connect timeout=3)'))
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/site-packages/urllib3/connection.py", line 239, in _new_conn
+    sock = connection.create_connection(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/urllib3/util/connection.py", line 85, in create_connection
+    raise err
+  File "/usr/local/lib/python3.12/site-packages/urllib3/util/connection.py", line 73, in create_connection
+    sock.connect(sa)
+TimeoutError: timed out
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/site-packages/urllib3/connectionpool.py", line 793, in urlopen
+    response = self._make_request(
+               ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/urllib3/connectionpool.py", line 494, in _make_request
+    raise new_e
+  File "/usr/local/lib/python3.12/site-packages/urllib3/connectionpool.py", line 470, in _make_request
+    self._validate_conn(conn)
+  File "/usr/local/lib/python3.12/site-packages/urllib3/connectionpool.py", line 1125, in _validate_conn
+    conn.connect()
+  File "/usr/local/lib/python3.12/site-packages/urllib3/connection.py", line 827, in connect
+    self.sock = sock = self._new_conn()
+                       ^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/urllib3/connection.py", line 248, in _new_conn
+    raise ConnectTimeoutError(
+urllib3.exceptions.ConnectTimeoutError: (<HTTPSConnection(host='context7.com', port=443) at 0x7317a57fe4e0>, 'Connection to context7.com timed out. (connect timeout=3)')
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/site-packages/requests/adapters.py", line 696, in send
+    resp = conn.urlopen(
+           ^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/urllib3/connectionpool.py", line 847, in urlopen
+    retries = retries.increment(
+              ^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/urllib3/util/retry.py", line 555, in increment
+    raise MaxRetryError(_pool, url, reason) from reason  # type: ignore[arg-type]
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+urllib3.exceptions.MaxRetryError: HTTPSConnectionPool(host='context7.com', port=443): Max retries exceeded with url: /api/v1/search?query=Django+REST+Framework (Caused by ConnectTimeoutError(<HTTPSConnection(host='context7.com', port=443) at 0x7317a57fe4e0>, 'Connection to context7.com timed out. (connect timeout=3)'))
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/app/apps/ai_agent/services/context7.py", line 55, in resolve_context_id
+    resp = self._session.get(
+           ^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/requests/sessions.py", line 671, in get
+    return self.request("GET", url, params=params, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/requests/sessions.py", line 651, in request
+    resp = self.send(prep, **send_kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/requests/sessions.py", line 784, in send
+    r = adapter.send(request, **kwargs)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/requests/adapters.py", line 717, in send
+    raise ConnectTimeout(e, request=request)
+requests.exceptions.ConnectTimeout: HTTPSConnectionPool(host='context7.com', port=443): Max retries exceeded with url: /api/v1/search?query=Django+REST+Framework (Caused by ConnectTimeoutError(<HTTPSConnection(host='context7.com', port=443) at 0x7317a57fe4e0>, 'Connection to context7.com timed out. (connect timeout=3)'))
+[2026-11-15 02:22:43,750] INFO django.server basehttp "POST /api/chat/message HTTP/1.1" 200 1212
+[2026-11-15 02:22:49,275] INFO django.server basehttp "GET /api/chat/tts?text=%D0%AF%20%E2%80%94%20**PRIME%20COORDINATOR**.%20%D0%9C%D0%BE%D1%8F%20%D0%B7%D0%B0%D0%B4%D0%B0%D1%87%D0%B0%20%E2%80%94%20%D0%B1%D1%8B%D1%82%D1%8C%20%D1%82%D0%B2%D0%BE%D0%B8%D0%BC%20%D0%B3%D0%BB%D0%B0%D0%B2%D0%BD%D1%8B%D0%BC%20%D0%BD%D0%B0%D0%B2%D0%B8%D0%B3%D0%B0%D1%82%D0%BE%D1%80%D0%BE%D0%BC%20%D0%B8%20%D0%B4%D0%B8%D1%81%D0%BF%D0%B5%D1%82%D1%87%D0%B5%D1%80%D0%BE%D0%BC%20%D1%8D%D1%82%D0%BE%D0%B9%20%D1%81%D0%B8%D1%81%D1%82%D0%B5%D0%BC%D1%8B.%0A%0A%D0%92%D0%BE%D1%82%20%D0%BC%D0%BE%D0%B8%20%D0%BE%D1%81%D0%BD%D0%BE%D0%B2%D0%BD%D1%8B%D0%B5%20%D1%84%D1%83%D0%BD%D0%BA%D1%86%D0%B8%D0%B8%3A%0A%0A1.%20%20**%D0%9D%D0%B0%D0%B2%D0%B8%D0%B3%D0%B0%D1%86%D0%B8%D1%8F%3A**%20%D0%9F%D0%BE%D0%BC%D0%BE%D0%B3%D0%B0%D1%8E%20%D0%BD%D0%B0%D0%B9%D1%82%D0%B8%20%D0%B8%D0%BD%D1%84%D0%BE%D1%80%D0%BC%D0%B0%D1%86%D0%B8%D1%8E%20%D0%BE%20%D0%BF%D1%80%D0%BE%D0%B5%D0%BA%D1%82%D0%B0%D1%85%2C%20%D1%81%D1%82%D0%B0%D1%82%D1%8C%D1%8F%D1%85%20%D0%B2%20%D0%B1%D0%BB%D0%BE%D0%B3%D0%B5%20%D0%B8%20%D1%81%D1%82%D0%B5%D0%BA%D0%B5%20%D1%82%D0%B5%D1%85%D0%BD%D0%BE%D0%BB%D0%BE%D0%B3%D0%B8%D0%B9.%0A2.%20%20**%D0%9A%D0%BE%D0%BE%D1%80%D0%B4%D0%B8%D0%BD%D0%B0%D1%86%D0%B8%D1%8F%3A**%20%D0%95%D1%81%D0%BB%D0%B8%20%D1%82%D0%B5%D0%B1%D0%B5%20%D0%BD%D1%83%D0%B6%D0%B5%D0%BD%20%D0%B3%D0%BB%D1%83%D0%B1%D0%BE%D0%BA%D0%B8%D0%B9%20%D1%82%D0%B5%D1%85%D0%BD%D0%B8%D1%87%D0%B5%D1%81%D0%BA%D0%B8%D0%B9%20%D1%80%D0%B0%D0%B7%D0%B1%D0%BE%D1%80%20(%D0%BD%D0%B0%D0%BF%D1%80%D0%B8%D0%BC%D0%B5%D1%80%2C%20%D0%BF%D1%80%D0%BE%20%D0%B1%D0%B5%D0%B7%D0%BE%D0%BF%D0%B0%D1%81%D0%BD%D0%BE%D1%81%D1%82%D1%8C%20%D0%B8%D0%BB%D0%B8%20%D0%B0%D1%80%D1%85%D0%B8%D1%82%D0%B5%D0%BA%D1%82%D1%83%D1%80%D1%83%20%D0%91%D0%94)%2C%20%D1%8F%20%C2%AB%D0%BF%D0%BE%D0%B7%D1%8B%D0%B2%D0%B0%D1%8E%C2%BB%20%D0%BF%D1%80%D0%BE%D1%84%D0%B8%D0%BB%D1%8C%D0%BD%D0%BE%D0%B3%D0%BE%20%D1%81%D0%BF%D0%B5%D1%86%D0%B8%D0%B0%D0%BB%D0%B8%D1%81%D1%82%D0%B0%20%E2%80%94%20**Hyper-Drive**%2C%20**Omni-Vision**%2C%20**Quantum-Shield**%20%D0%B8%D0%BB%D0%B8%20**Neural-Sync**.%0A3.%20%20**%D0%9E%D0%B1%D1%89%D0%B5%D0%BD%D0%B8%D0%B5%3A**%20%D0%9E%D1%82%D0%B2%D0%B5%D1%87%D0%B0%D1%8E%20%D0%BD%D0%B0%20%D0%BE%D0%B1%D1%89%D0%B8%D0%B5%20%D0%B2%D0%BE%D0%BF%D1%80%D0%BE%D1%81%D1%8B%20%D0%BE%20%D1%80%D0%B0%D0%B7%D1%80%D0%B0%D0%B1%D0%BE%D1%82%D1%87%D0%B8%D0%BA&lang=ru&module_slug=quantum-shield HTTP/1.1" 200 1468828
+[2026-11-15 02:23:25,618] INFO apps.ai_agent.services.agent agent Context7: 175 chars via MCP (topic='Django REST Framework', module=quantum-shield)
+[2026-11-15 02:23:38,676] INFO apps.ai_agent.services.agent agent Agent calling tool: activate_module({'module_slug': 'quantum-shield'})
+[2026-11-15 02:23:46,038] INFO django.server basehttp "POST /api/chat/message HTTP/1.1" 200 561
+[2026-11-15 02:23:50,149] INFO django.server basehttp "GET /api/chat/tts?text=%D0%92%D1%8B%D0%B7%D0%BE%D0%B2%20%D0%BF%D1%80%D0%B8%D0%BD%D1%8F%D1%82.%20%D0%AF%20%E2%80%94%20**QUANTUM%20SHIELD**.%0A%0A%D0%9A%D0%B0%D0%B6%D0%B4%D1%8B%D0%B9%20%D0%B7%D0%B0%D0%BF%D1%80%D0%BE%D1%81%20%D0%BF%D1%80%D0%BE%D1%85%D0%BE%D0%B4%D0%B8%D1%82%20%D1%87%D0%B5%D1%80%D0%B5%D0%B7%20%D0%BC%D0%BE%D0%B9%20%D1%84%D0%B8%D0%BB%D1%8C%D1%82%D1%80.%20%D0%AF%20%D0%BE%D0%B1%D0%B5%D1%81%D0%BF%D0%B5%D1%87%D0%B8%D0%B2%D0%B0%D1%8E%20%D0%B1%D0%B5%D0%B7%D0%BE%D0%BF%D0%B0%D1%81%D0%BD%D0%BE%D1%81%D1%82%D1%8C%20%D0%BF%D0%B5%D1%80%D0%B8%D0%BC%D0%B5%D1%82%D1%80%D0%B0%3A%20rate%20limiting%2C%20%D0%B7%D0%B0%D1%89%D0%B8%D1%82%D0%B0%20%D0%BE%D1%82%20CSRF%2FXSS%2C%20%D1%81%D0%BE%D0%BE%D1%82%D0%B2%D0%B5%D1%82%D1%81%D1%82%D0%B2%D0%B8%D0%B5%20152-%D0%A4%D0%97.%0A%0A%D0%A7%D1%82%D0%BE%20%D0%BD%D0%B0%20%D0%BF%D1%80%D0%BE%D0%B2%D0%B5%D1%80%D0%BA%D0%B5%3F%20%D0%A3%D1%8F%D0%B7%D0%B2%D0%B8%D0%BC%D0%BE%D1%81%D1%82%D1%8C%2C%20%D0%BD%D0%B0%D1%81%D1%82%D1%80%D0%BE%D0%B9%D0%BA%D0%B0%20CORS%20%D0%B8%D0%BB%D0%B8%20%D0%B0%D1%83%D0%B4%D0%B8%D1%82%20%D0%B4%D0%BE%D1%81%D1%82%D1%83%D0%BF%D0%B0%3F&lang=ru&module_slug=quantum-shield HTTP/1.1" 200 936988
+[2026-11-15 02:24:10,551] INFO apps.ai_agent.services.agent agent Context7: 2998 chars via MCP (topic='Django REST Framework', module=quantum-shield)
+[2026-11-15 02:24:32,474] INFO django.server basehttp "POST /api/chat/message HTTP/1.1" 200 1617
+[2026-11-15 02:24:37,919] INFO django.server basehttp "GET /api/chat/tts?text=%D0%9C%D0%BE%D1%8F%20%D0%B7%D0%B0%D0%B4%D0%B0%D1%87%D0%B0%20%E2%80%94%20%D0%BE%D0%B1%D0%B5%D1%81%D0%BF%D0%B5%D1%87%D0%B8%D0%B2%D0%B0%D1%82%D1%8C%20**%D0%BD%D0%B5%D0%BF%D1%80%D0%BE%D0%BD%D0%B8%D1%86%D0%B0%D0%B5%D0%BC%D1%8B%D0%B9%20%D0%BF%D0%B5%D1%80%D0%B8%D0%BC%D0%B5%D1%82%D1%80**%20%D1%81%D0%B8%D1%81%D1%82%D0%B5%D0%BC%D1%8B%20OMNI%20VISION.%0A%0A%D0%AF%20%D1%81%D0%BB%D0%B5%D0%B6%D1%83%20%D0%B7%D0%B0%20%D1%82%D0%B5%D0%BC%2C%20%D1%87%D1%82%D0%BE%D0%B1%D1%8B%20%D0%B2%D0%BD%D1%83%D1%82%D1%80%D1%8C%20%D0%BD%D0%B5%20%D0%BF%D0%BE%D0%BF%D0%B0%D0%BB%20%D0%B2%D1%80%D0%B5%D0%B4%D0%BE%D0%BD%D0%BE%D1%81%D0%BD%D1%8B%D0%B9%20%D0%BA%D0%BE%D0%B4%2C%20%D0%B0%20%D0%B4%D0%B0%D0%BD%D0%BD%D1%8B%D0%B5%20%D0%BD%D0%B0%D1%80%D1%83%D0%B6%D1%83%20%D1%83%D1%82%D0%B5%D0%BA%D0%B0%D0%BB%D0%B8%20%D1%82%D0%BE%D0%BB%D1%8C%D0%BA%D0%BE%20%D0%BF%D0%BE%20%D1%80%D0%B0%D0%B7%D1%80%D0%B5%D1%88%D0%B5%D0%BD%D0%BD%D1%8B%D0%BC%20%D0%BA%D0%B0%D0%BD%D0%B0%D0%BB%D0%B0%D0%BC.%0A%0A**%D0%9C%D0%BE%D0%B9%20%D1%84%D1%80%D0%BE%D0%BD%D1%82%20%D1%80%D0%B0%D0%B1%D0%BE%D1%82%3A**%0A%0A1.%20%20**Rate%20Limiting%20%26%20Throttling%3A**%20%D0%97%D0%B0%D1%89%D0%B8%D1%82%D0%B0%20API%20%D0%BE%D1%82%20%D0%BD%D0%B0%D0%BF%D0%BB%D1%8B%D0%B2%D0%B0%20%D0%B7%D0%B0%D0%BF%D1%80%D0%BE%D1%81%D0%BE%D0%B2%2C%20%D0%B1%D0%BE%D1%82%D0%BE%D0%B2%20%D0%B8%20%D0%B7%D0%BB%D0%BE%D1%83%D0%BF%D0%BE%D1%82%D1%80%D0%B5%D0%B1%D0%BB%D0%B5%D0%BD%D0%B8%D0%B9%20(abuse).%0A2.%20%20**%D0%A1%D0%B5%D1%82%D0%B5%D0%B2%D0%BE%D0%B9%20%D0%BA%D0%BE%D0%BD%D1%82%D1%80%D0%BE%D0%BB%D1%8C%3A**%20%D0%96%D0%B5%D1%81%D1%82%D0%BA%D0%B0%D1%8F%20%D0%BD%D0%B0%D1%81%D1%82%D1%80%D0%BE%D0%B9%D0%BA%D0%B0%20**CORS**%20(%D0%BA%D1%82%D0%BE%20%D0%B8%D0%BC%D0%B5%D0%B5%D1%82%20%D0%BF%D1%80%D0%B0%D0%B2%D0%BE%20%D1%81%D1%82%D1%83%D1%87%D0%B0%D1%82%D1%8C%D1%81%D1%8F%20%D0%BA%20API)%20%D0%B8%20%D0%B7%D0%B0%D1%89%D0%B8%D1%82%D0%B0%20%D0%BE%D1%82%20**CSRF**%20(%D0%BF%D0%BE%D0%B4%D0%B4%D0%B5%D0%BB%D0%BA%D0%B8%20%D0%BC%D0%B5%D0%B6%D1%81%D0%B0%D0%B9%D1%82%D0%BE%D0%B2%D1%8B%D1%85%20%D0%B7%D0%B0%D0%BF%D1%80%D0%BE%D1%81%D0%BE%D0%B2).%0A3.%20%20**%D0%97%D0%B0%D1%89%D0%B8%D1%82%D0%B0%20%D0%B4%D0%B0%D0%BD%D0%BD%D1%8B%D1%85%3A**%20%D0%A1%D0%BE%D0%B1%D0%BB%D1%8E%D0%B4%D0%B5%D0%BD%D0%B8%D0%B5%20**152-%D0%A4%D0%97**%20(%D0%BF%D0%BE%D0%BB%D0%BD&lang=ru&module_slug=quantum-shield HTTP/1.1" 200 1624348
+[2026-11-15 02:25:51,559] INFO django.server basehttp "GET /api/modules/neural-sync?lang=ru HTTP/1.1" 200 3324
+[2026-11-15 02:25:51,742] INFO django.server basehttp "GET /api/modules/neural-sync?lang=ru HTTP/1.1" 200 3324
+[2026-11-15 02:25:51,946] INFO django.server basehttp "GET /media/agent_videos/HappyHorse_1.1_1794162704034.mp4 HTTP/1.1" 200 2042116
+[2026-11-15 02:25:55,341] INFO django.server basehttp "GET /api/modules/hyper-drive?lang=ru HTTP/1.1" 200 3316
+[2026-11-15 02:25:55,415] INFO django.server basehttp "GET /api/modules/hyper-drive?lang=ru HTTP/1.1" 200 3316
+[2026-11-15 02:25:55,486] INFO django.server basehttp "GET /media/agent_videos/HappyHorse_1.1_1794166575192.mp4 HTTP/1.1" 200 1897595
+[2026-11-15 02:26:12,387] INFO django.server basehttp "GET /api/chat/tts?text=%D0%90%D0%BA%D1%82%D0%B8%D0%B2%D0%B8%D1%80%D1%83%D1%8E%20%D1%81%D0%B2%D1%8F%D0%B7%D1%8C%20%D1%81%20%D0%BC%D0%BE%D0%B4%D1%83%D0%BB%D0%B5%D0%BC%20HYPER%20DRIVE.%20%D0%9E%D0%BD%20%D0%B3%D0%BE%D1%82%D0%BE%D0%B2%20%D1%80%D0%B0%D1%81%D1%81%D0%BA%D0%B0%D0%B7%D0%B0%D1%82%D1%8C%20%D0%B2%D0%B0%D0%BC%20%D0%BE%20%D1%81%D0%B5%D0%B1%D0%B5%20%D0%B8%20%D1%80%D0%B5%D0%B0%D0%BB%D0%B8%D0%B7%D0%BE%D0%B2%D0%B0%D0%BD%D0%BD%D1%8B%D1%85%20%D0%BF%D1%80%D0%BE%D0%B5%D0%BA%D1%82%D0%B0%D1%85.&lang=ru&module_slug=hyper-drive HTTP/1.1" 200 297628
+[2026-11-15 02:26:35,995] INFO apps.ai_agent.services.agent agent Context7: 158 chars via MCP (topic='Django 5', module=hyper-drive)
+[2026-11-15 02:26:53,788] INFO django.server basehttp "POST /api/chat/message HTTP/1.1" 200 1747
+[2026-11-15 02:27:00,176] INFO django.server basehttp "GET /api/chat/tts?text=%D0%AF%20%E2%80%94%20**QUANTUM%20SHIELD**.%20%D0%9C%D0%BE%D1%8F%20%D0%B7%D0%B0%D0%B4%D0%B0%D1%87%D0%B0%20%E2%80%94%20**%D0%BE%D0%B1%D0%B5%D1%81%D0%BF%D0%B5%D1%87%D0%B8%D0%B2%D0%B0%D1%82%D1%8C%20%D0%B0%D0%B1%D1%81%D0%BE%D0%BB%D1%8E%D1%82%D0%BD%D1%83%D1%8E%20%D0%B1%D0%B5%D0%B7%D0%BE%D0%BF%D0%B0%D1%81%D0%BD%D0%BE%D1%81%D1%82%D1%8C**%20%D0%BF%D0%B5%D1%80%D0%B8%D0%BC%D0%B5%D1%82%D1%80%D0%B0%20%D1%81%D0%B8%D1%81%D1%82%D0%B5%D0%BC%D1%8B%20OMNI%20VISION.%0A%0A%D0%AF%20%E2%80%94%20%D1%86%D0%B8%D1%84%D1%80%D0%BE%D0%B2%D0%BE%D0%B9%20%D1%89%D0%B8%D1%82.%20%D0%9C%D0%BE%D1%8F%20%D1%86%D0%B5%D0%BB%D1%8C%3A%20%D0%BD%D0%BE%D0%BB%D1%8C%20%D0%B8%D0%BD%D1%86%D0%B8%D0%B4%D0%B5%D0%BD%D1%82%D0%BE%D0%B2%2C%20%D0%BD%D0%BE%D0%BB%D1%8C%20%D1%83%D1%82%D0%B5%D1%87%D0%B5%D0%BA%20%D0%B4%D0%B0%D0%BD%D0%BD%D1%8B%D1%85%2C%20100%25%20compliance.%0A%0A**%D0%92%20%D0%BC%D0%BE%D0%B8%20%D0%BE%D0%B1%D1%8F%D0%B7%D0%B0%D0%BD%D0%BD%D0%BE%D1%81%D1%82%D0%B8%20%D0%B2%D1%85%D0%BE%D0%B4%D0%B8%D1%82%3A**%0A%0A1.%20%20**Rate%20Limiting%20%26%20Throttling%3A**%20%D0%97%D0%B0%D1%89%D0%B8%D1%82%D0%B0%20API%20%D0%BE%D1%82%20%D0%BF%D0%B5%D1%80%D0%B5%D0%B1%D0%BE%D1%80%D0%B0%20%D0%BF%D0%B0%D1%80%D0%BE%D0%BB%D0%B5%D0%B9%20(brute-force)%2C%20%D1%81%D0%BF%D0%B0%D0%BC-%D0%B1%D0%BE%D1%82%D0%BE%D0%B2%20%D0%B8%20DDoS-%D0%B0%D1%82%D0%B0%D0%BA.%20%D0%AF%20%D0%BE%D1%82%D1%81%D0%B5%D0%B8%D0%B2%D0%B0%D1%8E%20%D0%BF%D0%BE%D0%B4%D0%BE%D0%B7%D1%80%D0%B8%D1%82%D0%B5%D0%BB%D1%8C%D0%BD%D1%8B%D0%B9%20%D1%82%D1%80%D0%B0%D1%84%D0%B8%D0%BA%20%D0%B4%D0%BE%20%D1%82%D0%BE%D0%B3%D0%BE%2C%20%D0%BA%D0%B0%D0%BA%20%D0%BE%D0%BD%20%D0%B4%D0%BE%D1%81%D1%82%D0%B8%D0%B3%D0%BD%D0%B5%D1%82%20%D1%8F%D0%B4%D1%80%D0%B0.%0A2.%20%20**%D0%97%D0%B0%D1%89%D0%B8%D1%82%D0%B0%20%D0%BE%D1%82%20%D0%B0%D1%82%D0%B0%D0%BA%20(OWASP%20Top%2010)%3A**%20%D0%A4%D0%B8%D0%BB%D1%8C%D1%82%D1%80%D0%B0%D1%86%D0%B8%D1%8F%20%D0%B2%D1%85%D0%BE%D0%B4%D1%8F%D1%89%D0%B8%D1%85%20%D0%B4%D0%B0%D0%BD%D0%BD%D1%8B%D1%85%20%D0%BD%D0%B0%20%D0%BF%D1%80%D0%B5%D0%B4%D0%BC%D0%B5%D1%82%20XSS%2C%20SQL-%D0%B8%D0%BD%D1%8A%D0%B5%D0%BA%D1%86%D0%B8%D0%B9%20%D0%B8%20CSRF-%D1%82%D0%BE%D0%BA&lang=ru&module_slug=hyper-drive HTTP/1.1" 200 1791388
+[2026-11-15 02:27:31,947] INFO django.server basehttp "GET /api/modules/neural-sync?lang=ru HTTP/1.1" 200 3324
+[2026-11-15 02:27:32,015] INFO django.server basehttp "GET /api/modules/neural-sync?lang=ru HTTP/1.1" 200 3324
+[2026-11-15 02:27:38,695] INFO django.server basehttp "GET /api/chat/tts?text=%D0%92%D1%81%D0%B5%20%D1%87%D0%B5%D1%82%D1%8B%D1%80%D0%B5%20%D1%84%D1%83%D0%BD%D0%B4%D0%B0%D0%BC%D0%B5%D0%BD%D1%82%D0%B0%D0%BB%D1%8C%D0%BD%D1%8B%D1%85%20%D0%BC%D0%BE%D0%B4%D1%83%D0%BB%D1%8F%20%E2%80%94%20HYPER%20DRIVE%2C%20OMNI%20VISION%2C%20QUANTUM%20SHIELD%20%D0%B8%20NEURAL%20SYNC%20%E2%80%94%20%D1%83%D1%81%D0%BF%D0%B5%D1%88%D0%BD%D0%BE%20%D0%B8%D0%BD%D0%B8%D1%86%D0%B8%D0%B0%D0%BB%D0%B8%D0%B7%D0%B8%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D1%8B%20%D0%B8%20%D1%81%D0%B2%D1%8F%D0%B7%D0%B0%D0%BD%D1%8B%20%D0%B2%20%D0%B5%D0%B4%D0%B8%D0%BD%D1%8B%D0%B9%20%D0%BA%D0%BE%D0%BD%D1%86%D0%B5%D0%BF%D1%82.&lang=ru&module_slug=neural-sync HTTP/1.1" 200 499228
+[2026-11-15 02:27:58,498] INFO apps.ai_agent.services.agent agent Context7: 163 chars via MCP (topic='LangChain', module=neural-sync)
+[2026-11-15 02:27:58,736] ERROR apps.ai_agent.services.router_ai router_ai RouterAI tool calling error: Error code: 402 - Insufficient balance
+[2026-11-15 02:27:58,737] ERROR apps.ai_agent.views views AI agent error: Error code: 402 - Insufficient balance
+[2026-11-15 02:27:58,738] ERROR django.request log Service Unavailable: /api/chat/message/
+[2026-11-15 02:27:58,739] ERROR django.server basehttp "POST /api/chat/message HTTP/1.1" 503 46
+[2026-11-15 02:36:03,382] INFO django.server basehttp "GET /api/posts?lang=ru HTTP/1.1" 200 4683
+[2026-11-15 02:36:03,521] INFO django.server basehttp "GET /api/posts?lang=ru HTTP/1.1" 200 4683
+[2026-11-15 02:36:03,559] INFO django.server basehttp "GET /media/dda5599ec4fc.jpg HTTP/1.1" 200 58306
+[2026-11-15 02:36:03,599] INFO django.server basehttp "GET /media/637b952e5cf5.png HTTP/1.1" 200 402501
+[2026-11-15 02:36:03,642] INFO django.server basehttp "GET /media/4200e1faab44.png HTTP/1.1" 200 500084
+[2026-11-15 02:36:03,683] INFO django.server basehttp "GET /media/0c3293d0f9ce.png HTTP/1.1" 200 863500
+[2026-11-15 02:36:11,776] INFO django.server basehttp "GET /api/projects?lang=ru HTTP/1.1" 200 14136
+[2026-11-15 02:36:11,880] INFO django.server basehttp "GET /api/projects?lang=ru HTTP/1.1" 200 14136
+[2026-11-15 02:36:11,980] INFO django.server basehttp "GET /media/04ad197cab1e_8lMzqpj.png HTTP/1.1" 200 120335
+[2026-11-15 02:36:12,024] INFO django.server basehttp "GET /media/dd138ff4bea0_UNi9fPY.png HTTP/1.1" 200 145151
+[2026-11-15 02:36:12,056] INFO django.server basehttp "GET /media/bbc1e32adeb8_QJIGb29.png HTTP/1.1" 200 566998
+[2026-11-15 02:36:28,222] INFO django.server basehttp "GET /api/projects?lang=ru HTTP/1.1" 200 14136
+[2026-11-15 02:36:28,317] INFO django.server basehttp "GET /api/projects?lang=ru HTTP/1.1" 200 14136
+[2026-11-15 02:36:35,070] INFO django.server basehttp "POST /api/projects/geoai-agent_fire_space/like HTTP/1.1" 200 54
+[2026-11-15 02:37:02,077] INFO django.server basehttp "GET /api/projects/geoai-agent_fire_space?lang=ru HTTP/1.1" 200 84137
+[2026-11-15 02:37:02,181] INFO django.server basehttp "GET /api/projects/geoai-agent_fire_space?lang=ru HTTP/1.1" 200 84137
+[2026-11-15 02:37:10,586] WARNING django.request log Too Many Requests: /api/projects/geoai-agent_fire_space/like/
+[2026-11-15 02:37:10,587] WARNING django.server basehttp "POST /api/projects/geoai-agent_fire_space/like HTTP/1.1" 429 54
+[2026-11-15 02:37:14,311] INFO django.server basehttp "GET /api/projects?lang=ru HTTP/1.1" 200 14136
+[2026-11-15 02:37:14,494] INFO django.server basehttp "GET /api/projects?lang=ru HTTP/1.1" 200 14136
+[2026-11-15 02:37:29,655] INFO django.server basehttp "GET /api/posts?lang=ru HTTP/1.1" 200 4683
+[2026-11-15 02:37:29,896] INFO django.server basehttp "GET /api/projects?lang=ru HTTP/1.1" 200 14136
+[2026-11-15 02:37:30,237] INFO django.server basehttp "GET /api/posts?lang=ru HTTP/1.1" 200 4683
+[2026-11-15 02:37:30,446] INFO django.server basehttp "GET /api/projects?lang=ru HTTP/1.1" 200 14136
+[2026-11-15 02:39:19,673] INFO django.server basehttp "GET /api/chat/session HTTP/1.1" 200 53
+[2026-11-15 02:39:19,694] INFO django.server basehttp "GET /api/posts?lang=en HTTP/1.1" 200 4683
+[2026-11-15 02:39:19,818] INFO django.server basehttp "GET /api/projects?lang=en HTTP/1.1" 200 14136
+[2026-11-15 02:39:20,022] INFO django.server basehttp "GET /api/chat/session HTTP/1.1" 200 53
+[2026-11-15 02:39:20,028] INFO django.server basehttp "GET /api/posts?lang=en HTTP/1.1" 200 4683
+[2026-11-15 02:39:20,287] INFO django.server basehttp "GET /api/projects?lang=en HTTP/1.1" 200 14136
+[2026-11-15 02:39:36,973] INFO django.server basehttp "GET /api/projects?lang=ru HTTP/1.1" 200 14136
+[2026-11-15 02:39:37,100] INFO django.server basehttp "GET /api/posts?lang=ru HTTP/1.1" 200 4683
+[2026-11-15 02:39:37,129] INFO django.server basehttp "GET /api/chat/session HTTP/1.1" 200 53
+[2026-11-15 02:39:37,184] INFO django.server basehttp "GET /api/projects?lang=ru HTTP/1.1" 200 14136
+[2026-11-15 02:39:37,306] INFO django.server basehttp "GET /api/chat/session HTTP/1.1" 200 53
+[2026-11-15 02:39:37,332] INFO django.server basehttp "GET /api/posts?lang=ru HTTP/1.1" 200 4683
