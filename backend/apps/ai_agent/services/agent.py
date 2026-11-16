@@ -41,6 +41,25 @@ LANGUAGE_INSTRUCTIONS = {
     'en': 'Response language: respond strictly in English.',
 }
 
+# Persona anchor appended at the very end of the system prompt (driven by the
+# UI locale). Fast models lose identity when the prompt lists other agents
+# (switching rules, tool descriptions, Context7 docs); recency is the strongest
+# lever — the last lines win.
+PERSONA_ANCHORS = {
+    'ru': (
+        "---\nПАМЯТЬ О СЕБЕ: ты — {code_name}. Это твоя единственная роль в диалоге: "
+        "представляй себя только так и отвечай в этом стиле. Все упоминания других "
+        "агентов выше — справочная информация для маршрутизации, а не твоя личность. "
+        "На вопрос «кто ты?» отвечай: «Я — {code_name}»."
+    ),
+    'en': (
+        "---\nIDENTITY RECALL: you are {code_name}. This is your only role in this "
+        "dialogue: introduce yourself only as {code_name} and answer in that style. "
+        "All mentions of other agents above are routing reference data, not your "
+        "identity. If asked who you are, answer: 'I am {code_name}'."
+    ),
+}
+
 # Markdown formatting rules appended to every response (global assistant and
 # module SKILLs). The frontend renders chat answers as GFM markdown, so the
 # model should structure answers that way (same convention as the geoscan
@@ -137,7 +156,9 @@ TOOLS = [
                 "явно просит позвать/переключить специалиста («позови бекендера», "
                 "«call the frontend guy») ИЛИ когда его запрос по смыслу чётко относится "
                 "к зоне одного из модулей. Не вызывай на вопросы «кто ты?» и общие "
-                "навигационные вопросы — их закрывает текущий агент. "
+                "навигационные вопросы — их закрывает текущий агент. Не представляйся "
+                "и не отвечай от лица другого модуля, пока не вызов этот инструмент "
+                "и не получишь его результат. "
                 "Модули: hyper-drive — бэкенд (Django, DRF, PostgreSQL, Redis, Celery, API); "
                 "quantum-shield — безопасность (rate limiting, CORS, CSRF, HTTPS, 152-ФЗ); "
                 "neural-sync — искусственный интеллект (RAG, pgvector, LLM, эмбеддинги, AI-агенты); "
@@ -334,6 +355,12 @@ class AIAgent:
                     system_prompt += (
                         f"\n\nСвежая документация (Context7, {topic}):\n\n{docs}"
                     )
+
+        # Persona anchor at the very end of the prompt (see PERSONA_ANCHORS).
+        if self.module:
+            system_prompt += "\n\n" + PERSONA_ANCHORS[self.lang].format(
+                code_name=self.module.code_name
+            )
         return system_prompt
 
     def _activate_module(self, slug: str) -> str:
