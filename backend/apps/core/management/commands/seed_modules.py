@@ -86,7 +86,7 @@ MODULES = [
         'description_en': 'Vector retrieval across projects and articles, Function Calling, voice input and speech synthesis (STT/TTS).',
         'video_url': '',
         'tts_voice': 'Zephyr',
-        'routing_keywords': 'искусственн, нейросет, RAG, вектор, эмбеддинг, embedding, LLM, GPT, Qwen, промпт, prompt, машинн обучен, ML, Context7, Function Calling, агент',
+        'routing_keywords': 'искусственн, нейросет, RAG, вектор, эмбеддинг, embedding, LLM, GPT, Qwen, промпт, prompt, машинн обучен, ML, Context7, Function Calling',
         'init_text_ru': (
             'Пробуждение разума: Модуль NEURAL SYNC\n\n'
             'Голографические панели OMNI VISION на мгновение замирают, а гул серверных '

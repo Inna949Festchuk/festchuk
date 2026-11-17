@@ -52,7 +52,7 @@ DEFAULT_ROUTING_KEYWORDS = {
     'neural-sync': (
         'искусственн', 'нейросет', 'rag', 'вектор',
         'эмбеддинг', 'embedding', 'llm', 'gpt', 'qwen', 'промпт', 'prompt',
-        'машинн обучен', 'ml', 'context7', 'function calling', 'агент',
+        'машинн обучен', 'ml', 'context7', 'function calling',
     ),
     'omni-vision': (
         'фронтенд', 'frontend', 'react', 'next.js', 'typescript', 'ui',
