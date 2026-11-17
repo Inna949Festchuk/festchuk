@@ -50,7 +50,7 @@ class RouterAIClient:
         self,
         messages: list[dict],
         model: str | None = None,
-        temperature: float = 0.7,
+        temperature: float | None = None,
         max_tokens: int = 2000,
         **kwargs,
     ) -> tuple[str, int]:
@@ -61,6 +61,8 @@ class RouterAIClient:
             (response_text, tokens_used)
         """
         model = model or settings.ROUTERAI_LLM_MODEL
+        if temperature is None:
+            temperature = settings.ROUTERAI_LLM_TEMPERATURE
 
         try:
             response = self.client.chat.completions.create(
@@ -83,7 +85,7 @@ class RouterAIClient:
         messages: list[dict],
         tools: list[dict] | None = None,
         model: str | None = None,
-        temperature: float = 0.7,
+        temperature: float | None = None,
         max_tokens: int = 2000,
     ):
         """
@@ -93,6 +95,8 @@ class RouterAIClient:
             The full response object (may contain tool_calls)
         """
         model = model or settings.ROUTERAI_LLM_MODEL
+        if temperature is None:
+            temperature = settings.ROUTERAI_LLM_TEMPERATURE
 
         try:
             response = self.client.chat.completions.create(

@@ -216,6 +216,9 @@ CHANNEL_LAYERS = {
 ROUTERAI_API_KEY = os.getenv('ROUTERAI_API_KEY', '')
 ROUTERAI_BASE_URL = os.getenv('ROUTERAI_BASE_URL', 'https://routerai.ru/api/v1')
 ROUTERAI_LLM_MODEL = os.getenv('ROUTERAI_LLM_MODEL', 'qwen-2.5-plus')
+# Low temperature improves instruction-following for module personas without
+# materially increasing latency for the fast chat model.
+ROUTERAI_LLM_TEMPERATURE = float(os.getenv('ROUTERAI_LLM_TEMPERATURE', '0.3'))
 ROUTERAI_EMBEDDINGS_MODEL = os.getenv('ROUTERAI_EMBEDDINGS_MODEL', 'bge-m3')
 # TTS voice names are provider-specific: minimax/speech-* take OpenAI names
 # (alloy/nova/echo) while google/gemini-*-tts take Gemini names (Kore/Puck/Zephyr/...).
@@ -243,7 +246,6 @@ TTS_MAX_CHARS = int(os.getenv('TTS_MAX_CHARS', '4000'))
 
 CONTEXT7_API_KEY = os.getenv('CONTEXT7_API_KEY', '')
 CONTEXT7_BASE_URL = os.getenv('CONTEXT7_BASE_URL', 'https://context7.com/api/v1')
-CONTEXT7_MCP_URL = os.getenv('CONTEXT7_MCP_URL', 'https://mcp.context7.com/mcp')
 CONTEXT7_TIMEOUT = int(os.getenv('CONTEXT7_TIMEOUT', '15'))
 
 # ============================================================

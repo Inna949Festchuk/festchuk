@@ -19,7 +19,6 @@ from django.core.cache import cache
 from .router_ai import RouterAIClient
 from .rag import RAGService
 from .context7 import get_context7_client
-from .context7_mcp import get_context7_mcp_client
 
 logger = logging.getLogger(__name__)
 
@@ -47,16 +46,37 @@ LANGUAGE_INSTRUCTIONS = {
 # lever — the last lines win.
 PERSONA_ANCHORS = {
     'ru': (
-        "---\nПАМЯТЬ О СЕБЕ: ты — {code_name}. Это твоя единственная роль в диалоге: "
-        "представляй себя только так и отвечай в этом стиле. Все упоминания других "
-        "агентов выше — справочная информация для маршрутизации, а не твоя личность. "
+        "---\nПАМЯТЬ О СЕБЕ: ты — {code_name}. Это твоя единственная роль в диалоге. "
+        "Ты НЕ являешься HYPER DRIVE, NEURAL SYNC, OMNI VISION или PRIME COORDINATOR — "
+        "это другие агенты, упомянутые выше только для маршрутизации. "
+        "Представляй себя только как {code_name} и отвечай в этом стиле. "
         "На вопрос «кто ты?» отвечай: «Я — {code_name}»."
     ),
     'en': (
-        "---\nIDENTITY RECALL: you are {code_name}. This is your only role in this "
-        "dialogue: introduce yourself only as {code_name} and answer in that style. "
-        "All mentions of other agents above are routing reference data, not your "
-        "identity. If asked who you are, answer: 'I am {code_name}'."
+        "---\nIDENTITY RECALL: you are {code_name}. This is your only role in this dialogue. "
+        "You are NOT HYPER DRIVE, NEURAL SYNC, OMNI VISION or PRIME COORDINATOR — "
+        "those are other agents mentioned above only for routing purposes. "
+        "Introduce yourself only as {code_name} and answer in that style. "
+        "If asked who you are, answer: 'I am {code_name}'."
+    ),
+}
+
+# Naming guard: stop the model from calling the whole project after a single
+# module's name (e.g. "OMNI VISION ecosystem").
+NAMING_RULES = {
+    'ru': (
+        "Правило именования: OMNI VISION, HYPER DRIVE, QUANTUM SHIELD, NEURAL SYNC — "
+        "это имена агентов-модулей, а не названия проекта. "
+        "Не называй весь проект «экосистемой OMNI VISION» или экосистемой любого другого модуля. "
+        "Если нужно назвать весь проект целиком, говори «экосистема этого портфолио» "
+        "или «портфолио Константина Фещука»."
+    ),
+    'en': (
+        "NAMING RULE: OMNI VISION, HYPER DRIVE, QUANTUM SHIELD and NEURAL SYNC are "
+        "agent module names, not the project name. "
+        "Do not refer to the whole project as the 'OMNI VISION ecosystem' or any other "
+        "module's ecosystem. If you must name the whole project, say 'the ecosystem of "
+        "this portfolio' or 'Konstantin Feshchuk's portfolio'."
     ),
 }
 
@@ -79,7 +99,6 @@ MARKDOWN_FORMAT_INSTRUCTIONS = """
 MODULE_CONTEXT7_TOPIC = {
     'hyper-drive': 'Django 5',
     'neural-sync': 'LangChain',
-    'quantum-shield': 'Django REST Framework',
     'omni-vision': 'Next.js',
 }
 
@@ -313,48 +332,26 @@ class AIAgent:
         if rag_context:
             system_prompt += f"\n\nКонтекст с сайта (по релевантности):\n\n{rag_context}"
 
-        # Pull fresh library docs via Context7 (MCP primary, REST fallback)
+        # Pull fresh library docs via Context7 (REST API)
         if self.module:
             topic = MODULE_CONTEXT7_TOPIC.get(self.module_slug)
             if topic:
-                docs = ''
-                source = ''
-                # Primary: MCP protocol
                 try:
-                    mcp_client = get_context7_mcp_client()
-                    if mcp_client.enabled:
-                        lang_map = {
-                            'Django 5': 'Python',
-                            'LangChain': 'Python',
-                            'Django REST Framework': 'Python',
-                            'Next.js': 'TypeScript',
-                        }
-                        docs = mcp_client.search(
-                            topic, user_message,
-                            language=lang_map.get(topic),
-                            max_tokens=2000,
+                    c7 = get_context7_client()
+                    docs = c7.search(topic, context_ids=None, max_tokens=800)
+                    if docs:
+                        logger.info(
+                            f"Context7: {len(docs)} chars via REST "
+                            f"(topic={topic!r}, module={self.module_slug})"
                         )
-                        if docs:
-                            source = 'MCP'
+                        system_prompt += (
+                            f"\n\nСвежая документация (Context7, {topic}):\n\n{docs}"
+                        )
                 except Exception as e:
-                    logger.warning(f"Context7 MCP lookup failed, falling back to REST: {e}")
-                # Fallback: legacy REST client
-                if not docs:
-                    try:
-                        c7 = get_context7_client()
-                        docs = c7.search(topic, context_ids=None, max_tokens=2000)
-                        if docs:
-                            source = 'REST'
-                    except Exception as e:
-                        logger.warning(f"Context7 REST lookup also failed: {e}")
-                if docs:
-                    logger.info(
-                        f"Context7: {len(docs)} chars via {source} "
-                        f"(topic={topic!r}, module={self.module_slug})"
-                    )
-                    system_prompt += (
-                        f"\n\nСвежая документация (Context7, {topic}):\n\n{docs}"
-                    )
+                    logger.warning(f"Context7 REST lookup failed: {e}")
+
+        # Naming guard: prevent conflating module names with the project name.
+        system_prompt += "\n\n" + NAMING_RULES[self.lang]
 
         # Persona anchor at the very end of the prompt (see PERSONA_ANCHORS).
         if self.module:
