@@ -83,6 +83,10 @@ class ChatSession(models.Model):
         editable=False,
     )
     ip_hash = models.CharField('IP Hash', max_length=64, unique=True, db_index=True)
+    active_module_slug = models.CharField(
+        'Активный модуль', max_length=50, blank=True, default='',
+        help_text='Slug модуля, отвечавшего в прошлом ходу (маркер смены персоны в истории)',
+    )
     created_at = models.DateTimeField('Создан', auto_now_add=True)
     last_active_at = models.DateTimeField('Активность', default=timezone.now)
 

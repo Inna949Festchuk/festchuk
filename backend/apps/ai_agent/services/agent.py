@@ -383,6 +383,44 @@ class AIAgent:
             ),
         }, ensure_ascii=False)
 
+    def _handoff_marker(self, prev_slug: str) -> str:
+        """History-level persona reset, injected when the active module switched.
+
+        The end-of-system-prompt anchor loses to conversation recency when the
+        history already contains another agent's self-introductions
+        («Я — PRIME COORDINATOR»…), so the switch must be stated inside the
+        history itself, immediately before the user's new message.
+        """
+        from apps.ai_agent.models import AgentModule
+        prev_name = prev_slug
+        if prev_slug == 'prime-coordinator':
+            prev_name = 'PRIME COORDINATOR'
+        else:
+            prev_module = AgentModule.objects.filter(slug=prev_slug).first()
+            if prev_module:
+                prev_name = prev_module.code_name
+        name = self.module.code_name
+        if self.lang == 'en':
+            return (
+                f"[SYSTEM AGENT SWITCH: the active agent is now {name}. "
+                f"Earlier messages in this conversation may have been answered by "
+                f"{prev_name} — do not continue that persona. From this message on "
+                f"you are {name} and you must introduce yourself only as {name}.]"
+            )
+        return (
+            f"[СИСТЕМНАЯ СМЕНА АГЕНТА: с этого сообщения активным агентом является "
+            f"{name}. Предыдущие сообщения могли отвечать от лица {prev_name} — не "
+            f"продолжайте и не повторяйте ту роль. С этого момента вы — {name}, "
+            f"представляйте себя только так.]"
+        )
+
+    def _persist_active_module(self):
+        """Remember which module answered this turn (drives the next handoff marker)."""
+        current = self.module_slug or ''
+        if self.session.active_module_slug != current:
+            self.session.active_module_slug = current
+            self.session.save(update_fields=['active_module_slug'])
+
     def process_message(self, user_message: str) -> tuple[str, int]:
         """
         Process a user message and return the AI response.
@@ -392,6 +430,12 @@ class AIAgent:
         """
         # 1. Load history
         history = self._load_history()
+
+        # 1b. Persona handoff: if the active module changed since the last
+        #     turn, state it inside the history (recency beats the system prompt).
+        prev_slug = self.session.active_module_slug or ''
+        if self.module and prev_slug and prev_slug != self.module_slug and history:
+            history.append({'role': 'system', 'content': self._handoff_marker(prev_slug)})
 
         # 2. Add current user message
         history.append({'role': 'user', 'content': user_message})
@@ -424,6 +468,7 @@ class AIAgent:
                 assistant_text = choice.message.content or ''
                 history.append({'role': 'assistant', 'content': assistant_text})
                 self._save_history(history)
+                self._persist_active_module()
                 return assistant_text, total_tokens
 
             # Process tool calls
@@ -468,4 +513,5 @@ class AIAgent:
         total_tokens += final_tokens
         history.append({'role': 'assistant', 'content': final_text})
         self._save_history(history)
+        self._persist_active_module()
         return final_text, total_tokens
