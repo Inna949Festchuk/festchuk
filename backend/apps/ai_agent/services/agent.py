@@ -11,6 +11,7 @@ The agent:
 import json
 import logging
 import time
+from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 
 from django.conf import settings
@@ -91,6 +92,7 @@ MARKDOWN_FORMAT_INSTRUCTIONS = """
 - Встроенный код (`имя`, `путь`) — в обратных кавычках; блоки кода ``` только при необходимости.
 - Не используй HTML-теги, эмодзи-разметку и горизонтальные линии без надобности.
 - Если ответ короткий (1-2 предложения) — без заголовков и таблиц.
+- По умолчанию отвечай кратко (до ~150 слов). Развёрнутые таблицы, длинные списки и блоки кода — только если пользователь просит подробнее.
 """
 
 # Context7 library topic per module slug, so the module-specific agent can pull
@@ -316,7 +318,30 @@ class AIAgent:
         trimmed = history[-settings.MAX_CHAT_HISTORY:]
         cache.set(key, trimmed, settings.CHAT_SESSION_TTL)
 
-    def _build_system_prompt(self, user_message: str, rag_context: str) -> str:
+    def _fetch_context7_docs(self) -> str:
+        """Fresh library docs for the active module (best-effort, Redis-cached).
+
+        Runs in parallel with RAG retrieval; the cache in Context7Client.search
+        makes repeat calls (and the post-handoff rebuild) nearly free.
+        """
+        if not self.module:
+            return ''
+        topic = MODULE_CONTEXT7_TOPIC.get(self.module_slug)
+        if not topic:
+            return ''
+        try:
+            docs = get_context7_client().search(topic, context_ids=None, max_tokens=800)
+            if docs:
+                logger.info(
+                    f"Context7: {len(docs)} chars "
+                    f"(topic={topic!r}, module={self.module_slug})"
+                )
+            return docs or ''
+        except Exception as e:
+            logger.warning(f"Context7 REST lookup failed: {e}")
+            return ''
+
+    def _build_system_prompt(self, user_message: str, rag_context: str, context7_docs: str = '') -> str:
         """System prompt for the currently active persona.
 
         SKILL of the active module (or the global SYSTEM_PROMPT) + markdown
@@ -332,23 +357,13 @@ class AIAgent:
         if rag_context:
             system_prompt += f"\n\nКонтекст с сайта (по релевантности):\n\n{rag_context}"
 
-        # Pull fresh library docs via Context7 (REST API)
-        if self.module:
+        # Fresh library docs (Context7 REST) are fetched in parallel with RAG
+        # in process_message and passed in; cached per topic in Context7Client.
+        if context7_docs:
             topic = MODULE_CONTEXT7_TOPIC.get(self.module_slug)
-            if topic:
-                try:
-                    c7 = get_context7_client()
-                    docs = c7.search(topic, context_ids=None, max_tokens=800)
-                    if docs:
-                        logger.info(
-                            f"Context7: {len(docs)} chars via REST "
-                            f"(topic={topic!r}, module={self.module_slug})"
-                        )
-                        system_prompt += (
-                            f"\n\nСвежая документация (Context7, {topic}):\n\n{docs}"
-                        )
-                except Exception as e:
-                    logger.warning(f"Context7 REST lookup failed: {e}")
+            system_prompt += (
+                f"\n\nСвежая документация (Context7, {topic}):\n\n{context7_docs}"
+            )
 
         # Naming guard: prevent conflating module names with the project name.
         system_prompt += "\n\n" + NAMING_RULES[self.lang]
@@ -440,14 +455,19 @@ class AIAgent:
         # 2. Add current user message
         history.append({'role': 'user', 'content': user_message})
 
-        # 3. RAG retrieval
-        rag_chunks = self.rag.search_similar(user_message)
+        # 3. RAG retrieval and Context7 docs in parallel — both depend only on
+        #    the user message / active module; uncached Context7 adds ~2s.
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            rag_future = pool.submit(self.rag.search_similar, user_message)
+            docs_future = pool.submit(self._fetch_context7_docs)
+            rag_chunks = rag_future.result()
+            context7_docs = docs_future.result()
         context = self.rag.build_context(rag_chunks)
 
         # 4. Build messages (system prompt is re-built after activate_module
         #    so the next LLM round answers as the new persona)
         messages = [
-            {'role': 'system', 'content': self._build_system_prompt(user_message, context)}
+            {'role': 'system', 'content': self._build_system_prompt(user_message, context, context7_docs)}
         ] + history
 
         # 6. Call LLM with tools (max 3 rounds of tool calling)
@@ -499,7 +519,9 @@ class AIAgent:
             if self.module_slug != slug_before:
                 messages[0] = {
                     'role': 'system',
-                    'content': self._build_system_prompt(user_message, context),
+                    'content': self._build_system_prompt(
+                        user_message, context, self._fetch_context7_docs()
+                    ),
                 }
 
         # If we exit the loop without a final answer, generate one

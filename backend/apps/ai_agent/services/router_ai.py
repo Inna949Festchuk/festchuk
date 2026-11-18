@@ -28,6 +28,19 @@ def tts_content_type() -> str:
     return _TTS_CONTENT_TYPES.get(fmt, f'audio/{fmt}')
 
 
+def _reasoning_extra_body() -> dict | None:
+    """Disable LLM thinking unless explicitly allowed via env.
+
+    qwen3.5-plus thinks by default (~900 reasoning tokens, +10-15s per reply);
+    reasoning={'enabled': False} is the verified RouterAI switch — the older
+    enable_thinking flag only partially suppresses it. Must go through
+    extra_body: the OpenAI SDK has no typed ``reasoning`` parameter.
+    """
+    if getattr(settings, 'ROUTERAI_LLM_REASONING_ENABLED', False):
+        return None
+    return {'reasoning': {'enabled': False}}
+
+
 class RouterAIClient:
     """
     Client for RouterAI API (OpenAI-compatible).
@@ -51,7 +64,7 @@ class RouterAIClient:
         messages: list[dict],
         model: str | None = None,
         temperature: float | None = None,
-        max_tokens: int = 2000,
+        max_tokens: int | None = None,
         **kwargs,
     ) -> tuple[str, int]:
         """
@@ -63,6 +76,8 @@ class RouterAIClient:
         model = model or settings.ROUTERAI_LLM_MODEL
         if temperature is None:
             temperature = settings.ROUTERAI_LLM_TEMPERATURE
+        if max_tokens is None:
+            max_tokens = settings.ROUTERAI_LLM_MAX_TOKENS
 
         try:
             response = self.client.chat.completions.create(
@@ -70,6 +85,7 @@ class RouterAIClient:
                 messages=messages,
                 temperature=temperature,
                 max_tokens=max_tokens,
+                extra_body=_reasoning_extra_body(),
                 **kwargs,
             )
             text = response.choices[0].message.content or ''
@@ -86,7 +102,7 @@ class RouterAIClient:
         tools: list[dict] | None = None,
         model: str | None = None,
         temperature: float | None = None,
-        max_tokens: int = 2000,
+        max_tokens: int | None = None,
     ):
         """
         Generate a chat completion with function calling support.
@@ -97,6 +113,8 @@ class RouterAIClient:
         model = model or settings.ROUTERAI_LLM_MODEL
         if temperature is None:
             temperature = settings.ROUTERAI_LLM_TEMPERATURE
+        if max_tokens is None:
+            max_tokens = settings.ROUTERAI_LLM_MAX_TOKENS
 
         try:
             response = self.client.chat.completions.create(
@@ -105,6 +123,7 @@ class RouterAIClient:
                 temperature=temperature,
                 max_tokens=max_tokens,
                 tools=tools,
+                extra_body=_reasoning_extra_body(),
             )
             return response
 

@@ -12,6 +12,7 @@ from typing import Optional
 
 import requests
 from django.conf import settings
+from django.core.cache import cache
 
 logger = logging.getLogger(__name__)
 
@@ -102,6 +103,15 @@ class Context7Client:
         if not self.enabled or not topic:
             return ''
 
+        # Доки библиотек меняются редко: кэш убирает ~2с REST-запроса из
+        # каждого сообщения модуля (и повторного после activate_module).
+        # Пустой результат кэшируем на 5 минут — чтобы не долбить лежащий API.
+        cache_key = f'context7:docs:{topic}:{max_tokens}:{",".join(context_ids or [])}'
+        cached = cache.get(cache_key)
+        if cached is not None:
+            logger.info(f'Context7: cache hit (topic={topic!r}, {len(cached)} chars)')
+            return cached
+
         ids = list(context_ids or [])
         if not ids:
             context_id = self.resolve_context_id(topic)
@@ -116,10 +126,8 @@ class Context7Client:
                 chunks.append(doc)
 
         text = '\n\n'.join(chunks).strip()
-        if not text:
-            return ''
-            
-        if max_tokens:
+
+        if text and max_tokens:
             max_chars = max_tokens * 4
             if len(text) > max_chars:
                 # Умная обрезка: ищем последний перенос строки перед лимитом,
@@ -127,9 +135,11 @@ class Context7Client:
                 cut_idx = text.rfind('\n', 0, max_chars)
                 if cut_idx == -1 or cut_idx < max_chars * 0.8:
                     cut_idx = max_chars # Фоллбек, если переносов строки нет
-                
+
                 text = text[:cut_idx] + "\n\n... [документация обрезана из-за ограничения длины]"
-                
+
+        ttl = getattr(settings, 'CONTEXT7_CACHE_TTL', 21600)
+        cache.set(cache_key, text, ttl if text else 300)
         return text
 
     def __del__(self):

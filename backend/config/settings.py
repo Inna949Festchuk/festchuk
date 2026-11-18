@@ -219,6 +219,14 @@ ROUTERAI_LLM_MODEL = os.getenv('ROUTERAI_LLM_MODEL', 'qwen-2.5-plus')
 # Low temperature improves instruction-following for module personas without
 # materially increasing latency for the fast chat model.
 ROUTERAI_LLM_TEMPERATURE = float(os.getenv('ROUTERAI_LLM_TEMPERATURE', '0.3'))
+# qwen3.5-plus thinks by default: ~900 reasoning tokens and +10-15s even for a
+# greeting. The verified RouterAI switch is reasoning={'enabled': False}
+# (enable_thinking only partially suppresses it). When true, the parameter is
+# not sent at all — for models without reasoning support (e.g. instruct-2507).
+ROUTERAI_LLM_REASONING_ENABLED = os.getenv('ROUTERAI_LLM_REASONING_ENABLED', 'false') == 'true'
+# Output is the expensive side (plus: ~193 RUB/1M) and long markdown answers
+# also slow generation down. Brevity is additionally enforced in the prompt.
+ROUTERAI_LLM_MAX_TOKENS = int(os.getenv('ROUTERAI_LLM_MAX_TOKENS', '1000'))
 ROUTERAI_EMBEDDINGS_MODEL = os.getenv('ROUTERAI_EMBEDDINGS_MODEL', 'bge-m3')
 # TTS voice names are provider-specific: minimax/speech-* take OpenAI names
 # (alloy/nova/echo) while google/gemini-*-tts take Gemini names (Kore/Puck/Zephyr/...).
@@ -228,15 +236,20 @@ ROUTERAI_TTS_MODEL = os.getenv('ROUTERAI_TTS_MODEL', 'google/gemini-3.8-flash-li
 ROUTERAI_TTS_VOICE = os.getenv('ROUTERAI_TTS_VOICE', 'Kore')
 # Must be explicit: the default is raw PCM, which a browser cannot play.
 ROUTERAI_TTS_FORMAT = os.getenv('ROUTERAI_TTS_FORMAT', 'wav')
-ROUTERAI_STT_MODEL = os.getenv('ROUTERAI_STT_MODEL', 'whisper-large-v3')
+# turbo is 2.25x cheaper per second and faster than large-v3 at near-equal quality.
+ROUTERAI_STT_MODEL = os.getenv('ROUTERAI_STT_MODEL', 'openai/whisper-large-v3-turbo')
 
 # ============================================================
 # AI Agent
 # ============================================================
 
 CHAT_SESSION_TTL = 4 * 3600  # 4 hours
-MAX_CHAT_HISTORY = 50  # messages to keep in context
-RAG_TOP_K = 5  # number of similar documents to retrieve
+# Every history message is re-sent as input tokens on each turn; 50 messages of
+# long markdown answers made long dialogues expensive. 16 keeps enough context.
+MAX_CHAT_HISTORY = int(os.getenv('MAX_CHAT_HISTORY', '16'))
+# 5 chunks x 800 chars ~ 2k input tokens per message; top-3 suffices for the
+# small corpus (projects + articles) and cuts the RAG context by ~40%.
+RAG_TOP_K = int(os.getenv('RAG_TOP_K', '3'))
 # Upper bound on characters handed to the synthesizer per request.
 TTS_MAX_CHARS = int(os.getenv('TTS_MAX_CHARS', '4000'))
 
@@ -247,6 +260,9 @@ TTS_MAX_CHARS = int(os.getenv('TTS_MAX_CHARS', '4000'))
 CONTEXT7_API_KEY = os.getenv('CONTEXT7_API_KEY', '')
 CONTEXT7_BASE_URL = os.getenv('CONTEXT7_BASE_URL', 'https://context7.com/api/v1')
 CONTEXT7_TIMEOUT = int(os.getenv('CONTEXT7_TIMEOUT', '15'))
+# Library docs change rarely; caching them per topic removes the ~2s REST
+# round-trip from almost every module message (and the repeat after a handoff).
+CONTEXT7_CACHE_TTL = int(os.getenv('CONTEXT7_CACHE_TTL', '21600'))
 
 # ============================================================
 # Analytics
