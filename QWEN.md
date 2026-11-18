@@ -97,8 +97,7 @@ Prod: `docker compose up -d --build` (backend сам делает `migrate` + `c
 # TypeScript — ТОЛЬКО внутри контейнера (на хосте EACCES/зависание из-за root-owned tsconfig.tsbuildinfo)
 docker compose -f docker-compose.dev.yml exec -T frontend npx tsc --noEmit
 
-# ESLint
-docker compose -f docker-compose.dev.yml exec -T frontend npm run lint
+# ESLint в репозитории не настроен (next lint спрашивает конфиг интерактивно) — основной чек tsc
 
 # Django-проверки
 docker compose -f docker-compose.dev.yml exec backend python manage.py check
@@ -130,15 +129,19 @@ PRIME COORDINATOR (slug `prime-coordinator`) — дирижёр по умолч�
 1. Детерминированный (`services/routing.py`): имя модуля в тексте → ключевые слова стека (`routing_keywords`, фолбэк `DEFAULT_ROUTING_KEYWORDS`) → триггеры возврата («пока»/«bye»/«помощник» — отдельное слово, «покажи» не переключает) → закреплённый slug сессии.
 2. Семантический: LLM отвечает в персоне активного модуля и может вызвать инструмент `activate_module` для передачи диалога.
 
-`ChatSession.active_module_slug` — маркер персоны прошлого хода. Сессии по IP-hash (unique), TTL 4ч, история в `ChatMessage` (до 50 сообщений в контексте).
+`ChatSession.active_module_slug` — маркер персоны прошлого хода. Сессии по IP-hash (unique), TTL 4ч, история в `ChatMessage` (до 16 сообщений в контексте, `MAX_CHAT_HISTORY`).
 
 ### RAG и RouterAI
 
-- `DocumentEmbedding` (pgvector, 1024d), чанки ~800 символов, top-5 (`RAG_TOP_K`). Эмбеддинги генерируют Celery-задачи: `sync_project_readme`, `generate_post_embeddings`, `sync_all_projects_readme` (beat: ежедневно).
+- `DocumentEmbedding` (pgvector, 1024d), чанки ~800 символов, top-3 (`RAG_TOP_K`). Вектор запроса кэшируется в Redis (`rag:qemb:{md5}`, TTL 1ч) — защита от всплесков латентности embeddings. Эмбеддинги генерируют Celery-задачи: `sync_project_readme`, `generate_post_embeddings`, `sync_all_projects_readme` (beat: ежедневно).
 - RouterAI base URL — `https://routerai.ru/api/v1` (хост `api.routerai.ru` не резолвится с хоста).
 - TTS: имена голосов специфичны для провайдера — `google/gemini-*-tts` принимают Gemini-имена (Puck/Zephyr/Charon/…), `minimax/speech-*` — OpenAI (alloy/nova/echo). Неверное имя → 400. Google TTS всегда отдаёт WAV. Голос модуля — `AgentModule.tts_voice`, глобальный — `ROUTERAI_TTS_VOICE`. Формат `wav` обязателен (дефолт SDK — raw PCM, браузер не играет).
 - STT: multipart обязан содержать имя файла, иначе 400.
-- Context7 — REST v1 (`CONTEXT7_BASE_URL=https://context7.com/api/v1`), используется модульными агентами для актуальной документации.
+- Context7 — REST v1 (`CONTEXT7_BASE_URL=https://context7.com/api/v1`), используется модульными агентами для актуальной документации; доки кэшируются в Redis по topic (`CONTEXT7_CACHE_TTL`, 6ч).
+
+### Стриминг ответа (SSE)
+
+Чат стримится через `POST /api/chat/message/stream/` (обычный JSON-эндпоинт сохранён для совместимости). События: `meta` (slug активной персоны; повторяется после `activate_module`) → `delta` (фрагменты текста) → `done` (авторитетный итоговый текст, slug, токены, message_id); `error` при сбое. Генератор `AIAgent.process_message_stream` стримит только текст финального раунда — tool-раунды копятся молча; история и сообщение сохраняются даже при обрыве клиента (finally). `ChatWidget` парсит SSE вручную (fetch + ReadableStream, EventSource не умеет POST), батчит рендер ~60мс; TTS озвучивает полный ответ после `done` (не трогать). Обязательные детали: заголовки `Cache-Control: no-cache, no-transform` (обход compression-мидлвари Next) + `X-Accel-Buffering: no`; nginx `/api/chat/` — `proxy_buffering off`; в DRF-вьюхе override `perform_content_negotiation` (иначе `Accept: text/event-stream` → 406). **`stream_options.include_usage` не ставить** — RouterAI с ним буферизует весь ответ (TTFT 15,8с против ~1с); usage приходит в финальном чанке по умолчанию.
 
 ### Контент: seed_portfolio
 
@@ -182,3 +185,5 @@ next-intl, URL-префиксы `/ru` `/en` (localePrefix always, default ru). �
 8. Media-URL без `API_BASE_URL` указывают на `backend:8000` — браузер не открывает.
 9. RAG молча не работает без миграции pgvector (`CREATE EXTENSION vector`, колонка embedding 1024d) и пересоздания контейнеров после правок `.env` (`env_file` читается только при create).
 10. Правки SKILL-файлов `.md` не действуют, пока не синхронизированы в БД (источник истины — `AgentModule` в Admin).
+11. `stream_options.include_usage` в стриме RouterAI → буферизация всего ответа (TTFT 15,8с); usage и так приходит в финальном чанке.
+12. SSE в DRF: `Accept: text/event-stream` → 406 без override `perform_content_negotiation`; без `no-transform` в Cache-Control Next-прокси буферизует стрим.

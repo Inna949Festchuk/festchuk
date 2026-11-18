@@ -131,6 +131,47 @@ class RouterAIClient:
             logger.error(f"RouterAI tool calling error: {e}")
             raise
 
+    def chat_completion_stream(
+        self,
+        messages: list[dict],
+        tools: list[dict] | None = None,
+        model: str | None = None,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
+    ):
+        """
+        Generate a streaming chat completion.
+
+        Returns:
+            An iterator of ChatCompletionChunk objects: content deltas arrive
+            live, tool calls as indexed fragments, and the final chunk carries
+            usage (RouterAI sends it by default).
+        """
+        model = model or settings.ROUTERAI_LLM_MODEL
+        if temperature is None:
+            temperature = settings.ROUTERAI_LLM_TEMPERATURE
+        if max_tokens is None:
+            max_tokens = settings.ROUTERAI_LLM_MAX_TOKENS
+
+        # Do NOT set stream_options.include_usage: RouterAI then buffers the
+        # whole reply until completion (TTFT 15.8s vs ~1s without it, measured
+        # 2026-11-18). Usage arrives in the final chunk anyway.
+        extra_body = _reasoning_extra_body()
+
+        try:
+            return self.client.chat.completions.create(
+                model=model,
+                messages=messages,
+                temperature=temperature,
+                max_tokens=max_tokens,
+                tools=tools,
+                stream=True,
+                extra_body=extra_body,
+            )
+        except Exception as e:
+            logger.error(f"RouterAI stream error: {e}")
+            raise
+
     def embeddings(self, texts: list[str], model: str | None = None) -> list[list[float]]:
         """
         Generate embeddings for a list of texts.

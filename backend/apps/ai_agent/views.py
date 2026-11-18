@@ -2,14 +2,16 @@
 AI Agent views for REST API.
 """
 import hashlib
+import json
 import logging
 
 from django.conf import settings
 from django.core.cache import cache
 from django.db import IntegrityError
-from django.http import HttpResponse
+from django.http import HttpResponse, StreamingHttpResponse
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from rest_framework.renderers import JSONRenderer
 from rest_framework import status
 from rest_framework.permissions import AllowAny
 
@@ -135,6 +137,102 @@ class ChatMessageView(APIView):
             # from this value.
             'module_slug': agent.module_slug or '',
         })
+
+
+class ChatMessageStreamView(APIView):
+    """Send a message and stream the answer as Server-Sent Events.
+
+    Same request contract as ChatMessageView; the reply arrives incrementally:
+    meta (active module slug, may repeat after activate_module) → delta*
+    (text fragments) → done (authoritative text, slug, tokens, message_id).
+    error event on failure. The JSON endpoint stays for compatibility.
+    """
+    permission_classes = [AllowAny]
+    throttle_classes = [ClientIPScopedRateThrottle]
+    throttle_scope = 'chat'
+
+    def perform_content_negotiation(self, request, force=False):
+        # The SSE response bypasses DRF rendering; Accept: text/event-stream
+        # must not 406 against the JSON-only renderer list. Error responses
+        # (400/404) still render as JSON.
+        return JSONRenderer(), 'application/json'
+
+    def post(self, request):
+        serializer = ChatMessageSendSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        session_id = serializer.validated_data['session_id']
+        user_message = serializer.validated_data['message']
+        lang = serializer.validated_data.get('lang', 'ru')
+        module_slug = serializer.validated_data.get('module_slug', '')
+
+        try:
+            session = ChatSession.objects.get(session_id=session_id)
+        except ChatSession.DoesNotExist:
+            return Response(
+                {'error': 'Session not found'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        ChatMessage.objects.create(
+            session=session,
+            role=ChatMessage.Role.USER,
+            content=user_message,
+        )
+
+        effective_slug = resolve_module_slug(user_message, module_slug)
+        agent = AIAgent(session, lang=lang, module_slug=effective_slug)
+
+        def event_stream():
+            accumulated = ''
+            persisted = False
+            try:
+                for event, data in agent.process_message_stream(user_message):
+                    if event == 'delta':
+                        accumulated += data.get('text', '')
+                    elif event == 'done':
+                        text = data.get('text') or accumulated
+                        assistant_msg = ChatMessage.objects.create(
+                            session=session,
+                            role=ChatMessage.Role.ASSISTANT,
+                            content=text,
+                            tokens_used=data.get('tokens_used', 0),
+                        )
+                        session.touch()
+                        data['message_id'] = str(assistant_msg.pk)
+                        persisted = True
+                    elif event == 'error' and accumulated:
+                        # Keep whatever the visitor already saw on screen
+                        ChatMessage.objects.create(
+                            session=session,
+                            role=ChatMessage.Role.ASSISTANT,
+                            content=accumulated,
+                            tokens_used=0,
+                        )
+                        session.touch()
+                        persisted = True
+                    yield f'event: {event}\ndata: {json.dumps(data, ensure_ascii=False)}\n\n'
+            finally:
+                # Client disconnect mid-stream: persist the partial answer so
+                # DB history matches what the visitor saw.
+                if not persisted and accumulated:
+                    ChatMessage.objects.create(
+                        session=session,
+                        role=ChatMessage.Role.ASSISTANT,
+                        content=accumulated,
+                        tokens_used=0,
+                    )
+                    session.touch()
+
+        response = StreamingHttpResponse(
+            event_stream(), content_type='text/event-stream; charset=utf-8'
+        )
+        # no-transform skips the Next.js compression middleware (it would
+        # buffer the stream); X-Accel-Buffering disables nginx buffering.
+        response['Cache-Control'] = 'no-cache, no-transform'
+        response['X-Accel-Buffering'] = 'no'
+        return response
 
 
 class ChatTTSView(APIView):

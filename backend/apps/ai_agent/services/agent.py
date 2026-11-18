@@ -436,27 +436,25 @@ class AIAgent:
             self.session.active_module_slug = current
             self.session.save(update_fields=['active_module_slug'])
 
-    def process_message(self, user_message: str) -> tuple[str, int]:
-        """
-        Process a user message and return the AI response.
+    def _prepare(self, user_message: str) -> tuple[list[dict], list[dict], str, str]:
+        """Shared setup for both reply paths (JSON and streaming).
 
-        Returns:
-            (response_text, total_tokens_used)
+        History + persona handoff marker + user message, parallel RAG/Context7
+        retrieval, initial system prompt. Returns
+        (messages, history, rag_context, context7_docs).
         """
-        # 1. Load history
         history = self._load_history()
 
-        # 1b. Persona handoff: if the active module changed since the last
-        #     turn, state it inside the history (recency beats the system prompt).
+        # Persona handoff: if the active module changed since the last turn,
+        # state it inside the history (recency beats the system prompt).
         prev_slug = self.session.active_module_slug or ''
         if self.module and prev_slug and prev_slug != self.module_slug and history:
             history.append({'role': 'system', 'content': self._handoff_marker(prev_slug)})
 
-        # 2. Add current user message
         history.append({'role': 'user', 'content': user_message})
 
-        # 3. RAG retrieval and Context7 docs in parallel — both depend only on
-        #    the user message / active module; uncached Context7 adds ~2s.
+        # RAG retrieval and Context7 docs in parallel — both depend only on
+        # the user message / active module; uncached Context7 adds ~2s.
         with ThreadPoolExecutor(max_workers=2) as pool:
             rag_future = pool.submit(self.rag.search_similar, user_message)
             docs_future = pool.submit(self._fetch_context7_docs)
@@ -464,13 +462,23 @@ class AIAgent:
             context7_docs = docs_future.result()
         context = self.rag.build_context(rag_chunks)
 
-        # 4. Build messages (system prompt is re-built after activate_module
-        #    so the next LLM round answers as the new persona)
+        # System prompt is re-built after activate_module so the next LLM
+        # round answers as the new persona.
         messages = [
             {'role': 'system', 'content': self._build_system_prompt(user_message, context, context7_docs)}
         ] + history
+        return messages, history, context, context7_docs
 
-        # 6. Call LLM with tools (max 3 rounds of tool calling)
+    def process_message(self, user_message: str) -> tuple[str, int]:
+        """
+        Process a user message and return the AI response.
+
+        Returns:
+            (response_text, total_tokens_used)
+        """
+        messages, history, context, _docs = self._prepare(user_message)
+
+        # Call LLM with tools (max 3 rounds of tool calling)
         total_tokens = 0
         max_tool_rounds = 3
 
@@ -537,3 +545,125 @@ class AIAgent:
         self._save_history(history)
         self._persist_active_module()
         return final_text, total_tokens
+
+    def process_message_stream(self, user_message: str):
+        """Streaming variant of process_message: yields (event, data) tuples.
+
+        Events: meta (active slug; repeated after activate_module), delta
+        (answer text fragments), done (authoritative final text/slug/tokens),
+        error. Tool rounds are accumulated silently — only answer text is
+        streamed. History is persisted even on client disconnect
+        (GeneratorExit runs the finally block).
+        """
+        messages, history, context, _docs = self._prepare(user_message)
+        yield 'meta', {'module_slug': self.module_slug or ''}
+
+        total_tokens = 0
+        max_tool_rounds = 3
+        assistant_text = ''
+        try:
+            for _round in range(max_tool_rounds + 1):
+                stream = self.client.chat_completion_stream(messages=messages, tools=TOOLS)
+                content_parts: list[str] = []
+                tool_calls: dict[int, dict] = {}
+                for chunk in stream:
+                    usage = getattr(chunk, 'usage', None)
+                    if usage:
+                        total_tokens += usage.total_tokens or 0
+                    if not chunk.choices:
+                        continue
+                    delta = chunk.choices[0].delta
+                    if delta is None:
+                        continue
+                    if delta.content:
+                        content_parts.append(delta.content)
+                        yield 'delta', {'text': delta.content}
+                    for tc in delta.tool_calls or []:
+                        slot = tool_calls.setdefault(tc.index, {'id': '', 'name': '', 'arguments': ''})
+                        if tc.id:
+                            slot['id'] = tc.id
+                        if tc.function:
+                            if tc.function.name:
+                                slot['name'] = tc.function.name
+                            if tc.function.arguments:
+                                slot['arguments'] += tc.function.arguments
+
+                assistant_text = ''.join(content_parts)
+                if not tool_calls:
+                    break
+
+                # Tool round: replay the assistant message with its tool_calls
+                messages.append({
+                    'role': 'assistant',
+                    'content': assistant_text or None,
+                    'tool_calls': [
+                        {
+                            'id': tool_calls[i]['id'],
+                            'type': 'function',
+                            'function': {
+                                'name': tool_calls[i]['name'],
+                                'arguments': tool_calls[i]['arguments'],
+                            },
+                        }
+                        for i in sorted(tool_calls)
+                    ],
+                })
+
+                slug_before = self.module_slug
+                for i in sorted(tool_calls):
+                    tc = tool_calls[i]
+                    try:
+                        func_args = json.loads(tc['arguments'])
+                    except json.JSONDecodeError:
+                        func_args = {}
+                    logger.info(f"Agent calling tool: {tc['name']}({func_args})")
+                    if tc['name'] == 'activate_module':
+                        result = self._activate_module(func_args.get('module_slug', ''))
+                    else:
+                        result = _execute_tool(tc['name'], func_args, lang=self.lang)
+                    messages.append({
+                        'role': 'tool',
+                        'tool_call_id': tc['id'],
+                        'content': result,
+                    })
+
+                # activate_module may have swapped the persona mid-request:
+                # tell the client (TTS voice) and rebuild the system prompt.
+                if self.module_slug != slug_before:
+                    yield 'meta', {'module_slug': self.module_slug or ''}
+                    messages[0] = {
+                        'role': 'system',
+                        'content': self._build_system_prompt(
+                            user_message, context, self._fetch_context7_docs()
+                        ),
+                    }
+            else:
+                # Loop exhausted without a final answer — force a short summary
+                # round (mirrors the non-streaming fallback), still streamed.
+                messages.append({
+                    'role': 'user',
+                    'content': 'Сформулируй краткий ответ на основе имеющихся данных.',
+                })
+                content_parts = []
+                for chunk in self.client.chat_completion_stream(messages=messages, max_tokens=500):
+                    usage = getattr(chunk, 'usage', None)
+                    if usage:
+                        total_tokens += usage.total_tokens or 0
+                    if chunk.choices and chunk.choices[0].delta and chunk.choices[0].delta.content:
+                        content_parts.append(chunk.choices[0].delta.content)
+                        yield 'delta', {'text': chunk.choices[0].delta.content}
+                assistant_text = ''.join(content_parts)
+
+            yield 'done', {
+                'text': assistant_text,
+                'module_slug': self.module_slug or '',
+                'tokens_used': total_tokens,
+            }
+        except Exception as e:
+            logger.error(f"AI agent stream error: {e}")
+            yield 'error', {'error': 'AI service temporarily unavailable'}
+        finally:
+            if assistant_text:
+                history.append({'role': 'assistant', 'content': assistant_text})
+                self._save_history(history)
+            self._persist_active_module()

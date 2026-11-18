@@ -4,11 +4,13 @@ RAG (Retrieval-Augmented Generation) service.
 Handles document chunking, embedding storage/retrieval via pgvector,
 and context assembly for the AI agent.
 """
+import hashlib
 import logging
 import math
 import re
 
 from django.conf import settings
+from django.core.cache import cache
 from django.db import connection
 
 from .router_ai import RouterAIClient
@@ -161,11 +163,18 @@ class RAGService:
 
         top_k = top_k or settings.RAG_TOP_K
 
-        try:
-            query_embedding = self.client.embeddings([query])[0]
-        except Exception as e:
-            logger.error(f"Query embedding error: {e}")
-            return []
+        # RouterAI embeddings latency spikes (observed 0.8s → 5.7s within one
+        # session); repeated questions (quick prompts, follow-ups) skip the
+        # API call entirely via a short-lived Redis cache of the query vector.
+        cache_key = 'rag:qemb:' + hashlib.md5(query.strip().lower().encode()).hexdigest()
+        query_embedding = cache.get(cache_key)
+        if query_embedding is None:
+            try:
+                query_embedding = self.client.embeddings([query])[0]
+            except Exception as e:
+                logger.error(f"Query embedding error: {e}")
+                return []
+            cache.set(cache_key, query_embedding, 3600)
 
         # Build filter
         where_clause = ""

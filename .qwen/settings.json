@@ -89,7 +89,21 @@
       "Bash(.decode)",
       "Bash(r'unicode-range:\\s*([^;]+);',body)",
       "Bash(um.group)",
-      "Bash(out_css.append)"
+      "Bash(out_css.append)",
+      "Bash(body)",
+      "Bash(.encode(), *)",
+      "Bash(with *)",
+      "Bash(as *)",
+      "Bash(r)",
+      "Bash(['session_id'])",
+      "Bash('content-type')",
+      "Bash('cache-control')",
+      "Bash('x-accel-buffering')",
+      "Bash(.rstrip)",
+      "Bash(elif *)",
+      "Bash('data:')",
+      "Bash(-t0)",
+      "Bash(stream_test)"
     ]
   },
   "$version": 4

@@ -44,11 +44,14 @@ export default function ChatWidget() {
   const [ttsEnabled, setTtsEnabled] = useState(true);
   const [sessionError, setSessionError] = useState(false);
   const [activeModuleSlug, setActiveModuleSlug] = useState<string | null>(null);
+  // Id of the assistant message currently being streamed (null when idle).
+  const [streamingId, setStreamingId] = useState<string | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
+  const abortRef = useRef<AbortController | null>(null);
 
   const quickPrompts = [t('q1'), t('q2'), t('q3'), t('q4')];
   const timeLocale = locale === 'ru' ? 'ru-RU' : 'en-US';
@@ -72,6 +75,7 @@ export default function ChatWidget() {
 
     return () => {
       if (audioRef.current) audioRef.current.pause();
+      abortRef.current?.abort();
     };
   }, [initSession]);
 
@@ -191,49 +195,140 @@ export default function ChatWidget() {
       if (!text) setInput('');
       setLoading(true);
 
+      const controller = new AbortController();
+      abortRef.current = controller;
+
+      // Streaming reply state lives in locals/refs: React state is flushed in
+      // ~60ms batches so ReactMarkdown is not re-parsed on every token.
+      let msgId: string | null = null;
+      let fullText = '';
+      let finalSlug = activeModuleSlug ?? '';
+      let flushTimer: ReturnType<typeof setInterval> | null = null;
+
+      const flush = () => {
+        if (!msgId) return;
+        const id = msgId;
+        const snapshot = fullText;
+        setMessages((prev) =>
+          prev.map((m) => (m.id === id ? {...m, content: snapshot} : m)),
+        );
+      };
+      const stopFlush = () => {
+        if (flushTimer) {
+          clearInterval(flushTimer);
+          flushTimer = null;
+        }
+      };
+
       try {
-        const res = await fetch('/api/chat/message/', {
+        const res = await fetch('/api/chat/message/stream/', {
           method: 'POST',
-          headers: {'Content-Type': 'application/json'},
+          headers: {'Content-Type': 'application/json', Accept: 'text/event-stream'},
           body: JSON.stringify({
             session_id: sessionId,
             message,
             lang: locale,
             module_slug: activeModuleSlug || '',
           }),
+          signal: controller.signal,
         });
+        if (!res.ok || !res.body) throw new Error('Failed');
 
-        if (!res.ok) throw new Error('Failed');
-        const data = await res.json();
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+        let finished = false;
 
-        const assistantMsg: Message = {
-          id: crypto.randomUUID(),
-          role: 'assistant',
-          content: data.message?.content || t('errNoResponse'),
-          timestamp: new Date(),
-        };
-        setMessages((prev) => [...prev, assistantMsg]);
-        // The backend may have switched the active module by the user's text
-        // (e.g. "поговорить с NEURAL SYNC"), or handed the dialogue back to
-        // the global NEURAL ASSIST (empty slug after "пока" / "помощник"):
-        // sync the state in both directions and voice this reply with the
-        // effective voice, not the stale closed-over one.
-        const effectiveSlug: string = data.module_slug || '';
-        if (effectiveSlug !== (activeModuleSlug ?? '')) {
-          setActiveModuleSlug(effectiveSlug || null);
+        while (!finished) {
+          const {done, value} = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, {stream: true});
+
+          let sep: number;
+          while ((sep = buffer.indexOf('\n\n')) >= 0) {
+            const rawEvent = buffer.slice(0, sep);
+            buffer = buffer.slice(sep + 2);
+            let eventName = 'message';
+            const dataLines: string[] = [];
+            for (const line of rawEvent.split('\n')) {
+              if (line.startsWith('event:')) eventName = line.slice(6).trim();
+              else if (line.startsWith('data:')) dataLines.push(line.slice(5).trim());
+            }
+            if (dataLines.length === 0) continue;
+            let data: {text?: string; module_slug?: string; error?: string};
+            try {
+              data = JSON.parse(dataLines.join('\n'));
+            } catch {
+              continue;
+            }
+
+            if (eventName === 'meta') {
+              // The backend may switch the persona mid-reply (activate_module)
+              // or hand back to the coordinator — sync the slug both ways so
+              // the post-stream TTS uses the effective voice.
+              finalSlug = data.module_slug || '';
+              setActiveModuleSlug(finalSlug || null);
+            } else if (eventName === 'delta') {
+              fullText += data.text || '';
+              if (!msgId) {
+                msgId = crypto.randomUUID();
+                const id = msgId;
+                setMessages((prev) => [
+                  ...prev,
+                  {id, role: 'assistant', content: '', timestamp: new Date()},
+                ]);
+                setStreamingId(id);
+                flushTimer = setInterval(flush, 60);
+              }
+            } else if (eventName === 'done') {
+              finished = true;
+              stopFlush();
+              // done.text is authoritative (reconciles any lost deltas)
+              const text = data.text || fullText || t('errNoResponse');
+              const slug = data.module_slug ?? finalSlug;
+              if (msgId) {
+                const id = msgId;
+                setMessages((prev) =>
+                  prev.map((m) => (m.id === id ? {...m, content: text} : m)),
+                );
+              } else {
+                setMessages((prev) => [
+                  ...prev,
+                  {id: crypto.randomUUID(), role: 'assistant', content: text, timestamp: new Date()},
+                ]);
+              }
+              setActiveModuleSlug(slug || null);
+              playResponse(text, slug);
+              reader.cancel();
+            } else if (eventName === 'error') {
+              throw new Error(data.error || 'stream error');
+            }
+          }
         }
-        playResponse(assistantMsg.content, effectiveSlug);
+        // Connection ended without a done event: keep whatever was streamed
+        if (!finished) {
+          stopFlush();
+          flush();
+        }
       } catch {
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: crypto.randomUUID(),
-            role: 'assistant',
-            content: t('errAi'),
-            timestamp: new Date(),
-          },
-        ]);
+        stopFlush();
+        if (msgId && fullText) {
+          flush();
+        } else if (!controller.signal.aborted) {
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: crypto.randomUUID(),
+              role: 'assistant',
+              content: t('errAi'),
+              timestamp: new Date(),
+            },
+          ]);
+        }
       } finally {
+        stopFlush();
+        abortRef.current = null;
+        setStreamingId(null);
         setLoading(false);
       }
     },
@@ -320,6 +415,8 @@ export default function ChatWidget() {
 
   const clearHistory = () => {
     stopSpeaking();
+    abortRef.current?.abort();
+    setStreamingId(null);
     setMessages([]);
   };
 
@@ -404,7 +501,9 @@ export default function ChatWidget() {
                         : speaking
                           ? 'SYNTH VOICE OUTPUT...'
                           : loading
-                            ? 'QUERYING VECTOR MATRIX...'
+                            ? streamingId
+                              ? 'LIVE TRANSMISSION...'
+                              : 'QUERYING VECTOR MATRIX...'
                             : 'UPLINK STABLE • NODE 44-A'}
                     </div>
                   </div>
@@ -535,7 +634,7 @@ export default function ChatWidget() {
                   </motion.div>
                 ))}
 
-                {loading && (
+                {loading && !streamingId && (
                   <div className="flex items-start gap-2">
                     <div className="px-3.5 py-2.5 bg-[#0e162d]/95 border border-neon-cyan/40 flex items-center gap-2.5">
                       <Loader2 className="w-4 h-4 text-neon-cyan animate-spin" />

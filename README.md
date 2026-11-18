@@ -6,7 +6,7 @@
 
 - **Портфолио** — проекты в Bento Grid, рендеринг README из GitHub, лайки и просмотры
 - **Технический блог** — Markdown (таблицы, код, изображения), озвучка статей (TTS)
-- **AI-ассистент** — RAG (pgvector), Function Calling, голосовой ввод (STT) и озвучка ответов (TTS)
+- **AI-ассистент** — RAG (pgvector), Function Calling, стриминг ответа (SSE), голосовой ввод (STT) и озвучка (TTS)
 - **Киберпанк UI** — неоновые акценты, glassmorphism, анимации Framer Motion
 - **i18n** — RU / EN
 
@@ -18,7 +18,7 @@
 | Backend | Python 3.12, Django 5, DRF, Celery + Beat |
 | БД | PostgreSQL 15 + pgvector |
 | Кэш / брокер | Redis 7 |
-| AI | RouterAI (routerai.ru) — qwen-2.5-plus, bge-m3, whisper, tts-1-hd |
+| AI | RouterAI (routerai.ru) — qwen3.5-plus (LLM, reasoning off), bge-m3 (RAG), whisper-large-v3-turbo (STT), gemini-flash-lite-tts (TTS), Context7 (доки библиотек) |
 | Инфра | Docker Compose, Nginx |
 
 ## 📁 Структура (monorepo)
@@ -31,14 +31,15 @@ feshchuk/
 │   │   ├── projects/       # модель Project, API, лайки/просмотры
 │   │   ├── blog/           # модель Post, Markdown, TTS
 │   │   ├── analytics/      # анонимные лайки/просмотры (Redis)
-│   │   └── ai_agent/       # RAG, Function Calling, STT/TTS, Celery tasks
+│   │   └── ai_agent/       # RAG, модули-персоны, стриминг (SSE), STT/TTS, Celery tasks
 │   ├── config/             # settings, urls, celery, wsgi/asgi
 │   ├── Dockerfile
 │   ├── manage.py
 │   └── requirements.txt
 ├── frontend/               # Next.js
-│   ├── app/                # страницы (главная, проекты, блог, контакты)
-│   ├── components/         # Header, ChatWidget
+│   ├── app/[locale]/       # страницы RU/EN (главная, проекты, блог, контакты, модули)
+│   ├── components/         # Header, ChatWidget, HUD-плеер, …
+│   ├── i18n/ + messages/   # next-intl: ru.json, en.json
 │   ├── Dockerfile
 │   ├── next.config.js
 │   ├── tailwind.config.js
@@ -93,7 +94,8 @@ POST /api/posts/{id}/like/       # лайк
 POST /api/posts/{id}/tts/        # озвучка (TTS)
 
 POST /api/chat/session/          # создать сессию чата
-POST /api/chat/message/          # отправить сообщение
+POST /api/chat/message/          # отправить сообщение (полный JSON-ответ)
+POST /api/chat/message/stream/   # отправить сообщение (потоковый ответ SSE)
 GET  /api/chat/history/{id}/     # история диалога
 POST /api/chat/voice/stt/        # Speech-to-Text
 
@@ -104,10 +106,12 @@ GET  /api/health/                # health check
 ## 🤖 AI-агент
 
 AI-ассистент использует:
-- **RAG** — векторные эмбеддинги README проектов и статей (pgvector), top-5 retrieval
-- **Function Calling** — `get_project_stats`, `list_projects`, `search_blog_posts`, `get_blog_post`
+- **RAG** — векторные эмбеддинги README проектов и статей (pgvector), top-3 retrieval
+- **Function Calling** — `get_project_stats`, `list_projects`, `search_blog_posts`, `get_blog_post`, `activate_module`
 - **Память** — история диалога в Redis (TTL 4 часа)
-- **Голос** — Web Audio API → STT (Whisper) → LLM → TTS (tts-1-hd)
+- **Стриминг** — ответ приходит SSE-потоком по мере генерации: первые слова за ~1–3 с
+- **Context7** — актуальные доки библиотек (Django 5, Next.js, LangChain) в промптах модулей
+- **Голос** — Web Audio API → STT (Whisper turbo) → LLM → TTS (Gemini)
 
 Celery задачи:
 - `sync_project_readme` — скачивание README из GitHub + регенерация эмбеддингов
@@ -117,7 +121,7 @@ Celery задачи:
 ## 🔒 Безопасность
 
 - Анонимные лайки/просмотры: hash IP + object_id в Redis, TTL 24ч
-- Rate limiting: Nginx (30 r/s API, 5 r/s AI-эндпоинты) + DRF (100/hour anon)
+- Rate limiting: Nginx (30 r/s API, 5 r/s AI-эндпоинты) + DRF по IP: чтение 2000/час, запись 120/час, AI (чат/TTS/STT) 30/час
 - Без форм сбора ПДн (ФЗ-152)
 - Cookie-баннер для Яндекс.Метрики (запланировано)
 
@@ -219,5 +223,7 @@ AI-ассистент — это **PRIME COORDINATOR**, «дирижёр» по�
 | Синтез по контексту: «какой проект сложнее по бэкенду и что перенести в другой?» | 20,3 с / 0,238 ₽ | 7,2 с / 0,081 ₽ | Одинаковый вывод; без «мышления» ответ конкретнее |
 
 **Вывод:** для маршрутизации и ответов из контекста качество не страдает — режим без «мышления» в 3–9 раз быстрее и в 3–7 раз дешевле. «Мышление» нужно для длинных логических цепочек и математики, которых в задачах портфолио-бота нет.
+
+Ответы стримингуются (SSE): на длинном ответе (800 токенов) текст начинается появляться через ~1,2 с вместо ~13,5 с ожидания полного ответа; озвучка TTS по-прежнему после завершения.
 
 Режим и длина ответа настраиваются в `.env` без правки кода: `ROUTERAI_LLM_REASONING_ENABLED`, `ROUTERAI_LLM_MAX_TOKENS`.
