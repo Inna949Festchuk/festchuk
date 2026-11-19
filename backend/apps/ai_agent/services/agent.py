@@ -38,17 +38,30 @@ SYSTEM_PROMPT = """\
 # Language instruction appended to the system prompt (driven by the UI locale).
 # The language is pinned: user messages may arrive in another language (voice
 # transcription glitches, EN quick phrases) — the reply must not follow them.
+# Full foreign-language sentences are banned outright: the model kept finishing
+# a thought in English right after an English name/term ("…LangChain. As
+# mentioned above, the pipeline…" — 2026-11-19), so the rule names the exact
+# failure pattern, not just the target language.
 LANGUAGE_INSTRUCTIONS = {
     'ru': (
         'Язык ответа: отвечай строго на русском языке. Язык ответа закреплён: '
         'не переключайся на язык сообщения пользователя — если пользователь пишет '
         'по-английски или на другом языке (в том числе из-за ошибок распознавания '
-        'голоса), всё равно отвечай по-русски.'
+        'голоса), всё равно отвечай по-русски. Англоязычные вкрапления — только '
+        'названия, термины, аббревиатуры и код, встроенные в русские предложения; '
+        'сразу после английского слова продолжай фразу по-русски. Полностью '
+        'английские предложения, обороты и связки («as mentioned above», '
+        '«in summary», «let me explain» и т. п.) в ответе запрещены — заменяй '
+        'их русскими.'
     ),
     'en': (
-        'Response language: respond strictly in English. The language is pinned: '
-        'do not switch to the user\'s message language — if the user writes in Russian '
-        'or another language (including voice-transcription glitches), still reply in English.'
+        "Response language: respond strictly in English. The language is pinned: "
+        "do not switch to the user's message language — if the user writes in Russian "
+        "or another language (including voice-transcription glitches), still reply in "
+        "English. Non-English insertions are allowed only as names, terms, "
+        "abbreviations and code embedded in English sentences; immediately after a "
+        "foreign word continue the sentence in English. Full sentences, phrases or "
+        "connectives in another language are forbidden."
     ),
 }
 
@@ -138,7 +151,7 @@ MARKDOWN_FORMAT_INSTRUCTIONS = """
 - По умолчанию отвечай кратко (до ~150 слов). Развёрнутые таблицы, длинные списки и блоки кода — только если пользователь просит подробнее.
 - Начинай сразу с сути: первое предложение — результат или пояснение к таблице. Не начинай ответ с анонса собственных действий («теперь сопоставлю», «сейчас разберу», «я проанализировал», «получил списки», «давай посмотрим» — в любых словоформах и порядке слов).
 - Не показывай внутренние ID проектов и статей в тексте ответа (даже если в предыдущих сообщениях диалога они встречались) — они нужны только для вызова инструментов. Называй записи по заголовку/названию.
-- Не повторяй название проекта или статьи несколько раз в одном ответе: назови один раз, дальше — по теме («первый проект», «статья про спутниковые снимки»). Ответ будет озвучен голосом: пиши цельным языком диалога, англоязычные вкрапления — только названия, аббревиатуры и термины; не цитируй описания проектов на английском — пересказывай по-русски. Англоязычный термин ставь в середине предложения, а не в начале: не «RAG: фреймворк упрощает…», а «векторный поиск (RAG) упрощает…» — иначе озвучка переключает фрагмент на английский.
+- Не повторяй название проекта или статьи несколько раз в одном ответе: назови один раз, дальше — по теме («первый проект», «статья про спутниковые снимки»). Ответ будет озвучен голосом: пиши цельным языком диалога, англоязычные вкрапления — только названия, аббревиатуры и термины; не цитируй описания проектов на английском — пересказывай по-русски. Англоязычный термин ставь в середине предложения, а не в начале: не «RAG: фреймворк упрощает…», а «векторный поиск (RAG) упрощает…» — иначе озвучка переключает фрагмент на английский. Это правило действует и для КАЖДОГО пункта списка — пункт списка это то же предложение: не начинай его с английского названия или термина, сначала русская формулировка, английское — в скобках или в середине: не «SSR/ISR — SEO для блога», а «серверный рендеринг (SSR/ISR) — SEO для блога»; не «TypeScript — строгая типизация», а «строгая типизация (TypeScript)»; не «Tailwind + Framer Motion — неоновая эстетика», а «неоновая эстетика (Tailwind + Framer Motion)». Это касается и названий категорий/уровней в списках: не «Per-view — декоратор…», а «кэш уровня view (per-view) — декоратор…». Не переходи на английский внутри мысли: после английского названия или термина продолжай предложение по-русски, полностью английские предложения и связки (даже одно) запрещены.
 """
 
 # Short style restatement placed right before the persona anchor: the key
@@ -152,23 +165,200 @@ STYLE_RULES = {
         "проанализировал», «сейчас разберу» и любые другие формулировки этого рода), "
         "в том числе деепричастиями о собственной работе: не «Проанализировав список, "
         "выделяю…», а «В портфолио четыре основных направления: …». "
-        "Внутренние ID записей в ответе не показывай."
+        "Внутренние ID записей в ответе не показывай. "
+        "Ни одно предложение и ни один пункт списка не начинай с английского слова: "
+        "сначала русская формулировка, английское название или термин — в скобках "
+        "или в середине («строгая типизация (TypeScript)», а не «TypeScript — "
+        "строгая типизация»). Названия категорий и уровней в списках — тоже: "
+        "не «Per-view — декоратор…», а «кэш уровня view (per-view) — декоратор…»; "
+        "не «Low-level API — …», а «низкоуровневый API (low-level) — …» — "
+        "иначе озвучка переключает фрагмент на английский."
     ),
     'en': (
         "Reply style: the first sentence is the result or the table explanation, never an "
         "announcement of your own actions («let me now…», «I analyzed…», «Having analyzed "
         "the list, I highlight…» and the like). "
-        "Do not show internal record IDs in the answer."
+        "Do not show internal record IDs in the answer. "
+        "Never start a sentence or a list item with a word in another language: lead "
+        "with English and put non-English names and terms in parentheses or mid-sentence."
     ),
 }
 
-# Context7 library topic per module slug, so the module-specific agent can pull
-# fresh documentation for its own stack. A missing slug means "no Context7
+# Context7 library topic per module slug: fresh docs for the module's own
+# stack, auto-injected into its prompt every turn. The mapping is
+# configuration, not code — settings.CONTEXT7_MODULE_TOPICS, env-overridable
+# via the CONTEXT7_MODULE_TOPICS JSON. A missing slug means "no Context7
 # topic for this module" (the agent still answers from RAG + SKILL).
-MODULE_CONTEXT7_TOPIC = {
-    'hyper-drive': 'Django 5',
-    'neural-sync': 'LangChain',
-    'omni-vision': 'Next.js',
+MODULE_CONTEXT7_TOPIC = dict(getattr(settings, 'CONTEXT7_MODULE_TOPICS', None) or {})
+
+# Context7 self-awareness. The SKILLs name Context7 as a capability, but the
+# model cannot find it in TOOLS — so agents answered «no direct access to
+# Context7, only portfolio tools» while auto-injected docs sat right in their
+# own prompt (incident 2026-11-19: NEURAL SYNC denied Context7 access). The
+# actual access mode is dynamic (topic per module, best-effort fetch), so it
+# is stated here in code, per turn, for every persona — not in the SKILLs.
+CONTEXT7_AWARENESS = {
+    'ru': {
+        'connected': (
+            "Context7: ты подключён к актуальной документации по теме «{topic}» — "
+            "блок «Свежая документация (Context7, …)» подгружается в твой промпт "
+            "автоматически, каждый ход, без просьбы пользователя. Опирайся на неё "
+            "ОБЯЗАТЕЛЬНО и в первую очередь на ЛЮБОЙ вопрос по твоему стеку — "
+            "«как сделать», «как улучшить проект», «актуально ли X», «правильно ли "
+            "подобрано», «есть ли свежий способ» — даже если пользователь не "
+            "упоминает Context7. Если документация противоречит твоей внутренней "
+            "памяти — доверься документации, она свежее. Приоритет источников: "
+            "общие технические вопросы («как правильно настроить», «как вообще», "
+            "best practices) закрывай связкой Context7 + память — сначала "
+            "документация, твоя память дополняет то, чего в доках нет; не отвечай "
+            "из одной памяти, пока доки подгружены и релевантны. RAG-контекст — "
+            "ТОЛЬКО для вопросов о том, как устроено и настроено в этом портфолио, "
+            "не для общих best practices. Если вопрос касается библиотеки, которой "
+            "нет в твоём автоматическом контексте (CORS → django-cors-headers, "
+            "rate limiting → Django REST Framework, кэш → Django), — вызови "
+            "инструмент fetch_context7_docs с названием библиотеки и опирайся на "
+            "полученные доки. Для темы «{topic}» инструмент не вызывай — она уже "
+            "в промпте. Если "
+            "пользователь просит «подключиться к Context7» или «использовать "
+            "Context7» — не говори, что доступа нет: документация по теме «{topic}» "
+            "уже в твоём контексте, объясни это и ответь, опираясь на неё. Не "
+            "выдавай документацию библиотек за новости индустрии."
+        ),
+        'unavailable': (
+            "Context7: у твоей роли есть тема документации «{topic}», но в этом "
+            "промпте свежая документация НЕ подгружена — источник временно "
+            "недоступен. Не заявляй, что подключён к Context7 автоматически. "
+            "Ты можешь запросить доки нужной библиотеки инструментом "
+            "fetch_context7_docs; если документация не получена — честно скажи, "
+            "что свежая документация недоступна, и ответь из памяти. Приоритет "
+            "источников: общие технические вопросы — Context7 (через инструмент) "
+            "+ твоя память; RAG-контекст — только для вопросов о том, как "
+            "устроено и настроено в этом портфолио."
+        ),
+        'no_access': (
+            "Context7: к твоей роли свежая документация автоматически НЕ "
+            "подгружается. Но ты можешь запросить доки конкретной библиотеки "
+            "инструментом fetch_context7_docs (тема — название библиотеки). "
+            "Если пользователь просит «подключиться к Context7» — объясни: "
+            "автоматических доков у твоей роли нет, но по запросу ты получишь "
+            "доки нужной библиотеки; при необходимости предложи модуль, который "
+            "закрывает тему (NEURAL SYNC — AI/LLM, HYPER DRIVE — бэкенд, "
+            "OMNI VISION — фронтенд). Приоритет источников: общие технические "
+            "вопросы — Context7 (через инструмент) + твоя память; RAG-контекст — "
+            "только для вопросов о том, как устроено и настроено в этом портфолио."
+        ),
+    },
+    'en': {
+        'connected': (
+            "Context7: you are connected to up-to-date documentation for the topic "
+            "'{topic}' — the documentation block is injected into your prompt "
+            "automatically, every turn, without the user asking. You MUST rely on it "
+            "first for ANY question about your stack — 'how to do it', 'how to "
+            "improve the project', 'is X up to date', 'is the framework the right "
+            "choice', 'is there a newer way' — even when the user never mentions "
+            "Context7. When the documentation conflicts with your internal "
+            "knowledge, trust the documentation: it is newer. Source priority: "
+            "general technical questions ('how to configure it correctly', 'how "
+            "does it work in general', best practices) are answered with Context7 "
+            "+ your own knowledge — documentation first, your knowledge supplements "
+            "what the docs do not cover; do not answer from knowledge alone while "
+            "relevant docs are injected. The RAG context is ONLY for questions "
+            "about how things are built and configured in this portfolio, not for "
+            "general best practices. If the question concerns a library that is "
+            "not in your automatic context (CORS → django-cors-headers, rate "
+            "limiting → Django REST Framework, caching → Django), call the "
+            "fetch_context7_docs tool with the library name and rely on the "
+            "returned docs. Do not call it for '{topic}' — it is already in your "
+            "prompt. If the user asks you to "
+            "'connect to Context7' or 'use Context7' — do not say you have no "
+            "access: the documentation for '{topic}' is already in your context; "
+            "explain that and answer based on it. Do not present library "
+            "documentation as industry news."
+        ),
+        'unavailable': (
+            "Context7: your role has a documentation topic ('{topic}'), but no "
+            "fresh documentation was injected into this prompt — the source is "
+            "temporarily unavailable. Do not claim you are connected to Context7 "
+            "automatically. You can request docs for the needed library with the "
+            "fetch_context7_docs tool; if no documentation is returned, say "
+            "honestly that fresh documentation is unavailable and answer from "
+            "your knowledge. Source priority: general technical questions — "
+            "Context7 (via the tool) + your own knowledge; the RAG context — "
+            "only for questions about how things are built and configured in "
+            "this portfolio."
+        ),
+        'no_access': (
+            "Context7: no fresh documentation is injected for your role "
+            "automatically. However, you can request docs for a specific library "
+            "with the fetch_context7_docs tool (topic = library name). If the "
+            "user asks you to 'connect to Context7', explain: your role has no "
+            "automatic docs, but you can fetch docs for any library on request; "
+            "when relevant, suggest the module that covers the topic (NEURAL "
+            "SYNC — AI/LLM, HYPER DRIVE — backend, OMNI VISION — frontend). "
+            "Source priority: general technical questions — Context7 (via the "
+            "tool) + your own knowledge; the RAG context — only for questions "
+            "about how things are built and configured in this portfolio."
+        ),
+    },
+}
+
+# Verified stack facts injected into every persona's prompt: agents kept
+# inventing stack details from internal memory when Context7 docs did not
+# cover the topic (2026-11-19: neural-sync called the TTS «tts-1-hd» instead
+# of gemini-tts; hyper-drive denied Django's built-in Redis cache backend and
+# recommended django-redis). AI-config lines are built from settings at
+# prompt-build time (see AIAgent._stack_facts) so they never drift from .env.
+STACK_FACTS = {
+    'ru': (
+        "Факты о стеке этого портфолио (проверены и актуальны; они приоритетнее "
+        "твоей внутренней памяти — не выдумывай названия моделей, библиотек и версий):\n"
+        "- Backend: Python 3.12, Django 5.0 + DRF, Celery + django-celery-beat, "
+        "Channels/Daphne, gunicorn в prod.\n"
+        "- База данных: PostgreSQL 15 + pgvector.\n"
+        "- Redis 7: кэш — DB0, брокер Celery — DB1, результаты задач — DB2. "
+        "Кэш работает на встроенном бэкенде Django "
+        "`django.core.cache.backends.redis.RedisCache` (Django 4.0+), "
+        "сторонний django-redis НЕ используется.\n"
+        "- Frontend: Next.js 14.2 (App Router, standalone), React 18, TypeScript, "
+        "Tailwind CSS, Framer Motion, next-intl (RU/EN), react-markdown + remark-gfm "
+        "+ rehype-highlight, axios; display-шрифт Geologica (self-hosted).\n"
+        "- Инфраструктура: Docker Compose (dev/prod), Nginx в prod "
+        "(reverse proxy, rate limiting, static/media).\n"
+        "- AI-провайдер: RouterAI — OpenAI-совместимый API (routerai.ru/api/v1).\n"
+        "{ai_facts}"
+        "- Context7: REST v1 (context7.com/api/v1); свежая документация "
+        "подгружается в промпт автоматически по теме модуля, инструмент "
+        "fetch_context7_docs запрашивает доки произвольной библиотеки по требованию.\n"
+        "Эти факты описывают данный проект. Для общих технических вопросов "
+        "действует приоритет источников (Context7 + память). Если факта нет ни "
+        "здесь, ни в документации — честно скажи, что не знаешь, не выдумывай."
+    ),
+    'en': (
+        "Verified facts about this portfolio's stack (current; they take priority "
+        "over your internal knowledge — do not invent model names, libraries or "
+        "versions):\n"
+        "- Backend: Python 3.12, Django 5.0 + DRF, Celery + django-celery-beat, "
+        "Channels/Daphne, gunicorn in prod.\n"
+        "- Database: PostgreSQL 15 + pgvector.\n"
+        "- Redis 7: cache — DB0, Celery broker — DB1, task results — DB2. "
+        "Caching uses Django's built-in backend "
+        "`django.core.cache.backends.redis.RedisCache` (Django 4.0+); "
+        "the third-party django-redis is NOT used.\n"
+        "- Frontend: Next.js 14.2 (App Router, standalone), React 18, TypeScript, "
+        "Tailwind CSS, Framer Motion, next-intl (RU/EN), react-markdown + remark-gfm "
+        "+ rehype-highlight, axios; display font Geologica (self-hosted).\n"
+        "- Infrastructure: Docker Compose (dev/prod), Nginx in prod "
+        "(reverse proxy, rate limiting, static/media).\n"
+        "- AI provider: RouterAI — an OpenAI-compatible API (routerai.ru/api/v1).\n"
+        "{ai_facts}"
+        "- Context7: REST v1 (context7.com/api/v1); fresh documentation is "
+        "injected into the prompt automatically per module topic; the "
+        "fetch_context7_docs tool fetches docs for any library on demand.\n"
+        "These facts describe this project. General technical questions follow "
+        "the source priority (Context7 + your knowledge). If a fact is neither "
+        "here nor in the documentation, say honestly that you do not know — "
+        "do not invent it."
+    ),
 }
 
 # Tool definitions for function calling
@@ -279,6 +469,36 @@ TOOLS = [
             },
         },
     },
+    {
+        "type": "function",
+        "function": {
+            "name": "fetch_context7_docs",
+            "description": (
+                "Получить свежую документацию библиотеки или фреймворка из Context7 "
+                "по произвольной теме. Вызывай, когда вопрос касается конкретной "
+                "библиотеки, которой нет в блоке «Свежая документация» твоего промпта "
+                "(например: CORS → django-cors-headers, rate limiting/throttling → "
+                "Django REST Framework, кэширование → Django, очереди → Celery). "
+                "topic — название библиотеки/фреймворка, а не вопрос целиком. "
+                "Не вызывай для темы, уже подгруженной в промпт, и для вопросов о "
+                "проектах/статьях портфолио (для них — list_projects, list_blog_posts "
+                "и др.). Полученная документация актуальнее твоей внутренней памяти."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "topic": {
+                        "type": "string",
+                        "description": (
+                            "Название библиотеки/фреймворка, например "
+                            "'django-cors-headers', 'Django REST Framework', 'Celery'"
+                        ),
+                    },
+                },
+                "required": ["topic"],
+            },
+        },
+    },
 ]
 
 
@@ -357,6 +577,28 @@ def _execute_tool(name: str, arguments: dict[str, Any], lang: str = 'ru') -> str
                 "content": content,
                 "tags": post.tags,
             }, ensure_ascii=False)
+
+        elif name == "fetch_context7_docs":
+            # On-demand Context7 lookup: the auto-injected topic covers only the
+            # module's own stack, adjacent libraries (CORS, throttling, ...) are
+            # fetched here. search() caches per topic in Redis (6h) and swallows
+            # API failures -> empty result is handled below, not raised.
+            topic = (arguments.get("topic") or "").strip()[:120]
+            if not topic:
+                return json.dumps({"error": "topic required"}, ensure_ascii=False)
+            from .context7 import get_context7_client
+            docs = get_context7_client().search(topic, context_ids=None, max_tokens=800)
+            if not docs:
+                return json.dumps({
+                    "topic": topic,
+                    "docs": "",
+                    "instruction": (
+                        "Документация по этой теме не найдена или источник недоступен. "
+                        "НЕ выдумывай — ответь из своей памяти и честно скажи, что "
+                        "свежая документация сейчас недоступна."
+                    ),
+                }, ensure_ascii=False)
+            return json.dumps({"topic": topic, "docs": docs}, ensure_ascii=False)
 
         else:
             return json.dumps({"error": f"Неизвестная функция: {name}"})
@@ -444,6 +686,63 @@ class AIAgent:
             logger.warning(f"Context7 REST lookup failed: {e}")
             return ''
 
+    def _context7_awareness(self, context7_docs: str) -> str:
+        """Per-turn Context7 access statement for the active persona.
+
+        The model does not see Context7 in TOOLS, so without this rule it
+        denies access while auto-injected docs sit in its own prompt.
+        """
+        topic = MODULE_CONTEXT7_TOPIC.get(self.module_slug) if self.module_slug else None
+        if topic and context7_docs:
+            state = 'connected'
+        elif topic:
+            state = 'unavailable'
+        else:
+            state = 'no_access'
+        return CONTEXT7_AWARENESS[self.lang][state].format(topic=topic or '')
+
+    def _stack_facts(self) -> str:
+        """Verified stack facts for the prompt (see STACK_FACTS).
+
+        AI-config lines are read from settings so they never drift from .env;
+        the module TTS voice comes from the DB (Admin-editable).
+        """
+        if self.lang == 'en':
+            ai_lines = [
+                f"- Chat LLM: {settings.ROUTERAI_LLM_MODEL}.",
+                f"- Embeddings: {settings.ROUTERAI_EMBEDDINGS_MODEL}, 1024 dimensions.",
+                f"- TTS (voice output): {settings.ROUTERAI_TTS_MODEL}, "
+                f"{settings.ROUTERAI_TTS_FORMAT.upper()} format; the global assistant's "
+                f"voice — {settings.ROUTERAI_TTS_VOICE}.",
+                f"- STT (speech recognition): {settings.ROUTERAI_STT_MODEL}.",
+                f"- RAG: ~800-character chunks, top-{settings.RAG_TOP_K} by relevance; "
+                f"chat history — up to {settings.MAX_CHAT_HISTORY} messages, sessions "
+                f"by IP hash (TTL 4 hours).",
+            ]
+            if self.module and self.module.tts_voice:
+                ai_lines.append(
+                    f"- Your module's TTS voice ({self.module.code_name}): "
+                    f"{self.module.tts_voice}."
+                )
+        else:
+            ai_lines = [
+                f"- LLM чата: {settings.ROUTERAI_LLM_MODEL}.",
+                f"- Эмбеддинги: {settings.ROUTERAI_EMBEDDINGS_MODEL}, 1024 измерения.",
+                f"- TTS (озвучка): {settings.ROUTERAI_TTS_MODEL}, "
+                f"формат {settings.ROUTERAI_TTS_FORMAT.upper()}; голос глобального "
+                f"ассистента — {settings.ROUTERAI_TTS_VOICE}.",
+                f"- STT (распознавание речи): {settings.ROUTERAI_STT_MODEL}.",
+                f"- RAG: чанки ~800 символов, top-{settings.RAG_TOP_K} по релевантности; "
+                f"история чата — до {settings.MAX_CHAT_HISTORY} сообщений, сессии "
+                f"по IP-hash (TTL 4 часа).",
+            ]
+            if self.module and self.module.tts_voice:
+                ai_lines.append(
+                    f"- Голос TTS твоего модуля ({self.module.code_name}): "
+                    f"{self.module.tts_voice}."
+                )
+        return STACK_FACTS[self.lang].format(ai_facts='\n'.join(ai_lines) + '\n')
+
     def _build_system_prompt(self, user_message: str, rag_context: str, context7_docs: str = '') -> str:
         """System prompt for the currently active persona.
 
@@ -457,6 +756,10 @@ class AIAgent:
             base_prompt = SYSTEM_PROMPT
 
         system_prompt = base_prompt + '\n' + MARKDOWN_FORMAT_INSTRUCTIONS + '\n' + LANGUAGE_INSTRUCTIONS[self.lang]
+
+        # Verified stack facts (AI config read from settings — never drifts).
+        system_prompt += "\n\n" + self._stack_facts()
+
         if rag_context:
             system_prompt += f"\n\nКонтекст с сайта (по релевантности):\n\n{rag_context}"
 
@@ -467,6 +770,10 @@ class AIAgent:
             system_prompt += (
                 f"\n\nСвежая документация (Context7, {topic}):\n\n{context7_docs}"
             )
+
+        # Context7 self-awareness: states the actual access mode for this
+        # persona this turn (see CONTEXT7_AWARENESS).
+        system_prompt += "\n\n" + self._context7_awareness(context7_docs)
 
         # Data guard: no invented projects/articles (applies to every persona).
         system_prompt += "\n\n" + DATA_RULES[self.lang]

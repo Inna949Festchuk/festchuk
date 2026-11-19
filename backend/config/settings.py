@@ -1,6 +1,7 @@
 """
 Django settings for Feshchuk project.
 """
+import json
 import os
 from pathlib import Path
 
@@ -263,6 +264,30 @@ CONTEXT7_TIMEOUT = int(os.getenv('CONTEXT7_TIMEOUT', '15'))
 # Library docs change rarely; caching them per topic removes the ~2s REST
 # round-trip from almost every module message (and the repeat after a handoff).
 CONTEXT7_CACHE_TTL = int(os.getenv('CONTEXT7_CACHE_TTL', '21600'))
+
+# Module -> Context7 topic: whose library docs get auto-injected into that
+# module's prompt every turn. Env override is a JSON dict ({"slug": "topic"})
+# merged on top of the defaults, so a single slug can be overridden.
+# quantum-shield = Django core: the security sections (CSRF/HTTPS/cookies)
+# fit its stack; 'Django REST Framework' was rejected — its API docs drifted
+# the persona toward HYPER DRIVE (2026-11-17).
+_DEFAULT_CONTEXT7_MODULE_TOPICS = {
+    'hyper-drive': 'Django 5',
+    'neural-sync': 'LangChain',
+    'omni-vision': 'Next.js',
+    'quantum-shield': 'Django',
+}
+CONTEXT7_MODULE_TOPICS = dict(_DEFAULT_CONTEXT7_MODULE_TOPICS)
+_context7_topics_env = os.getenv('CONTEXT7_MODULE_TOPICS', '').strip()
+if _context7_topics_env:
+    try:
+        _context7_topics_override = json.loads(_context7_topics_env)
+    except ValueError:
+        _context7_topics_override = None
+    if isinstance(_context7_topics_override, dict):
+        CONTEXT7_MODULE_TOPICS.update(
+            {str(k): str(v) for k, v in _context7_topics_override.items()}
+        )
 
 # ============================================================
 # Analytics
