@@ -215,7 +215,7 @@ CHANNEL_LAYERS = {
 
 ROUTERAI_API_KEY = os.getenv('ROUTERAI_API_KEY', '')
 ROUTERAI_BASE_URL = os.getenv('ROUTERAI_BASE_URL', 'https://routerai.ru/api/v1')
-ROUTERAI_LLM_MODEL = os.getenv('ROUTERAI_LLM_MODEL', 'qwen-2.5-plus')
+ROUTERAI_LLM_MODEL = os.getenv('ROUTERAI_LLM_MODEL', 'qwen/qwen3.7-plus')
 # Low temperature improves instruction-following for module personas without
 # materially increasing latency for the fast chat model.
 ROUTERAI_LLM_TEMPERATURE = float(os.getenv('ROUTERAI_LLM_TEMPERATURE', '0.3'))

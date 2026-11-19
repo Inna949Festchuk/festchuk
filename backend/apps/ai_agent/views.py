@@ -329,8 +329,12 @@ class ChatSTTView(APIView):
             )
 
         try:
+            # Pin the recognition language to the UI locale (sent by the
+            # frontend as ?lang=ru|en): whisper auto-detect mis-hears short
+            # Russian phrases as English.
+            lang = request.query_params.get('lang', 'ru')
             client = RouterAIClient()
-            text = client.stt(audio_file)
+            text = client.stt(audio_file, language=lang)
             return Response({'text': text})
         except Exception as e:
             logger.error(f"STT error: {e}")

@@ -16,7 +16,7 @@
 | Backend | Python 3.12, Django 5.0, DRF, Celery + django-celery-beat, Channels/Daphne |
 | БД | PostgreSQL 15 + pgvector (образ `pgvector/pgvector:pg15`), эмбеддинги 1024d |
 | Кэш/брокер | Redis 7 (кэш DB0, брокер DB1, результаты DB2) |
-| AI | RouterAI (`https://routerai.ru/api/v1`, OpenAI-совместимый): LLM qwen3.5-plus, эмбеддинги bge-m3, TTS google/gemini-*-tts, STT whisper-large-v3; Context7 REST v1 для актуальной документации библиотек |
+| AI | RouterAI (`https://routerai.ru/api/v1`, OpenAI-совместимый): LLM qwen3.7-plus, эмбеддинги bge-m3, TTS google/gemini-*-tts, STT whisper-large-v3-turbo; Context7 REST v1 для актуальной документации библиотек |
 | Инфра | Docker Compose (dev и prod), Nginx (prod: reverse proxy, rate limiting, static/media) |
 
 ## Структура
@@ -119,7 +119,7 @@ curl -s http://localhost:8000/api/projects/
 
 ### API полностью анонимный
 
-`DEFAULT_AUTHENTICATION_CLASSES = ()` намеренно: SessionAuthentication при залогиненной Django-админке включал бы CSRF на POST, и SPA без X-CSRFToken получала бы 403 на чате/STT. Не возвращать session-auth «для удобства». Троттлинг — `config.throttling.ClientIPAnonRateThrottle` по реальному IP (приватные/Docker-адреса доверены всегда, публичные прокси — через `TRUSTED_PROXY_IPS`). Ставки из env: anon 2000/h, write 120/h, chat/tts/stt 30/h. В dev весь трафик идёт через rewrite Next без X-Forwarded-For — anon-бакет общий на весь сайт.
+`DEFAULT_AUTHENTICATION_CLASSES = ()` намеренно: SessionAuthentication при залогиненной Django-админке включал бы CSRF на POST, и SPA без X-CSRFToken получала бы 403 на чате/STT. Не возвращать session-auth «для удобства». Троттлинг — `config.throttling.ClientIPAnonRateThrottle` по реальному IP (приватные/Docker-адреса доверены всегда, публичные прокси — через `TRUSTED_PROXY_IPS`). Ставки из env: anon 2000/h, write 120/h, chat/stt 30/h, tts 120/h (кусочный синтез — несколько запросов на ответ). В dev весь трафик идёт через rewrite Next без X-Forwarded-For — anon-бакет общий на весь сайт.
 
 ### AI-ассистент: модули и маршрутизация
 
@@ -129,7 +129,7 @@ PRIME COORDINATOR (slug `prime-coordinator`) — дирижёр по умолч�
 1. Детерминированный (`services/routing.py`): имя модуля в тексте → ключевые слова стека (`routing_keywords`, фолбэк `DEFAULT_ROUTING_KEYWORDS`) → триггеры возврата («пока»/«bye»/«помощник» — отдельное слово, «покажи» не переключает) → закреплённый slug сессии.
 2. Семантический: LLM отвечает в персоне активного модуля и может вызвать инструмент `activate_module` для передачи диалога.
 
-`ChatSession.active_module_slug` — маркер персоны прошлого хода. Сессии по IP-hash (unique), TTL 4ч, история в `ChatMessage` (до 16 сообщений в контексте, `MAX_CHAT_HISTORY`).
+`ChatSession.active_module_slug` — маркер персоны прошлого хода. Сессии по IP-hash (unique), TTL 4ч, история в `ChatMessage` (до 16 сообщений в контексте, `MAX_CHAT_HISTORY`). Состав каталога (наличие/отсутствие/полные списки/сопоставления) модель подтверждает ТОЛЬКО инструментами (`list_projects`, `list_blog_posts`, …); RAG-контекст — детали, не основание для выводов о составе. Правило `DATA_RULES` добавляется в коде к каждой персоне (глобальный SYSTEM_PROMPT с «не выдумывай» НЕ действует при наличии SKILL в БД; версия «или из контекста» давала пропуск инструментов и выдуманные списки).
 
 ### RAG и RouterAI
 
@@ -141,7 +141,7 @@ PRIME COORDINATOR (slug `prime-coordinator`) — дирижёр по умолч�
 
 ### Стриминг ответа (SSE)
 
-Чат стримится через `POST /api/chat/message/stream/` (обычный JSON-эндпоинт сохранён для совместимости). События: `meta` (slug активной персоны; повторяется после `activate_module`) → `delta` (фрагменты текста) → `done` (авторитетный итоговый текст, slug, токены, message_id); `error` при сбое. Генератор `AIAgent.process_message_stream` стримит только текст финального раунда — tool-раунды копятся молча; история и сообщение сохраняются даже при обрыве клиента (finally). `ChatWidget` парсит SSE вручную (fetch + ReadableStream, EventSource не умеет POST), батчит рендер ~60мс; TTS озвучивает полный ответ после `done` (не трогать). Обязательные детали: заголовки `Cache-Control: no-cache, no-transform` (обход compression-мидлвари Next) + `X-Accel-Buffering: no`; nginx `/api/chat/` — `proxy_buffering off`; в DRF-вьюхе override `perform_content_negotiation` (иначе `Accept: text/event-stream` → 406). **`stream_options.include_usage` не ставить** — RouterAI с ним буферизует весь ответ (TTFT 15,8с против ~1с); usage приходит в финальном чанке по умолчанию.
+Чат стримится через `POST /api/chat/message/stream/` (обычный JSON-эндпоинт сохранён для совместимости). События: `meta` (slug активной персоны; повторяется после `activate_module`) → `delta` (фрагменты текста) → `done` (авторитетный итоговый текст, slug, токены, message_id); `error` при сбое. Генератор `AIAgent.process_message_stream` стримит только текст финального раунда — tool-раунды копятся молча; история и сообщение сохраняются даже при обрыве клиента (finally). `ChatWidget` парсит SSE вручную (fetch + ReadableStream, EventSource не умеет POST), батчит рендер ~60мс. TTS потоковый: `createTTSChunker` на лету вырезает законченные предложения (150–450 знаков; лимит эндпоинта — 500/запрос), очередь синтезирует и играет их с prefetch следующего во время воспроизведения — голос сопровождает текст, не дожидаясь `done`; markdown очищается, код-блоки не режутся посередине; модель и голоса не менять. Обязательные детали: заголовки `Cache-Control: no-cache, no-transform` (обход compression-мидлвари Next) + `X-Accel-Buffering: no`; nginx `/api/chat/` — `proxy_buffering off`; в DRF-вьюхе override `perform_content_negotiation` (иначе `Accept: text/event-stream` → 406). **`stream_options.include_usage` не ставить** — RouterAI с ним буферизует весь ответ (TTFT 15,8с против ~1с); usage приходит в финальном чанке по умолчанию.
 
 ### Контент: seed_portfolio
 

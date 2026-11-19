@@ -29,6 +29,274 @@ interface Message {
   timestamp: Date;
 }
 
+// Strip markdown for voice synthesis: tables become comma-separated pauses,
+// code blocks are dropped, emphasis markers removed.
+function stripMarkdownForTTS(text: string): string {
+  return text
+    .replace(/```[\s\S]*?```/g, ' ')
+    .replace(/```[\s\S]*$/g, ' ')
+    .replace(/`([^`]*)`/g, '$1')
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, ' ')
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
+    .replace(/^\s{0,3}#{1,6}\s+/gm, '')
+    .replace(/^\s*[-*+]\s+/gm, '')
+    .replace(/^\s*\d+\.\s+/gm, '')
+    // Tables are never voiced cell by cell: the model writes a one-sentence
+    // intro before each table (prompt rule), the voice reads that instead.
+    // Drop whole pipe-lines, including partial rows mid-stream.
+    .replace(/^[ \t]*\|.*$/gm, ' ')
+    // Tab-separated "tables" (model occasionally emits them): lines with
+    // several tabs are table rows, not prose.
+    .replace(/^[ \t]*(?:[^\n]*\t){2,}[^\n]*$/gm, ' ')
+    .replace(/[*_~]{1,3}/g, '')
+    .replace(/^\s*[-=]{3,}\s*$/gm, ' ')
+    .replace(/\n{2,}/g, '. ')
+    .replace(/(?:\.\s*){2,}/g, '. ')
+    .replace(/\n/g, ' ')
+    .replace(/\s{2,}/g, ' ')
+    .replace(/^[\s.!?…\-–—]+/, '')
+    .trim();
+}
+
+// Incremental chunker for live TTS: as the answer streams in, completed
+// sentences (≥150 chars, ≤450 — the backend caps one synthesis at 500) are
+// cut out and sent to synthesis immediately, so voice follows the text
+// instead of waiting for the full reply. Never cuts inside an open code fence.
+function createTTSChunker(onChunk: (chunk: string) => void, en = false) {
+  let consumed = 0;
+  const LIMIT = 450;
+  const MIN = 150;
+  // Table-voicing state: the voice must not read a bare table title and must
+  // not read cells. The model writes a content intro (prompt rule); if it
+  // doesn't, a mechanical one built from the real first-column values is
+  // prepended. A small state machine (not text heuristics on previous
+  // chunks) tracks which table is covered:
+  //   inTable — the previous piece contained table rows;
+  //   introDone — the current table already has a voiced intro;
+  //   pendingValues — rows collected while waiting for text to attach to.
+  let inTable = false;
+  let introDone = false;
+  let pendingValues: string[] = [];
+  let pendingRows = 0;
+  let prevClean = '';
+  const lastTableSentence = (s: string): number => {
+    // Length of the sentence containing the LAST «таблица/table» mention:
+    // a real intro is a content sentence (>45 chars), a bare heading is not.
+    let idx = -1;
+    const re = /таблиц|table/gi;
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(s)) !== null) idx = m.index;
+    if (idx < 0) return 0;
+    const prefix = s.slice(0, idx);
+    const bounds = prefix.match(/[.!?…]\s/g);
+    const start = bounds ? prefix.length - bounds[bounds.length - 1].length : 0;
+    const rest = s.slice(idx + 1);
+    const endMatch = rest.match(/[.!?…]/);
+    const end = endMatch ? idx + 1 + (endMatch.index ?? 0) + 1 : s.length;
+    return end - start;
+  };
+  const buildIntro = (): string => {
+    const shown = pendingValues.slice(0, 4).join(', ');
+    const more = pendingRows > 4 ? (en ? ' and more' : ' и другие') : '';
+    return en
+      ? `Details are presented in the following table${shown ? `: ${shown}${more}` : ''}. `
+      : `Детали представлены в следующей таблице${shown ? `: ${shown}${more}` : ''}. `;
+  };
+  const withTableIntro = (piece: string): string => {
+    const pipeStart = piece.search(/^[ \t]*\|/m);
+    const tabStart = piece.search(/^[ \t]*(?:[^\n]*\t){2,}[^\n]*$/m);
+    const tableStart =
+      pipeStart >= 0 && tabStart >= 0 ? Math.min(pipeStart, tabStart) : pipeStart >= 0 ? pipeStart : tabStart;
+    let clean = stripMarkdownForTTS(piece);
+    if (tableStart >= 0) {
+      // Prose before this piece's table while the previous piece was still
+      // inside a table ⇒ a NEW table begins: reset the state.
+      const proseBefore = stripMarkdownForTTS(piece.slice(0, tableStart));
+      if (inTable && proseBefore.length > 0) {
+        inTable = false;
+        introDone = false;
+        pendingValues = [];
+        pendingRows = 0;
+      }
+      if (!introDone) {
+        // Only the FIRST contiguous table block in this piece (rows stop at
+        // the first non-table line) — otherwise values from a later table
+        // in the same piece would leak into this intro.
+        const lines: string[] = [];
+        for (const l of piece.slice(tableStart).split('\n')) {
+          if (!(/^[ \t]*\|/.test(l) || (l.match(/\t/g) || []).length >= 2)) break;
+          lines.push(l);
+        }
+        // The first table line of the FIRST piece is the header row; in
+        // continuation pieces every line is data.
+        lines.slice(inTable ? 0 : 1).forEach((line) => {
+          const isPipe = /^[ \t]*\|/.test(line);
+          const cell = (isPipe ? line.split('|')[1] || '' : line.split('\t')[0] || '')
+            .replace(/[*_~`]/g, '')
+            .trim();
+          if (!cell) return;
+          if (isPipe && /^[\s:|-]*$/.test(cell)) return; // separator row
+          pendingRows += 1;
+          if (pendingValues.length < 4) {
+            pendingValues.push(cell.length > 42 ? `${cell.slice(0, 42)}…` : cell);
+          }
+        });
+        const modelIntro =
+          !inTable && (lastTableSentence(proseBefore) > 45 || lastTableSentence(prevClean) > 45);
+        if (modelIntro) {
+          introDone = true;
+          pendingValues = [];
+          pendingRows = 0;
+        } else if (clean) {
+          clean = buildIntro() + clean;
+          introDone = true;
+          pendingValues = [];
+          pendingRows = 0;
+        }
+        // rows-only piece (clean === ''): wait for a piece with text to
+        // attach the intro to.
+      }
+      inTable = true;
+    } else {
+      if (clean && pendingValues.length > 0) {
+        clean = buildIntro() + clean;
+      }
+      pendingValues = [];
+      pendingRows = 0;
+      introDone = false;
+      inTable = false;
+    }
+    if (clean) prevClean = clean;
+    return clean;
+  };
+  const feed = (raw: string, final = false) => {
+    // Code fences are atomic: never cut inside a block and never leave an
+    // orphan ``` marker at the start of the remainder — the stripper would
+    // treat it as an unclosed fence and eat the rest of the answer.
+    const fences: Array<[number, number]> = [];
+    let open = -1;
+    const fenceRe = /```/g;
+    let fm: RegExpExecArray | null;
+    while ((fm = fenceRe.exec(raw)) !== null) {
+      if (open < 0) open = fm.index;
+      else {
+        fences.push([open, fm.index + 3]);
+        open = -1;
+      }
+    }
+    const inFence = (abs: number) =>
+      fences.some(([a, b]) => abs > a && abs < b) || (open >= 0 && abs > open);
+    const region = raw.slice(consumed);
+    let cut = -1;
+    const bRe = /[.!?…](?=\s)|\n/g;
+    let bm: RegExpExecArray | null;
+    while ((bm = bRe.exec(region)) !== null) {
+      const abs = consumed + bm.index + 1;
+      if (inFence(abs)) continue;
+      if (abs - consumed <= LIMIT) cut = abs;
+      else break;
+    }
+    if (final) {
+      if (raw.length - consumed > LIMIT) {
+        // Long tail: emit one full chunk now, the rest on the next final
+        // pass — a single piece above the backend's 500-char cap would be
+        // truncated there and lose its tail in the voice.
+        if (cut <= consumed) {
+          const sp = region.lastIndexOf(' ', LIMIT);
+          cut = consumed + (sp > MIN ? sp : LIMIT);
+          const f = fences.find(([a, b]) => cut > a && cut < b);
+          if (f) cut = f[0] > consumed ? f[0] : f[1];
+          if (open >= 0 && cut > open && open > consumed) cut = open;
+        }
+      } else {
+        cut = raw.length;
+      }
+    } else if (cut - consumed < MIN) {
+      if (region.length <= LIMIT) return; // wait for more text
+      const sp = region.lastIndexOf(' ', LIMIT);
+      cut = consumed + (sp > MIN ? sp : LIMIT);
+      // Snap a forced cut out of any code block (whole block goes to the
+      // next chunk; if it starts at consumed, take it whole and strip it).
+      const f = fences.find(([a, b]) => cut > a && cut < b);
+      if (f) cut = f[0] > consumed ? f[0] : f[1];
+      if (open >= 0 && cut > open) {
+        // Unclosed fence: cut before it, or wait at its start — consuming
+        // raw code lines without the ``` marker would voice them later.
+        if (open > consumed) cut = open;
+        else return;
+      }
+    }
+    if (cut <= consumed) return;
+    // Language guard: TTS picks the language per chunk — a chunk opening with
+    // an English term ("RAG (Retrieval-Augmented Generation): …") drags the
+    // whole chunk into English. If the remainder would start in Latin, first
+    // defer the cut to the next feed (more text becomes visible), then pull
+    // the cut to just past the leading Latin run.
+    if (!final && cut > consumed) {
+      const rest0 = raw.slice(cut);
+      if (/^[A-Za-z]/.test(rest0.replace(/^\s+/, ''))) {
+        let k = cut;
+        while (k < raw.length && /\s/.test(raw[k])) k++;
+        const leadStart = k;
+        while (
+          k < raw.length &&
+          k - leadStart < 120 &&
+          /[A-Za-z0-9(),.;:'"&/ \u2019\u2013\u2014-]/.test(raw[k])
+        ) {
+          k++;
+        }
+        // The lead must end at a terminator (space/colon/punctuation). If the
+        // next char continues a word ("AI-агенты"), defer the cut — otherwise
+        // a Latin fragment would leak into the voiced text.
+        const prev = k > leadStart ? raw[k - 1] : ' ';
+        if (!/[\s:.,!?…)"'’—–]/.test(prev)) {
+          return;
+        }
+        // Never split a tab-table row: pull the cut to the end of the line,
+        // so the whole row stays in one piece and the stripper drops it.
+        let kEnd = k;
+        const nl = raw.indexOf('\n', kEnd);
+        if (nl >= 0 && raw.slice(kEnd, nl).includes('\t') && nl - kEnd < 200) kEnd = nl + 1;
+        if (
+          k > leadStart &&
+          kEnd - consumed <= LIMIT &&
+          /[А-Яа-я]/.test(raw.slice(kEnd, kEnd + 3))
+        ) {
+          cut = kEnd;
+        } else {
+          return; // wait for the next feed to see past the Latin lead
+        }
+      }
+    }
+    const piece = raw.slice(consumed, cut);
+    consumed = cut;
+    const clean = withTableIntro(piece);
+    if (clean) onChunk(clean);
+    // Last resort: the table ended the reply and its intro stayed deferred —
+    // voice it anyway, after the table.
+    if (final && !clean && pendingValues.length > 0 && !introDone) {
+      const intro = buildIntro();
+      pendingValues = [];
+      pendingRows = 0;
+      introDone = true;
+      onChunk(intro);
+    }
+  };
+  return {feed, consumed: () => consumed};
+}
+
+// Emit every chunk of a full text (a long tail needs several final passes).
+function feedAllToChunks(
+  chunker: {feed: (raw: string, final?: boolean) => void; consumed: () => number},
+  text: string,
+) {
+  let safety = 0;
+  do {
+    chunker.feed(text, true);
+    safety += 1;
+  } while (chunker.consumed() < text.length && safety < 50);
+}
+
 export default function ChatWidget() {
   const t = useTranslations('chat');
   const locale = useLocale();
@@ -52,6 +320,13 @@ export default function ChatWidget() {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const abortRef = useRef<AbortController | null>(null);
+  const ttsAbortRef = useRef<AbortController | null>(null);
+  // Live TTS queue: chunks arrive while the answer is still streaming.
+  const ttsQueueRef = useRef<string[]>([]);
+  const ttsClosedRef = useRef(false);
+  const ttsWakeRef = useRef<(() => void) | null>(null);
+  const ttsSlugRef = useRef('');
+  const ttsEnabledRef = useRef(true);
 
   const quickPrompts = [t('q1'), t('q2'), t('q3'), t('q4')];
   const timeLocale = locale === 'ru' ? 'ru-RU' : 'en-US';
@@ -76,6 +351,10 @@ export default function ChatWidget() {
     return () => {
       if (audioRef.current) audioRef.current.pause();
       abortRef.current?.abort();
+      ttsAbortRef.current?.abort();
+      ttsQueueRef.current = [];
+      ttsClosedRef.current = true;
+      ttsWakeRef.current?.();
     };
   }, [initSession]);
 
@@ -85,6 +364,12 @@ export default function ChatWidget() {
   }, [messages, loading]);
 
   const stopSpeaking = useCallback(() => {
+    ttsAbortRef.current?.abort();
+    ttsAbortRef.current = null;
+    ttsQueueRef.current = [];
+    ttsClosedRef.current = true;
+    ttsWakeRef.current?.();
+    ttsWakeRef.current = null;
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current = null;
@@ -92,40 +377,111 @@ export default function ChatWidget() {
     setSpeaking(false);
   }, []);
 
+  useEffect(() => {
+    ttsEnabledRef.current = ttsEnabled;
+    if (!ttsEnabled) stopSpeaking();
+  }, [ttsEnabled, stopSpeaking]);
+
+  // Queue player: consumes chunks as they arrive (live during the text
+  // stream), prefetching the next synthesis while the current audio plays.
+  const startTTSPlayer = useCallback(() => {
+    const controller = new AbortController();
+    ttsAbortRef.current = controller;
+
+    const fetchChunk = async (chunk: string): Promise<string | null> => {
+      const params = new URLSearchParams({text: chunk, lang: locale});
+      if (ttsSlugRef.current) params.set('module_slug', ttsSlugRef.current);
+      try {
+        const r = await fetch(`/api/chat/tts/?${params.toString()}`, {
+          signal: controller.signal,
+        });
+        if (!r.ok) return null;
+        return URL.createObjectURL(await r.blob());
+      } catch {
+        return null;
+      }
+    };
+
+    const run = async () => {
+      setSpeaking(true);
+      let url: string | null = null;
+      let prefetch: Promise<string | null> | null = null;
+      while (!controller.signal.aborted) {
+        if (!url) {
+          if (ttsQueueRef.current.length === 0) {
+            if (ttsClosedRef.current) break;
+            await new Promise<void>((res) => {
+              ttsWakeRef.current = res;
+            });
+            ttsWakeRef.current = null;
+            continue;
+          }
+          const chunk = ttsQueueRef.current.shift()!;
+          url = prefetch ? await prefetch : await fetchChunk(chunk);
+          prefetch = null;
+        }
+        if (!prefetch && ttsQueueRef.current.length > 0) {
+          prefetch = fetchChunk(ttsQueueRef.current[0]);
+        }
+        if (url) {
+          const currentUrl = url;
+          url = null;
+          await new Promise<void>((resolve) => {
+            const audio = new Audio(currentUrl);
+            audioRef.current = audio;
+            const finish = () => {
+              URL.revokeObjectURL(currentUrl);
+              if (audioRef.current === audio) audioRef.current = null;
+              resolve();
+            };
+            audio.onended = finish;
+            audio.onerror = finish;
+            // pause() from stopSpeaking must also unblock the queue loop
+            audio.onpause = finish;
+            audio.play().catch(finish);
+          });
+        }
+      }
+      if (url) URL.revokeObjectURL(url);
+      prefetch?.then((u) => {
+        if (u) URL.revokeObjectURL(u);
+      });
+      if (!controller.signal.aborted) setSpeaking(false);
+    };
+    run();
+  }, [locale]);
+
+  const enqueueTTS = useCallback((chunk: string) => {
+    if (!ttsEnabledRef.current) return;
+    ttsQueueRef.current.push(chunk);
+    ttsWakeRef.current?.();
+  }, []);
+
+  const closeTTS = useCallback(() => {
+    ttsClosedRef.current = true;
+    ttsWakeRef.current?.();
+  }, []);
+
+  const initTTS = useCallback(
+    (slug: string) => {
+      stopSpeaking();
+      ttsClosedRef.current = false;
+      ttsSlugRef.current = slug;
+      startTTSPlayer();
+    },
+    [stopSpeaking, startTTSPlayer],
+  );
+
+  // Full-text path (module greetings): feed everything at once and close.
   const playResponse = useCallback(
     (text: string, moduleSlug?: string | null) => {
       if (!ttsEnabled) return;
-      stopSpeaking();
-      const ttsParams = new URLSearchParams({
-        text: text.slice(0, 500),
-        lang: locale,
-      });
-      // The backend may have switched the active module by the user's text;
-      // use the fresh slug so the reply is voiced with the right module voice
-      // without waiting for setActiveModuleSlug to re-render this closure.
-      const slug = moduleSlug ?? activeModuleSlug;
-      if (slug) {
-        ttsParams.set('module_slug', slug);
-      }
-      fetch(`/api/chat/tts/?${ttsParams.toString()}`)
-        .then((r) => (r.ok ? r.blob() : null))
-        .then((blob) => {
-          if (!blob) return;
-          const url = URL.createObjectURL(blob);
-          const audio = new Audio(url);
-          audioRef.current = audio;
-          audio.onended = () => {
-            setSpeaking(false);
-            URL.revokeObjectURL(url);
-          };
-          audio
-            .play()
-            .then(() => setSpeaking(true))
-            .catch(() => setSpeaking(false));
-        })
-        .catch(() => setSpeaking(false));
+      initTTS(moduleSlug ?? activeModuleSlug ?? '');
+      const chunker = createTTSChunker(enqueueTTS, locale === 'en');
+      feedAllToChunks(chunker, text);
+      closeTTS();
     },
-    [stopSpeaking, ttsEnabled, locale, activeModuleSlug],
+    [ttsEnabled, initTTS, enqueueTTS, closeTTS, activeModuleSlug],
   );
 
   // Listen for module-specific chat activation from module pages
@@ -184,6 +540,10 @@ export default function ChatWidget() {
       }
 
       stopSpeaking();
+      // Voice follows the text: completed sentences go to synthesis while
+      // the answer is still streaming (queue player consumes them live).
+      if (ttsEnabled) initTTS(activeModuleSlug ?? '');
+      const ttsChunker = createTTSChunker(enqueueTTS, locale === 'en');
 
       const userMsg: Message = {
         id: crypto.randomUUID(),
@@ -212,6 +572,7 @@ export default function ChatWidget() {
         setMessages((prev) =>
           prev.map((m) => (m.id === id ? {...m, content: snapshot} : m)),
         );
+        ttsChunker.feed(snapshot);
       };
       const stopFlush = () => {
         if (flushTimer) {
@@ -265,9 +626,10 @@ export default function ChatWidget() {
             if (eventName === 'meta') {
               // The backend may switch the persona mid-reply (activate_module)
               // or hand back to the coordinator — sync the slug both ways so
-              // the post-stream TTS uses the effective voice.
+              // the next TTS chunks use the effective voice.
               finalSlug = data.module_slug || '';
               setActiveModuleSlug(finalSlug || null);
+              ttsSlugRef.current = finalSlug;
             } else if (eventName === 'delta') {
               fullText += data.text || '';
               if (!msgId) {
@@ -298,7 +660,9 @@ export default function ChatWidget() {
                 ]);
               }
               setActiveModuleSlug(slug || null);
-              playResponse(text, slug);
+              ttsSlugRef.current = slug;
+              feedAllToChunks(ttsChunker, text);
+              closeTTS();
               reader.cancel();
             } else if (eventName === 'error') {
               throw new Error(data.error || 'stream error');
@@ -309,6 +673,8 @@ export default function ChatWidget() {
         if (!finished) {
           stopFlush();
           flush();
+          feedAllToChunks(ttsChunker, fullText);
+          closeTTS();
         }
       } catch {
         stopFlush();
@@ -325,6 +691,10 @@ export default function ChatWidget() {
             },
           ]);
         }
+        if (!controller.signal.aborted) {
+          feedAllToChunks(ttsChunker, fullText);
+          closeTTS();
+        }
       } finally {
         stopFlush();
         abortRef.current = null;
@@ -332,7 +702,7 @@ export default function ChatWidget() {
         setLoading(false);
       }
     },
-    [input, loading, sessionId, playResponse, stopSpeaking, locale, t, initSession, activeModuleSlug],
+    [input, loading, sessionId, ttsEnabled, initTTS, enqueueTTS, closeTTS, stopSpeaking, locale, t, initSession, activeModuleSlug],
   );
 
   const startRecording = useCallback(async () => {

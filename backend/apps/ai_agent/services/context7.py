@@ -132,11 +132,13 @@ class Context7Client:
             if len(text) > max_chars:
                 # Умная обрезка: ищем последний перенос строки перед лимитом,
                 # чтобы не разрывать markdown-блоки или слова посередине.
+                # Явного маркера «обрезано» не ставим: модель начинала
+                # прокомментировать его в ответах («контент урезан, но…»).
                 cut_idx = text.rfind('\n', 0, max_chars)
                 if cut_idx == -1 or cut_idx < max_chars * 0.8:
                     cut_idx = max_chars # Фоллбек, если переносов строки нет
 
-                text = text[:cut_idx] + "\n\n... [документация обрезана из-за ограничения длины]"
+                text = text[:cut_idx]
 
         ttl = getattr(settings, 'CONTEXT7_CACHE_TTL', 21600)
         cache.set(cache_key, text, ttl if text else 300)

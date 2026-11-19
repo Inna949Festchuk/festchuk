@@ -18,7 +18,7 @@
 | Backend | Python 3.12, Django 5, DRF, Celery + Beat |
 | БД | PostgreSQL 15 + pgvector |
 | Кэш / брокер | Redis 7 |
-| AI | RouterAI (routerai.ru) — qwen3.5-plus (LLM, reasoning off), bge-m3 (RAG), whisper-large-v3-turbo (STT), gemini-flash-lite-tts (TTS), Context7 (доки библиотек) |
+| AI | RouterAI (routerai.ru) — qwen3.7-plus (LLM, reasoning off), bge-m3 (RAG), whisper-large-v3-turbo (STT), gemini-flash-lite-tts (TTS), Context7 (доки библиотек) |
 | Инфра | Docker Compose, Nginx |
 
 ## 📁 Структура (monorepo)
@@ -107,11 +107,11 @@ GET  /api/health/                # health check
 
 AI-ассистент использует:
 - **RAG** — векторные эмбеддинги README проектов и статей (pgvector), top-3 retrieval
-- **Function Calling** — `get_project_stats`, `list_projects`, `search_blog_posts`, `get_blog_post`, `activate_module`
+- **Function Calling** — `get_project_stats`, `list_projects`, `list_blog_posts`, `search_blog_posts`, `get_blog_post`, `activate_module`
 - **Память** — история диалога в Redis (TTL 4 часа)
 - **Стриминг** — ответ приходит SSE-потоком по мере генерации: первые слова за ~1–3 с
 - **Context7** — актуальные доки библиотек (Django 5, Next.js, LangChain) в промптах модулей
-- **Голос** — Web Audio API → STT (Whisper turbo) → LLM → TTS (Gemini)
+- **Голос** — Web Audio API → STT (Whisper turbo) → LLM → TTS (Gemini); голос сопровождает ответ по мере генерации (кусочный синтез на лету)
 
 Celery задачи:
 - `sync_project_readme` — скачивание README из GitHub + регенерация эмбеддингов
@@ -224,6 +224,6 @@ AI-ассистент — это **PRIME COORDINATOR**, «дирижёр» по�
 
 **Вывод:** для маршрутизации и ответов из контекста качество не страдает — режим без «мышления» в 3–9 раз быстрее и в 3–7 раз дешевле. «Мышление» нужно для длинных логических цепочек и математики, которых в задачах портфолио-бота нет.
 
-Ответы стримингуются (SSE): на длинном ответе (800 токенов) текст начинается появляться через ~1,2 с вместо ~13,5 с ожидания полного ответа; озвучка TTS по-прежнему после завершения.
+Ответы стримингуются (SSE): на длинном ответе (800 токенов) текст начинается появляться через ~1,2 с вместо ~13,5 с ожидания полного ответа. Озвучка потоковая: законченные предложения синтезируются на лету — голос сопровождает текст по мере генерации и читает ответ целиком.
 
 Режим и длина ответа настраиваются в `.env` без правки кода: `ROUTERAI_LLM_REASONING_ENABLED`, `ROUTERAI_LLM_MAX_TOKENS`.

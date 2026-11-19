@@ -226,13 +226,17 @@ class RouterAIClient:
             logger.error(f"RouterAI TTS error: {e}")
             raise
 
-    def stt(self, audio_file, model: str | None = None) -> str:
+    def stt(self, audio_file, model: str | None = None, language: str | None = None) -> str:
         """
         Perform speech-to-text on an audio file.
 
         Args:
             audio_file: File-like object (Django UploadedFile preferred — its
                 filename carries the format) or raw bytes
+            model: STT model (default from settings)
+            language: Whisper language hint (BCP-47: 'ru', 'en', …). Pinned to
+                the UI locale by the view — auto-detection mis-hears short
+                Russian phrases as English ("you So, the Telegram…").
 
         Returns:
             Transcribed text
@@ -252,10 +256,10 @@ class RouterAIClient:
                 audio = io.BytesIO(audio_file)
             audio.name = name or 'recording.webm'
 
-            response = self.client.audio.transcriptions.create(
-                model=model,
-                file=audio,
-            )
+            create_kwargs = {'model': model, 'file': audio}
+            if language:
+                create_kwargs['language'] = language
+            response = self.client.audio.transcriptions.create(**create_kwargs)
             return response.text
 
         except Exception as e:

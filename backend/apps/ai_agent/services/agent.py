@@ -36,9 +36,20 @@ SYSTEM_PROMPT = """\
 """
 
 # Language instruction appended to the system prompt (driven by the UI locale).
+# The language is pinned: user messages may arrive in another language (voice
+# transcription glitches, EN quick phrases) — the reply must not follow them.
 LANGUAGE_INSTRUCTIONS = {
-    'ru': 'Язык ответа: отвечай строго на русском языке.',
-    'en': 'Response language: respond strictly in English.',
+    'ru': (
+        'Язык ответа: отвечай строго на русском языке. Язык ответа закреплён: '
+        'не переключайся на язык сообщения пользователя — если пользователь пишет '
+        'по-английски или на другом языке (в том числе из-за ошибок распознавания '
+        'голоса), всё равно отвечай по-русски.'
+    ),
+    'en': (
+        'Response language: respond strictly in English. The language is pinned: '
+        'do not switch to the user\'s message language — if the user writes in Russian '
+        'or another language (including voice-transcription glitches), still reply in English.'
+    ),
 }
 
 # Persona anchor appended at the very end of the system prompt (driven by the
@@ -81,6 +92,37 @@ NAMING_RULES = {
     ),
 }
 
+# Data guard: fast models complete lists from imagination when RAG shows only
+# a couple of real titles («Какие статьи?» → 10 выдуманных постов, 2026-11-18).
+# The first version allowed «или из контекста» — with partial RAG data the
+# model skipped list_projects and claimed a fire project didn't exist.
+# Composition/existence claims now require tools; context is details only.
+# Lives in code (not in Admin SKILLs) so it applies to every persona — the
+# global SYSTEM_PROMPT with its «не выдумывай» rule is NOT used when a module
+# SKILL exists.
+DATA_RULES = {
+    'ru': (
+        "Правило данных: наличие, отсутствие и полные списки проектов и статей подтверждай "
+        "ТОЛЬКО инструментами (list_projects, list_blog_posts, search_blog_posts, get_blog_post). "
+        "Контекст выше — источник деталей и цитат, но НЕ основание для выводов о составе: "
+        "в нём могут быть лишь отдельные записи. Перед любым сопоставлением, сравнением или "
+        "поиском соответствий между проектами и статьями получи оба списка инструментами. "
+        "Если инструмент вернул пусто — честно скажи, что не нашёл. "
+        "НИКОГДА не выдумывай названия, ID или описания. "
+        "Не оформляй названия ссылками без реального URL."
+    ),
+    'en': (
+        "DATA RULE: confirm the presence, absence and full lists of projects and articles "
+        "ONLY with the tools (list_projects, list_blog_posts, search_blog_posts, get_blog_post). "
+        "The context above is a source of details and quotes, NOT grounds for conclusions "
+        "about what exists: it may contain only individual records. Before any matching, "
+        "comparison or cross-referencing of projects and articles, fetch both lists with the tools. "
+        "If a tool returns empty, say honestly that you found nothing. "
+        "NEVER invent names, IDs or descriptions. "
+        "Do not format names as links without a real URL."
+    ),
+}
+
 # Markdown formatting rules appended to every response (global assistant and
 # module SKILLs). The frontend renders chat answers as GFM markdown, so the
 # model should structure answers that way (same convention as the geoscan
@@ -89,11 +131,36 @@ MARKDOWN_FORMAT_INSTRUCTIONS = """
 Форматирование (ответ рендерится как Markdown, GFM):
 - Пиши ответы в формате Markdown: заголовки (##) для структуры, маркированные/нумерованные списки, **жирный** для ключевых значений, таблицы для сравнения вариантов и списков объектов.
 - Таблица: заголовок с колонками через | и строка-разделитель после заголовка; не шире 4-5 колонок.
+- Перед ЛЮБОЙ таблицей обязательно — одно-два предложения, резюмирующие её СОДЕРЖАНИЕ: какие строки/категории в ней и главный вывод, и назови темы строк. Пример: «В таблице — четыре направления: GeoAI и спутниковый мониторинг, AI-агенты и LLM, веб-разработка, автоматизация; у каждого есть флагманский проект». Не общие фразы («в таблице результаты») — назови темы строк. Озвучка читает только это пояснение, не ячейки таблицы. Таблицы пиши ТОЛЬКО через символ |; табличные строки через табуляцию запрещены.
 - Встроенный код (`имя`, `путь`) — в обратных кавычках; блоки кода ``` только при необходимости.
 - Не используй HTML-теги, эмодзи-разметку и горизонтальные линии без надобности.
 - Если ответ короткий (1-2 предложения) — без заголовков и таблиц.
 - По умолчанию отвечай кратко (до ~150 слов). Развёрнутые таблицы, длинные списки и блоки кода — только если пользователь просит подробнее.
+- Начинай сразу с сути: первое предложение — результат или пояснение к таблице. Не начинай ответ с анонса собственных действий («теперь сопоставлю», «сейчас разберу», «я проанализировал», «получил списки», «давай посмотрим» — в любых словоформах и порядке слов).
+- Не показывай внутренние ID проектов и статей в тексте ответа (даже если в предыдущих сообщениях диалога они встречались) — они нужны только для вызова инструментов. Называй записи по заголовку/названию.
+- Не повторяй название проекта или статьи несколько раз в одном ответе: назови один раз, дальше — по теме («первый проект», «статья про спутниковые снимки»). Ответ будет озвучен голосом: пиши цельным языком диалога, англоязычные вкрапления — только названия, аббревиатуры и термины; не цитируй описания проектов на английском — пересказывай по-русски. Англоязычный термин ставь в середине предложения, а не в начале: не «RAG: фреймворк упрощает…», а «векторный поиск (RAG) упрощает…» — иначе озвучка переключает фрагмент на английский.
 """
+
+# Short style restatement placed right before the persona anchor: the key
+# user-visible rules repeated at the end of the system prompt are followed
+# more reliably than the same rules buried in the markdown block above
+# (preamble «теперь сопоставлю…» recurred despite the earlier rule).
+STYLE_RULES = {
+    'ru': (
+        "Стиль ответа: первое предложение — сразу результат или пояснение к таблице. "
+        "Никогда не начинай с анонса собственных действий («теперь сопоставлю», «я "
+        "проанализировал», «сейчас разберу» и любые другие формулировки этого рода), "
+        "в том числе деепричастиями о собственной работе: не «Проанализировав список, "
+        "выделяю…», а «В портфолио четыре основных направления: …». "
+        "Внутренние ID записей в ответе не показывай."
+    ),
+    'en': (
+        "Reply style: the first sentence is the result or the table explanation, never an "
+        "announcement of your own actions («let me now…», «I analyzed…», «Having analyzed "
+        "the list, I highlight…» and the like). "
+        "Do not show internal record IDs in the answer."
+    ),
+}
 
 # Context7 library topic per module slug, so the module-specific agent can pull
 # fresh documentation for its own stack. A missing slug means "no Context7
@@ -138,16 +205,30 @@ TOOLS = [
         "type": "function",
         "function": {
             "name": "search_blog_posts",
-            "description": "Поиск статей в блоге по ключевым словам",
+            "description": "Поиск статей в блоге по ключевым словам. Пустой или отсутствующий query возвращает все статьи.",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "query": {
                         "type": "string",
-                        "description": "Поисковый запрос",
+                        "description": "Поисковый запрос (необязательно)",
                     },
                 },
-                "required": ["query"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "list_blog_posts",
+            "description": (
+                "Получить список ВСЕХ статей блога: id, заголовок, краткое описание, дата. "
+                "Вызывай для вопросов «какие статьи есть в блоге» и любых списков статей — "
+                "не составляй список из головы."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {},
             },
         },
     },
@@ -234,9 +315,18 @@ def _execute_tool(name: str, arguments: dict[str, Any], lang: str = 'ru') -> str
             ]
             return json.dumps(result, ensure_ascii=False)
 
+        elif name == "list_blog_posts":
+            from apps.blog.models import Post
+            posts = Post.objects.filter(status=Post.Status.PUBLISHED).order_by('published_at')
+            return json.dumps(
+                [{'id': p.pk, 'title': p.get_field('title', lang), 'excerpt': p.get_field('excerpt', lang), 'published_at': str(p.published_at)}
+                 for p in posts[:20]],
+                ensure_ascii=False,
+            )
+
         elif name == "search_blog_posts":
             from apps.blog.models import Post
-            query = arguments["query"].lower()
+            query = (arguments.get("query") or "").lower()
             posts = Post.objects.filter(status=Post.Status.PUBLISHED)
             filtered = [
                 p for p in posts
@@ -273,7 +363,20 @@ def _execute_tool(name: str, arguments: dict[str, Any], lang: str = 'ru') -> str
 
     except Exception as e:
         logger.error(f"Tool execution error ({name}): {e}")
-        return json.dumps({"error": str(e)})
+        # Инструктивный error-пейлоад: при сбое БД/зависимостей модель иначе
+        # «закрывает» ошибку выдуманными данными (инцидент 2026-11-19: во время
+        # падения Postgres список статей был дописан воображением).
+        return json.dumps(
+            {
+                "error": str(e),
+                "instruction": (
+                    "Данные получить не удалось (служба временно недоступна). "
+                    "НЕ выдумывай списки, названия и ID — честно сообщи, что "
+                    "информацию сейчас получить не удалось."
+                ),
+            },
+            ensure_ascii=False,
+        )
 
 
 class AIAgent:
@@ -365,8 +468,14 @@ class AIAgent:
                 f"\n\nСвежая документация (Context7, {topic}):\n\n{context7_docs}"
             )
 
+        # Data guard: no invented projects/articles (applies to every persona).
+        system_prompt += "\n\n" + DATA_RULES[self.lang]
+
         # Naming guard: prevent conflating module names with the project name.
         system_prompt += "\n\n" + NAMING_RULES[self.lang]
+
+        # Style restatement near the end of the prompt (recency effect).
+        system_prompt += "\n\n" + STYLE_RULES[self.lang]
 
         # Persona anchor at the very end of the prompt (see PERSONA_ANCHORS).
         if self.module:
