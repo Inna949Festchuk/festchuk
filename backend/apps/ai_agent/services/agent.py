@@ -122,6 +122,9 @@ DATA_RULES = {
         "поиском соответствий между проектами и статьями получи оба списка инструментами. "
         "Если инструмент вернул пусто — честно скажи, что не нашёл. "
         "НИКОГДА не выдумывай названия, ID или описания. "
+        "Называй проекты и статьи их заголовками (поле title из инструментов), "
+        "а не слугами репозиториев или URL: не «Arrow_Carbon», "
+        "«telegram_obsidian_sync», а «Arrow Carbon», «Telegram→Obsidian». "
         "Не оформляй названия ссылками без реального URL."
     ),
     'en': (
@@ -132,6 +135,9 @@ DATA_RULES = {
         "comparison or cross-referencing of projects and articles, fetch both lists with the tools. "
         "If a tool returns empty, say honestly that you found nothing. "
         "NEVER invent names, IDs or descriptions. "
+        "Name projects and articles by their titles (the title field from the tools), not by "
+        "repository slugs or URLs: not 'Arrow_Carbon' or 'telegram_obsidian_sync', but their "
+        "display titles. "
         "Do not format names as links without a real URL."
     ),
 }
@@ -633,6 +639,9 @@ class AIAgent:
         self.rag = RAGService()
         self.module_slug = module_slug or None
         self.module = None
+        # Напоминание об анонсе передачи: ставится в _handoff_marker при смене
+        # персоны, дописывается к tool-результатам (recency-бустер).
+        self._handoff_reminder = ''
         if self.module_slug:
             from apps.ai_agent.models import AgentModule
             self.module = AgentModule.objects.filter(
@@ -810,7 +819,10 @@ class AIAgent:
             'module': module.code_name,
             'instruction': (
                 f'Модуль {module.code_name} активирован. Ответь пользователю '
-                'от лица этого модуля — в его роли, стиле и компетенциях.'
+                'от лица этого модуля — в его роли, стиле и компетенциях. '
+                'Первым предложением (одна фраза) объяви передачу: вопрос лежит '
+                'в плоскости его компетенции, и PRIME COORDINATOR '
+                'передал ему диалог; представься его именем.'
             ),
         }, ensure_ascii=False)
 
@@ -831,18 +843,70 @@ class AIAgent:
             if prev_module:
                 prev_name = prev_module.code_name
         name = self.module.code_name
+        # Короткий вариант анонса для tool-результатов: маркер в начале
+        # истории проигрывает recency tool-раундам, и без повторения в конце
+        # контекста модель пропускала объявление передачи (проверено E2E).
+        is_coordinator = self.module_slug == 'prime-coordinator'
         if self.lang == 'en':
+            self._handoff_reminder = (
+                "Start your reply with the one-phrase announcement that the "
+                "dialogue returned to you, the coordinator"
+                if is_coordinator else
+                "Start your reply with the one-phrase handoff announcement "
+                "(the question is within your competence, the coordinator "
+                "passed the dialogue to you) and your self-introduction"
+            )
+        else:
+            self._handoff_reminder = (
+                "Начни ответ одной фразой-анонсом: диалог вернулся к тебе, координатору"
+                if is_coordinator else
+                "Начни ответ одной фразой-анонсом передачи (вопрос в твоей "
+                "компетенции, координатор передал диалог тебе) и представлением"
+            )
+        # Анонс передачи: смена персоны (роутером или activate_module) не
+        # должна быть незаметной — первый ответ обязан одной фразой объявить
+        # переход (инцидент 2026-11-20: «вектор» молча переключил HYPER DRIVE
+        # на NEURAL SYNC, пользователь услышал смену голоса без объяснений).
+        if self.module_slug == 'prime-coordinator':
+            announce = (
+                "В первом предложении (одна фраза, до сути ответа) кратко сообщи "
+                "пользователю, что диалог вернулся к тебе, координатору."
+            )
+        else:
+            announce = (
+                "В первом предложении (одна фраза, до сути ответа) ОБЯЗАТЕЛЬНО "
+                "объяви передачу: этот вопрос лежит в плоскости твоей "
+                "компетенции, и PRIME COORDINATOR передал тебе "
+                "диалог — представься своим именем. Это единственное "
+                "допустимое исключение из правила «начинай сразу с сути»: со "
+                "второго предложения отвечай по делу."
+            )
+        if self.lang == 'en':
+            if self.module_slug == 'prime-coordinator':
+                announce = (
+                    "In your first sentence (one phrase, before the substance of the answer) "
+                    "briefly tell the user the dialogue has returned to you, the coordinator."
+                )
+            else:
+                announce = (
+                    "In your first sentence (one phrase, before the substance of the answer) "
+                    "you MUST announce the handoff: this question is within your area of "
+                    "competence and the conductor PRIME COORDINATOR has passed the dialogue "
+                    "to you — introduce yourself by your name. This is the only allowed "
+                    "exception to the 'start with the point' rule: from the second sentence "
+                    "on, get to the matter."
+                )
             return (
                 f"[SYSTEM AGENT SWITCH: the active agent is now {name}. "
                 f"Earlier messages in this conversation may have been answered by "
                 f"{prev_name} — do not continue that persona. From this message on "
-                f"you are {name} and you must introduce yourself only as {name}.]"
+                f"you are {name} and you must introduce yourself only as {name}. {announce}]"
             )
         return (
             f"[СИСТЕМНАЯ СМЕНА АГЕНТА: с этого сообщения активным агентом является "
             f"{name}. Предыдущие сообщения могли отвечать от лица {prev_name} — не "
             f"продолжайте и не повторяйте ту роль. С этого момента вы — {name}, "
-            f"представляйте себя только так.]"
+            f"представляйте себя только так. {announce}]"
         )
 
     def _persist_active_module(self):
@@ -931,6 +995,11 @@ class AIAgent:
                     result = self._activate_module(func_args.get('module_slug', ''))
                 else:
                     result = _execute_tool(func_name, func_args, lang=self.lang)
+                # Recency-бустер анонса передачи: на ходах со сменой персоны
+                # напоминание дописывается к результату каждого tool, чтобы
+                # не проигрывать tool-раундам в конце контекста.
+                if self._handoff_reminder:
+                    result += f' [{self._handoff_reminder}]'
 
                 messages.append({
                     'role': 'tool',
@@ -1037,6 +1106,9 @@ class AIAgent:
                         result = self._activate_module(func_args.get('module_slug', ''))
                     else:
                         result = _execute_tool(tc['name'], func_args, lang=self.lang)
+                    # Recency-бустер анонса передачи (см. process_message).
+                    if self._handoff_reminder:
+                        result += f' [{self._handoff_reminder}]'
                     messages.append({
                         'role': 'tool',
                         'tool_call_id': tc['id'],

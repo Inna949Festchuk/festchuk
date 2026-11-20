@@ -27,7 +27,7 @@
 feshchuk/
 ├── backend/                # Django
 │   ├── apps/
-│   │   ├── core/           # health check, базовые utils
+│   │   ├── core/           # health check, сиды (seed_portfolio, seed_modules)
 │   │   ├── projects/       # модель Project, API, лайки/просмотры
 │   │   ├── blog/           # модель Post, Markdown, TTS
 │   │   ├── analytics/      # анонимные лайки/просмотры (Redis)
@@ -39,6 +39,7 @@ feshchuk/
 ├── frontend/               # Next.js
 │   ├── app/[locale]/       # страницы RU/EN (главная, проекты, блог, контакты, модули)
 │   ├── components/         # Header, ChatWidget, HUD-плеер, …
+│   ├── lib/                # ttsText.ts — нормализация текста перед озвучкой (язык речи)
 │   ├── i18n/ + messages/   # next-intl: ru.json, en.json
 │   ├── Dockerfile
 │   ├── next.config.js
@@ -57,7 +58,7 @@ feshchuk/
 1. Скопировать и заполнить переменные окружения:
    ```bash
    cp .env.example .env
-   # Внести: POSTGRES_PASSWORD, ROUTERAI_API_KEY и т.д.
+   # Внести: POSTGRES_PASSWORD, ROUTERAI_API_KEY, CONTEXT7_API_KEY и т.д.
    ```
 
 2. Запустить все сервисы:
@@ -93,10 +94,14 @@ GET  /api/posts/{slug}/          # детали статьи
 POST /api/posts/{id}/like/       # лайк
 POST /api/posts/{id}/tts/        # озвучка (TTS)
 
+GET  /api/modules/               # список AI-модулей
+GET  /api/modules/{slug}/        # модуль (?lang=ru|en)
+
 POST /api/chat/session/          # создать сессию чата
 POST /api/chat/message/          # отправить сообщение (полный JSON-ответ)
 POST /api/chat/message/stream/   # отправить сообщение (потоковый ответ SSE)
 GET  /api/chat/history/{id}/     # история диалога
+GET  /api/chat/tts/?text=&lang=  # озвучка ответа (TTS)
 POST /api/chat/voice/stt/        # Speech-to-Text
 
 GET  /api/stats/                 # агрегированная статистика
@@ -107,10 +112,10 @@ GET  /api/health/                # health check
 
 AI-ассистент использует:
 - **RAG** — векторные эмбеддинги README проектов и статей (pgvector), top-3 retrieval
-- **Function Calling** — `get_project_stats`, `list_projects`, `list_blog_posts`, `search_blog_posts`, `get_blog_post`, `activate_module`
+- **Function Calling** — `get_project_stats`, `list_projects`, `list_blog_posts`, `search_blog_posts`, `get_blog_post`, `activate_module`, `fetch_context7_docs`
 - **Память** — история диалога в Redis (TTL 4 часа)
 - **Стриминг** — ответ приходит SSE-потоком по мере генерации: первые слова за ~1–3 с
-- **Context7** — актуальные доки библиотек (Django 5, Next.js, LangChain) в промптах модулей
+- **Context7** — доки стека каждого модуля подгружаются в промпт автоматически (темы — в таблице ниже); доки смежных библиотек (CORS, rate limiting, кэширование) агент запрашивает сам по ходу ответа
 - **Голос** — Web Audio API → STT (Whisper turbo) → LLM → TTS (Gemini); голос сопровождает ответ по мере генерации (кусочный синтез на лету)
 
 Celery задачи:
@@ -121,7 +126,7 @@ Celery задачи:
 ## 🔒 Безопасность
 
 - Анонимные лайки/просмотры: hash IP + object_id в Redis, TTL 24ч
-- Rate limiting: Nginx (30 r/s API, 5 r/s AI-эндпоинты) + DRF по IP: чтение 2000/час, запись 120/час, AI (чат/TTS/STT) 30/час
+- Rate limiting: Nginx (30 r/s API, 5 r/s AI-эндпоинты) + DRF по IP: чтение 2000/час, запись 120/час, чат и STT 30/час, TTS 120/час (кусочный синтез — несколько запросов на ответ)
 - Без форм сбора ПДн (ФЗ-152)
 - Cookie-баннер для Яндекс.Метрики (запланировано)
 
@@ -174,19 +179,21 @@ AI-ассистент — это **PRIME COORDINATOR**, «дирижёр» по�
 
 - чат, открытый со страницы модуля (кнопка «ПОГОВОРИТЬ СО МНОЙ»), закрепляется за этим модулем;
 - упоминание имени модуля в тексте переключает на него (в любом регистре и языке);
-- вопрос по стеку модуля (ключевые слова: «бэкенд/Django/PostgreSQL/Celery», «безопасность/CORS/rate limit», «нейросети/RAG/векторы/LLM», «фронтенд/React/Next/UI/вёрстка») передаёт диалог этому модулю;
+- вопрос по стеку модуля (ключевые слова: «бэкенд/Django/PostgreSQL/Celery», «безопасность/Django/152-ФЗ», «нейросети/RAG/векторы/LLM», «фронтенд/React/Next/UI/вёрстка») передаёт диалог этому модулю;
 - слово «пока!» / «bye!» / «Neural Assist» / «помощник» / «assistant» возвращает диалог к PRIME COORDINATOR;
 - «туманная» формулировка без ключевых слов («позови того, кто делает сайт красивым») — решает сам координатор: он вызывает нужного модуля инструментом `activate_module`, и ответ приходит уже от нового участника.
 
-| Кто | Зона | Голос |
-|-----|------|-------|
-| PRIME COORDINATOR (дирижёр) | общие вопросы, навигация, маршрутизация | Puck (мужской) |
-| HYPER DRIVE | бэкенд: Django, DRF, PostgreSQL, Redis, Celery, API | Enceladus (мужской) |
-| QUANTUM SHIELD | безопасность: rate limiting, CORS, CSRF, HTTPS, 152-ФЗ | Charon (мужской) |
-| NEURAL SYNC | AI: RAG, pgvector, LLM, Function Calling, STT/TTS | Zephyr (женский) |
-| OMNI VISION | фронтенд: Next.js, React, TypeScript, Tailwind, UI/UX | Aoede (женский) |
+| Кто | Зона | Голос | Доки Context7 |
+|-----|------|-------|---------------|
+| PRIME COORDINATOR (дирижёр) | общие вопросы, навигация, маршрутизация | Puck (мужской) | — |
+| HYPER DRIVE | бэкенд: Django, DRF, PostgreSQL, Redis, Celery, API | Enceladus (мужской) | Django 5 |
+| QUANTUM SHIELD | безопасность: rate limiting, CORS, CSRF, HTTPS, 152-ФЗ | Charon (мужской) | Django |
+| NEURAL SYNC | AI: RAG, pgvector, LLM, Function Calling, STT/TTS | Zephyr (женский) | LangChain |
+| OMNI VISION | фронтенд: Next.js, React, TypeScript, Tailwind, UI/UX | Aoede (женский) | Next.js |
 
 Ключевые слова стека хранятся в БД и редактируются в Django Admin (AI-агент → модули → поле «Ключевые слова стека») без правки кода.
+
+Темы доки (Context7) меняются в `.env` — `CONTEXT7_MODULE_TOPICS`, JSON-словарь «модуль → тема» (например `CONTEXT7_MODULE_TOPICS={"neural-sync": "LlamaIndex"}`). Значение задаётся только для нужных модулей, остальные оставляют темы по умолчанию. После правки `.env` — пересоздать контейнер: `docker compose -f docker-compose.dev.yml up -d --force-recreate backend`.
 
 ### Таблица для тестирования
 
@@ -210,12 +217,14 @@ AI-ассистент — это **PRIME COORDINATOR**, «дирижёр» по�
 Подводки:
 
 - Имена модулей пишутся латиницей и работают в любом языке диалога: «привет neural sync» и «hello NEURAL SYNC».
+- Смена участника не бывает молчаливой: если роутер или агент передаёт диалог другому модулю, новый участник первым предложением объявляет передачу («это моя компетенция, координатор передал диалог мне — я …»); возврат к дирижёру — с кратким анонсом.
 - Возврат к координатору срабатывает на отдельное слово «пока»/«bye» — «покажи…», «пока не…» диалог не переключают.
 - Голос и ключевые слова модуля меняются в Django Admin (AI-агент → модули) и действуют немедленно.
+- Речь держится в языке интерфейса: голос фиксируется параметром языка запроса, а перед синтезом из текста убираются английские пояснения в скобках — насыщенные терминами ответы читаются по-русски.
 
 ### Замеры: скорость и качество ответа (2026-11-18)
 
-Чат работает с выключенным «мышлением» LLM (reasoning off). Живой A/B-тест на текущей модели (`qwen3.5-plus`) — две самые сложные задачи агента:
+Чат работает с выключенным «мышлением» LLM (reasoning off). Живой A/B-тест на `qwen3.5-plus` — две самые сложные задачи агента:
 
 | Задача | Reasoning ON | Reasoning OFF | Результат |
 |--------|--------------|---------------|-----------|

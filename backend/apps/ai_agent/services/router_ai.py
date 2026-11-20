@@ -198,6 +198,7 @@ class RouterAIClient:
         model: str | None = None,
         voice: str | None = None,
         response_format: str | None = None,
+        language: str | None = None,
     ) -> bytes:
         """
         Generate text-to-speech audio.
@@ -206,6 +207,11 @@ class RouterAIClient:
         falls back to raw PCM (which the browser cannot play from a Blob URL),
         and MiniMax rejects the call outright.
 
+        ``language`` (BCP-47, e.g. 'ru') pins the spoken language for mixed
+        RU/EN text. The OpenAI SDK has no typed ``language`` for
+        audio.speech, so it goes through extra_body; probe 2026-11-20 confirmed
+        RouterAI accepts it and renders English names better with it.
+
         Returns:
             Audio bytes in ``response_format`` (mp3 by default)
         """
@@ -213,13 +219,17 @@ class RouterAIClient:
         voice = voice or settings.ROUTERAI_TTS_VOICE
         response_format = response_format or settings.ROUTERAI_TTS_FORMAT
 
+        create_kwargs = dict(
+            model=model,
+            voice=voice,
+            input=text,
+            response_format=response_format,
+        )
+        if language:
+            create_kwargs['extra_body'] = {'language': language}
+
         try:
-            response = self.client.audio.speech.create(
-                model=model,
-                voice=voice,
-                input=text,
-                response_format=response_format,
-            )
+            response = self.client.audio.speech.create(**create_kwargs)
             return response.content
 
         except Exception as e:

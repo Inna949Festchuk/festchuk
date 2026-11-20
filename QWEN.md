@@ -16,7 +16,7 @@
 | Backend | Python 3.12, Django 5.0, DRF, Celery + django-celery-beat, Channels/Daphne |
 | БД | PostgreSQL 15 + pgvector (образ `pgvector/pgvector:pg15`), эмбеддинги 1024d |
 | Кэш/брокер | Redis 7 (кэш DB0, брокер DB1, результаты DB2) |
-| AI | RouterAI (`https://routerai.ru/api/v1`, OpenAI-совместимый): LLM qwen3.7-plus, эмбеддинги bge-m3, TTS google/gemini-*-tts, STT whisper-large-v3-turbo; Context7 REST v1 для актуальной документации библиотек |
+| AI | RouterAI (`https://routerai.ru/api/v1`, OpenAI-совместимый): LLM qwen3.7-plus (reasoning off), эмбеддинги bge-m3, TTS google/gemini-*-tts (голос Puck), STT whisper-large-v3-turbo; Context7 REST v1 для актуальной документации библиотек |
 | Инфра | Docker Compose (dev и prod), Nginx (prod: reverse proxy, rate limiting, static/media) |
 
 ## Структура
@@ -30,7 +30,8 @@ festchuk/
 │   │   ├── blog/        # Post, Markdown, TTS статей, Хабр-синк
 │   │   ├── analytics/   # анонимные лайки/просмотры (Redis, IP-hash, TTL 24ч)
 │   │   └── ai_agent/    # RAG, чат, STT/TTS, модули агентов, Celery tasks
-│   │       └── services/  # agent.py, routing.py, rag.py, router_ai.py, context7.py
+│   │       ├── services/  # agent.py, routing.py, rag.py, router_ai.py, context7.py
+│   │       └── skills/    # SKILL_*.md — персоны-промпты модулей (seed_modules → БД)
 │   ├── config/          # settings, urls, celery, middleware, throttling, wsgi/asgi
 │   ├── logs/django.log  # файловый лог (рантайм-артефакт)
 │   └── requirements.txt
@@ -38,6 +39,7 @@ festchuk/
 │   ├── app/[locale]/    # страницы: главная, projects, blog, contacts, modules/[slug]
 │   ├── components/      # Header, Footer, ChatWidget, CyberMusicPlayer, Cityscape,
 │   │                    # AgentVideoCard, HudBottomGuard, LanguageSwitcher, …
+│   ├── lib/             # ttsText.ts — чистые функции постобработки TTS-текста
 │   ├── i18n/            # routing/request/navigation (next-intl)
 │   ├── messages/        # ru.json, en.json — ВСЕ пользовательские строки
 │   ├── middleware.ts    # locale-редиректы
@@ -123,25 +125,37 @@ curl -s http://localhost:8000/api/projects/
 
 ### AI-ассистент: модули и маршрутизация
 
-PRIME COORDINATOR (slug `prime-coordinator`) — дирижёр по умолчанию; четыре модуля: HYPER DRIVE (бэкенд), QUANTUM SHIELD (безопасность), NEURAL SYNC (AI), OMNI VISION (фронтенд). Персоны, SKILL-промпты, голоса TTS, приветствия и ключевые слова роутинга хранятся в БД (`AgentModule`) и редактируются в Django Admin — не хардкодить в Python.
+PRIME COORDINATOR (slug `prime-coordinator`) — дирижёр по умолчанию; четыре модуля: HYPER DRIVE (бэкенд), QUANTUM SHIELD (безопасность), NEURAL SYNC (AI), OMNI VISION (фронтенд). Персоны, SKILL-промпты, голоса TTS, приветствия и ключевые слова роутинга хранятся в БД (`AgentModule`) и редактируются в Django Admin — не хардкодить в Python. Исходные SKILL-файлы — `backend/apps/ai_agent/skills/SKILL_*.md`, они попадают в `system_prompt_ru/en` при `seed_modules` (идемпотентно: не затирает отредактированные в Admin записи; после правки .md — пересинхронизировать вручную через Admin или снять защиту записи).
 
 Два слоя роутинга:
 1. Детерминированный (`services/routing.py`): имя модуля в тексте → ключевые слова стека (`routing_keywords`, фолбэк `DEFAULT_ROUTING_KEYWORDS`) → триггеры возврата («пока»/«bye»/«помощник» — отдельное слово, «покажи» не переключает) → закреплённый slug сессии.
 2. Семантический: LLM отвечает в персоне активного модуля и может вызвать инструмент `activate_module` для передачи диалога.
 
+Смена персоны обязательна к анонсу (решение 2026-11-20): `_handoff_marker` (system-сообщение в истории при смене slug с прошлого хода) требует первым предложением объявить передачу («вопрос в моей компетенции, координатор передал диалог — я …») или возврат к дирижёру; на ходах с tool-раундами напоминание дописывается к каждому tool-результату (`_handoff_reminder` — recency-бустер, без него анонс проигрывал tool-раундам и молча пропускался). Та же инструкция в result `activate_module`.
+
 `ChatSession.active_module_slug` — маркер персоны прошлого хода. Сессии по IP-hash (unique), TTL 4ч, история в `ChatMessage` (до 16 сообщений в контексте, `MAX_CHAT_HISTORY`). Состав каталога (наличие/отсутствие/полные списки/сопоставления) модель подтверждает ТОЛЬКО инструментами (`list_projects`, `list_blog_posts`, …); RAG-контекст — детали, не основание для выводов о составе. Правило `DATA_RULES` добавляется в коде к каждой персоне (глобальный SYSTEM_PROMPT с «не выдумывай» НЕ действует при наличии SKILL в БД; версия «или из контекста» давала пропуск инструментов и выдуманные списки).
+
+Кодовые правила промпта (agent.py, применяются ко ВСЕМ персонам, не редактируются в Admin): `CONTEXT7_AWARENESS` — честное самосознание доступа к Context7 по фактической подгрузке + приоритет источников (общие технические вопросы — доки Context7 + память; RAG — только «как устроено в этом портфолио»); `STACK_FACTS` — проверенные факты стека проекта (AI-строки берутся из settings, чтобы не дрейфовали от `.env`); языковые правила — язык ответа закреплён за UI-локалью, английский только как имена/термины внутри русских предложений.
 
 ### RAG и RouterAI
 
 - `DocumentEmbedding` (pgvector, 1024d), чанки ~800 символов, top-3 (`RAG_TOP_K`). Вектор запроса кэшируется в Redis (`rag:qemb:{md5}`, TTL 1ч) — защита от всплесков латентности embeddings. Эмбеддинги генерируют Celery-задачи: `sync_project_readme`, `generate_post_embeddings`, `sync_all_projects_readme` (beat: ежедневно).
 - RouterAI base URL — `https://routerai.ru/api/v1` (хост `api.routerai.ru` не резолвится с хоста).
+- LLM: qwen3.7-plus с `reasoning off` (`ROUTERAI_LLM_REASONING_ENABLED=false`) — в 3–9 раз быстрее и в 3–7 раз дешевле, качество на задачах портфолио не страдает; потолок `ROUTERAI_LLM_MAX_TOKENS=1000`.
 - TTS: имена голосов специфичны для провайдера — `google/gemini-*-tts` принимают Gemini-имена (Puck/Zephyr/Charon/…), `minimax/speech-*` — OpenAI (alloy/nova/echo). Неверное имя → 400. Google TTS всегда отдаёт WAV. Голос модуля — `AgentModule.tts_voice`, глобальный — `ROUTERAI_TTS_VOICE`. Формат `wav` обязателен (дефолт SDK — raw PCM, браузер не играет).
 - STT: multipart обязан содержать имя файла, иначе 400.
-- Context7 — REST v1 (`CONTEXT7_BASE_URL=https://context7.com/api/v1`), используется модульными агентами для актуальной документации; доки кэшируются в Redis по topic (`CONTEXT7_CACHE_TTL`, 6ч).
+- Context7 — REST v1 (`CONTEXT7_BASE_URL=https://context7.com/api/v1`), используется модульными агентами для актуальной документации; доки кэшируются в Redis по topic (`CONTEXT7_CACHE_TTL`, 6ч). Темы на модуль — `CONTEXT7_MODULE_TOPICS` (JSON slug→тема, пусто = дефолты из кода: hyper-drive=Django 5, neural-sync=LangChain, omni-vision=Next.js, quantum-shield=Django); после правки `.env` — `--force-recreate backend`. Смежные библиотеки, не покрытые темой модуля, агент запрашивает сам инструментом `fetch_context7_docs(topic)` (такой же лимит 800 токенов и кэш).
 
 ### Стриминг ответа (SSE)
 
 Чат стримится через `POST /api/chat/message/stream/` (обычный JSON-эндпоинт сохранён для совместимости). События: `meta` (slug активной персоны; повторяется после `activate_module`) → `delta` (фрагменты текста) → `done` (авторитетный итоговый текст, slug, токены, message_id); `error` при сбое. Генератор `AIAgent.process_message_stream` стримит только текст финального раунда — tool-раунды копятся молча; история и сообщение сохраняются даже при обрыве клиента (finally). `ChatWidget` парсит SSE вручную (fetch + ReadableStream, EventSource не умеет POST), батчит рендер ~60мс. TTS потоковый: `createTTSChunker` на лету вырезает законченные предложения (150–450 знаков; лимит эндпоинта — 500/запрос), очередь синтезирует и играет их с prefetch следующего во время воспроизведения — голос сопровождает текст, не дожидаясь `done`; markdown очищается, код-блоки не режутся посередине; модель и голоса не менять. Обязательные детали: заголовки `Cache-Control: no-cache, no-transform` (обход compression-мидлвари Next) + `X-Accel-Buffering: no`; nginx `/api/chat/` — `proxy_buffering off`; в DRF-вьюхе override `perform_content_negotiation` (иначе `Accept: text/event-stream` → 406). **`stream_options.include_usage` не ставить** — RouterAI с ним буферизует весь ответ (TTFT 15,8с против ~1с); usage приходит в финальном чанке по умолчанию.
+
+### Язык речи: TTS и STT
+
+Речь должна держаться в языке интерфейса (RU по умолчанию). Две защиты:
+
+- **Backend-пинга языка.** UI шлёт локаль: чат — поле `lang` в body, TTS/STT-эндпоинты — `?lang=ru|en`. TTS-вьюха (`ChatTTSView`) передаёт `lang` в `RouterAIClient.tts(language=...)`, где он уходит в `extra_body={'language': 'ru'}` (OpenAI SDK не типизирует `language` для audio.speech; RouterAI принимает, проверено 2026-11-20). Кэш TTS-ключа включает lang. STT шлёт `language` в whisper, иначе autodetect ошибается на коротких репликах.
+- **Frontend-нормализация текста.** Синтезатор (Gemini) выбирает язык по плотности английского в куске: фразы, насыщенные терминами, он читает по-английски. `frontend/lib/ttsText.ts` (`normalizeTtsLanguage(text, en)`) — чистые функции без React/DOM (тестируются в node): убирает почти-английские скобки-глоссы (короткие теги ≤6 символов и русские глоссы остаются, включая осиротевшие скобки на границах чанка), заменяет английские связки русскими эквивалентами (`for example` → «например» и т.д.). Вызывается в `createTTSChunker` перед отправкой куска; `en=true` — pass-through (продукт русскоязычный). Перенос лейблов («Label — описание») из модуля удалён 2026-11-20: ломал грамматику в середине фразы и склеивал буллеты. Английские начала предложений режутся на уровне промпта (правила в agent.py).
 
 ### Контент: seed_portfolio
 
@@ -167,7 +181,7 @@ next-intl, URL-префиксы `/ru` `/en` (localePrefix always, default ru). �
 - **Кастомизация контента — через Django Admin**, не через правки Python-файлов/сидов. Подсказки пользователю формулировать в терминах Admin.
 - **Комментарии** в коде — на русском, объясняют «почему» (скрытые ограничения, ловушки), а не «что». Стиль существующих комментариев в settings.py/next.config.js — ориентир.
 - **Конфигурация — через env** (`.env`, читается через python-dotenv и compose `env_file`). Гибкие унифицированные решения предпочтительнее хардкода. `.env.example` — только плейсхолдеры.
-- **Безопасность оценивать проактивно** до реализации:(rate limiting, CSRF/CORS, отсутствие ПДн-форм — ФЗ-152, IP-hash вместо сырых IP).
+- **Безопасность оценивать проактивно** до реализации: (rate limiting, CSRF/CORS, отсутствие ПДн-форм — ФЗ-152, IP-hash вместо сырых IP).
 - **Git**: ветка `master`, коммиты в стиле `v0.0.XX` (инкремент версии). Remote — HTTPS, push работает через credential.helper store. `backend/celerybeat-schedule` и `backend/logs/django.log` — рантайм-артефакты, постоянно «грязные» в git status; не включать их в функциональные коммиты без необходимости. Не пушить без явной просьбы.
 - **Отладочный мусор убирать** после завершения задачи (временные логи, print/console.log, тестовые данные).
 - README — только актуальное состояние, простые таблицы «действие → результат», без сравнений со старым и без технических деталей.
@@ -187,3 +201,5 @@ next-intl, URL-префиксы `/ru` `/en` (localePrefix always, default ru). �
 10. Правки SKILL-файлов `.md` не действуют, пока не синхронизированы в БД (источник истины — `AgentModule` в Admin).
 11. `stream_options.include_usage` в стриме RouterAI → буферизация всего ответа (TTFT 15,8с); usage и так приходит в финальном чанке.
 12. SSE в DRF: `Accept: text/event-stream` → 406 без override `perform_content_negotiation`; без `no-transform` в Cache-Control Next-прокси буферизует стрим.
+13. Gemini TTS читает кусок по плотности английского → без `language=ru` (extra_body) и frontend-нормализации (`lib/ttsText.ts`) смешанные RU/EN ответы звучат по-английски.
+14. TTS-чанкер не режет куски длиннее 450 знаков — бэкенд жёстко обрубает текст в 500 символов на запрос (`ChatTTSView`).

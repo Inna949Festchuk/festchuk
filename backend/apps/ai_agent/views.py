@@ -261,17 +261,22 @@ class ChatTTSView(APIView):
                 ).first()
                 voice = getattr(module, 'tts_voice', '') or None
         voice = voice or settings.ROUTERAI_TTS_VOICE
-        cache_key = 'tts:chat:{}:{}:{}:{}'.format(
+        # Голосовая локаль: UI шлёт lang=ru|en, язык речи фиксируется им —
+        # смешанные RU/EN ответы иначе читаются с английским акцентом
+        # (пробный замер 2026-11-20: RouterAI принимает параметр).
+        lang = (request.query_params.get('lang') or '').strip() or None
+        cache_key = 'tts:chat:{}:{}:{}:{}:{}'.format(
             settings.ROUTERAI_TTS_MODEL,
             settings.ROUTERAI_TTS_FORMAT,
             voice,
+            lang or '',
             hashlib.sha256(text.encode()).hexdigest()[:16],
         )
         audio = cache.get(cache_key)
 
         if audio is None:
             try:
-                audio = RouterAIClient().tts(text, voice=voice)
+                audio = RouterAIClient().tts(text, voice=voice, language=lang)
             except Exception as e:
                 logger.error(f"Chat TTS error: {e}")
                 return Response(

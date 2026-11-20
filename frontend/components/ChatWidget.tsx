@@ -21,6 +21,7 @@ import {
   Minimize2,
   Terminal,
 } from 'lucide-react';
+import {normalizeTtsLanguage} from '../lib/ttsText';
 
 interface Message {
   id: string;
@@ -271,7 +272,10 @@ function createTTSChunker(onChunk: (chunk: string) => void, en = false) {
     const piece = raw.slice(consumed, cut);
     consumed = cut;
     const clean = withTableIntro(piece);
-    if (clean) onChunk(clean);
+    // Language post-processing for the voice: move a leading English label
+    // to the end of its sentence and swap known English connectives to
+    // Russian, so the synthesizer keeps the utterance in Russian.
+    if (clean) onChunk(normalizeTtsLanguage(clean, en));
     // Last resort: the table ended the reply and its intro stayed deferred —
     // voice it anyway, after the table.
     if (final && !clean && pendingValues.length > 0 && !introDone) {
