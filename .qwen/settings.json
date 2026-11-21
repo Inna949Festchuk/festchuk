@@ -103,7 +103,19 @@
       "Bash(elif *)",
       "Bash('data:')",
       "Bash(-t0)",
-      "Bash(stream_test)"
+      "Bash(stream_test)",
+      "Bash(from *)",
+      "Bash(rag *)",
+      "Bash('какие обязанности у оператора по 152-фз?',)",
+      "Bash('что такое биометрические персональные данные?',)",
+      "Bash('можно ли передавать персональные данные за рубеж?',)",
+      "Bash('какой проект на django у константина?',)",
+      "Bash(]:)",
+      "Bash(res *)",
+      "Bash(q, *)",
+      "Bash(pyeof)",
+      "Bash(c.force_login)",
+      "Bash(getent *)"
     ]
   },
   "$version": 4

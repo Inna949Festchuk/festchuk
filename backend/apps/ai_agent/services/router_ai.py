@@ -7,6 +7,7 @@ import logging
 import base64
 import io
 
+import httpx
 from openai import OpenAI
 from django.conf import settings
 
@@ -54,9 +55,13 @@ class RouterAIClient:
     """
 
     def __init__(self):
+        # Явный таймаут: дефолт SDK — 600 с, и «зависший» сокет RouterAI
+        # держит чат-запрос висящим 10 минут («СИНТЕЗ ОТВЕТА...» без жизни).
+        # 180 с покрывает пиковые LLM-раунды/TTS-синтез, но ограничивает провисание.
         self.client = OpenAI(
             api_key=settings.ROUTERAI_API_KEY,
             base_url=settings.ROUTERAI_BASE_URL,
+            timeout=httpx.Timeout(settings.ROUTERAI_TIMEOUT, connect=10.0),
         )
 
     def chat_completion(

@@ -81,6 +81,7 @@ class DocumentEmbedding(models.Model):
     class SourceType(models.TextChoices):
         PROJECT = 'project', 'Проект'
         BLOG_POST = 'blog_post', 'Статья'
+        LEGAL = 'legal', 'Нормативный документ'
 
     source_type = models.CharField(
         'Тип источника',
@@ -106,3 +107,40 @@ class DocumentEmbedding(models.Model):
 
     def __str__(self):
         return f"{self.source_type}:{self.source_id}#{self.chunk_index}"
+
+
+class LegalDocument(models.Model):
+    """Нормативный документ для RAG (152-ФЗ и потенциально другие законы).
+
+    Текст редактируется в Django Admin; RAG-индекс обновляется ЯВНО
+    экшеном «Проиндексировать в RAG» (Celery-задача) — автоматически по
+    сохранению индекс не пересоздаётся: каждый ре-эмбеддинг стоит денег
+    и на время индексации RAG по документу пустует.
+    """
+    code = models.SlugField(
+        'Код', max_length=50, unique=True, db_index=True,
+        help_text='Стабильный идентификатор документа (например, fz-152).',
+    )
+    title = models.CharField('Название', max_length=255)
+    text = models.TextField(
+        'Текст',
+        help_text=(
+            'Полный текст документа для RAG. Индекс обновляется экшеном '
+            '«Проиндексировать в RAG» на списке документов; при смене '
+            'редакции также обновите дату в SKILL QUANTUM SHIELD.'
+        ),
+    )
+    is_active = models.BooleanField(
+        'Активен для RAG', default=True,
+        help_text='Если выключен — при индексировании чанки документа удаляются из RAG.',
+    )
+    created_at = models.DateTimeField('Создан', auto_now_add=True)
+    updated_at = models.DateTimeField('Обновлён', auto_now=True)
+
+    class Meta:
+        verbose_name = 'Нормативный документ'
+        verbose_name_plural = 'Нормативные документы'
+        ordering = ['code']
+
+    def __str__(self):
+        return f'{self.code}: {self.title}'

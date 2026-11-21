@@ -101,3 +101,43 @@ def sync_all_projects_readme():
 
     for project in projects:
         sync_project_readme.delay(project.pk)
+
+
+@shared_task
+def embed_legal_document(document_id):
+    """
+    (Re)index a legal document into the RAG vector store.
+
+    Invoked explicitly from the admin action («Проиндексировать в RAG»),
+    not on save: re-embedding is a paid API call and briefly leaves the
+    document without chunks, so it must be a deliberate act.
+    An inactive document gets its chunks removed instead.
+    """
+    from apps.ai_agent.models import LegalDocument, DocumentEmbedding
+    from apps.ai_agent.services.rag import RAGService
+
+    try:
+        doc = LegalDocument.objects.get(pk=document_id)
+    except LegalDocument.DoesNotExist:
+        logger.warning(f"Legal document {document_id} not found")
+        return
+
+    if not doc.is_active:
+        deleted, _ = DocumentEmbedding.objects.filter(
+            source_type='legal', source_id=doc.pk
+        ).delete()
+        logger.info(f"Legal document {doc.code}: removed {deleted} chunks from RAG")
+        return
+
+    try:
+        rag = RAGService()
+        rag.embed_document(
+            text=doc.text,
+            source_type='legal',
+            source_id=doc.pk,
+            metadata={'title': doc.title},
+        )
+        logger.info(f"Legal document {doc.code}: re-indexed in RAG")
+    except Exception as e:
+        logger.error(f"Error embedding legal document {doc.code}: {e}")
+        raise

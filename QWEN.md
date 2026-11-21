@@ -33,6 +33,8 @@ festchuk/
 │   │       ├── services/  # agent.py, routing.py, rag.py, router_ai.py, context7.py,
 │   │       │              # session.py (Redis-сессии), pii.py (PII-маскер)
 │   │       ├── skills/    # SKILL_*.md — персоны-промпты модулей (seed_modules → БД)
+│   │       ├── legal/     # fz_152_2026.txt — исходный текст 152-ФЗ; bootstrap LegalDocument (Admin), seed_legal_docs
+│   │       ├── management/ # seed_legal_docs — эмбеддинги 152-ФЗ в pgvector
 │   │       └── tests/     # unit-тесты PII-маскера (pytest, без БД)
 │   ├── config/          # settings, urls, celery, middleware, throttling, wsgi/asgi
 │   ├── logs/django.log  # файловый лог (рантайм-артефакт)
@@ -72,6 +74,7 @@ docker compose -f docker-compose.dev.yml exec backend python manage.py createsup
 # Наполнение контентом (идемпотентно)
 docker compose -f docker-compose.dev.yml exec backend python manage.py seed_portfolio
 docker compose -f docker-compose.dev.yml exec backend python manage.py seed_modules
+docker compose -f docker-compose.dev.yml exec backend python manage.py seed_legal_docs
 
 # Логи
 docker compose -f docker-compose.dev.yml logs -f backend celery frontend
@@ -146,6 +149,7 @@ PRIME COORDINATOR (slug `prime-coordinator`) — дирижёр по умолч�
 
 - `DocumentEmbedding` (pgvector, 1024d), чанки ~800 символов, top-3 (`RAG_TOP_K`). Вектор запроса кэшируется в Redis (`rag:qemb:{md5}`, TTL 1ч) — защита от всплесков латентности embeddings. Эмбеддинги генерируют Celery-задачи: `sync_project_readme`, `generate_post_embeddings`, `sync_all_projects_readme` (beat: ежедневно).
 - RouterAI base URL — `https://routerai.ru/api/v1` (хост `api.routerai.ru` не резолвится с хоста).
+- Источники RAG: `project` (README), `blog_post` (статьи) и `legal` — текст 152-ФЗ (ред. от 26.07.2026, 221 чанок) в модели `LegalDocument` (Admin → Нормативные документы; bootstrap строки из `apps/ai_agent/legal/fz_152_2026.txt` через `seed_legal_docs` — повторный запуск НЕ затирает Admin-правки). RAG-индекс обновляется ЯВНО экшеном «Проиндексировать в RAG» → Celery `embed_legal_document` (неактивный документ — чанки удаляются), не по сохранению (платные эмбеддинги). Поиск глобальный (без фильтра по типу) — юридические запросы сами поднимают legal-чанки в top-3. SKILL QUANTUM SHIELD обязывает отвечать по ПДн/152-ФЗ из этого контекста, цитировать только статьи, реально присутствующие в контексте, и оговаривать дату редакции; при смене текста/редакции в Admin дату в SKILL менять тоже (точечная синхронизация).
 - LLM: qwen3.7-plus с `reasoning off` (`ROUTERAI_LLM_REASONING_ENABLED=false`) — в 3–9 раз быстрее и в 3–7 раз дешевле, качество на задачах портфолио не страдает; потолок `ROUTERAI_LLM_MAX_TOKENS=1000`.
 - Суточный бюджет LLM (circuit breaker): `services/budget.py` — глобальные счётчики в Redis `stats:routerai:daily:{UTC-дата}:requests` / `:tokens` (TTL 48ч), лимиты из env `ROUTERAI_DAILY_MAX_REQUESTS` (1000) / `ROUTERAI_DAILY_MAX_TOKENS` (5M) — троттлинг per-IP не защищает от распределённого флуда. Пре-флайт-проверка в обеих chat-вьюхах → 429 с локализованным текстом; `claim_request()` и `record_tokens()` — в `AIAgent.process_message/process_message_stream`. Счётчики читаются `redis-cli`.
 - TTS: имена голосов специфичны для провайдера — `google/gemini-*-tts` принимают Gemini-имена (Puck/Zephyr/Charon/…), `minimax/speech-*` — OpenAI (alloy/nova/echo). Неверное имя → 400. Google TTS всегда отдаёт WAV. Голос модуля — `AgentModule.tts_voice`, глобальный — `ROUTERAI_TTS_VOICE`. Формат `wav` обязателен (дефолт SDK — raw PCM, браузер не играет).
@@ -220,3 +224,4 @@ next-intl, URL-префиксы `/ru` `/en` (localePrefix always, default ru). �
 14. TTS-чанкер не режет куски длиннее 450 знаков — бэкенд жёстко обрубает текст в 500 символов на запрос (`ChatTTSView`).
 15. `seed_modules` затирает Admin-правки: `update_or_create` заменяет ВСЕ поля ВСЕХ модулей на каждый прогон (голоса, тексты, промпты). Точечные правки — через `manage.py shell` (паттерн 2026-11-21). Старое утверждение «не затирает» относилось к `seed_portfolio` (флаг `sync_from_source`), не к `seed_modules`.
 16. Redis — критичное хранилище чата: вытеснение только `volatile-lru` (ключи с TTL). Не переключать на `allkeys-lru`: ключи брокера Celery (DB1) без TTL вытеснялись бы молча — потеря задач. `maxmemory` (`REDIS_MAXMEMORY`, дефолт 256mb) ограничивает RAM, а не диск: AOF живёт в томе `redis_data`, disk-full (инцидент 2026-11-19) всё так же рвёт записи.
+17. «СИНТЕЗ ОТВЕТА...» висит долго (инцидент 2026-11-21) — RouterAI пилит латентностью (раунд, что обычно за 2–10 с, тянется на 60–120+ с), а OpenAI SDK без явного таймаута ждёт дефолтные 600 с. Лечится `ROUTERAI_TIMEOUT` (дефолт 180 с, `httpx.Timeout(180, connect=10)` в `RouterAIClient`) — зависший раунд падает с 503/ошибкой стрима, а не висит 10 минут. Сам runserver уже многопоточный по умолчанию (`--nothreading` его отключает; флага `--threaded` НЕТ — не добавлять).

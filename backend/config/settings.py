@@ -216,6 +216,10 @@ CHANNEL_LAYERS = {
 
 ROUTERAI_API_KEY = os.getenv('ROUTERAI_API_KEY', '')
 ROUTERAI_BASE_URL = os.getenv('ROUTERAI_BASE_URL', 'https://routerai.ru/api/v1')
+# Таймаут HTTP-клиента (сек): дефолт OpenAI SDK — 600 с, и зависший сокет
+# держит чат-запрос висячим 10 минут; 180 с покрывает пиковые LLM-раунды
+# и TTS-синтез, но ограничивает провисание (встречен 2026-11-21).
+ROUTERAI_TIMEOUT = float(os.getenv('ROUTERAI_TIMEOUT', '180'))
 ROUTERAI_LLM_MODEL = os.getenv('ROUTERAI_LLM_MODEL', 'qwen/qwen3.7-plus')
 # Low temperature improves instruction-following for module personas without
 # materially increasing latency for the fast chat model.
