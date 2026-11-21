@@ -3901,3 +3901,541 @@ requests.exceptions.ConnectionError: HTTPSConnectionPool(host='context7.com', po
 [2026-11-21 07:13:17,643] INFO apps.ai_agent.services.context7 context7 Context7: cache hit (topic='Django', 3156 chars)
 [2026-11-21 07:13:17,643] INFO apps.ai_agent.services.agent agent Context7: 3156 chars (topic='Django', module=quantum-shield)
 [2026-11-21 07:15:58,152] INFO django.server basehttp "POST /api/chat/message/stream HTTP/1.1" 200 9928
+[2026-11-21 11:15:59,816] INFO django.utils.autoreload autoreload Watching for file changes with StatReloader
+[2026-11-21 11:16:50,516] INFO django.server basehttp "GET /api/chat/session HTTP/1.1" 200 73
+[2026-11-21 11:16:50,609] INFO django.server basehttp "GET /api/chat/session HTTP/1.1" 200 73
+[2026-11-21 11:16:50,670] INFO django.server basehttp "GET /api/posts?lang=ru HTTP/1.1" 200 4754
+[2026-11-21 11:16:50,790] INFO django.server basehttp "GET /api/posts?lang=ru HTTP/1.1" 200 4754
+[2026-11-21 11:16:50,976] INFO django.server basehttp "GET /api/projects?lang=ru HTTP/1.1" 200 14783
+[2026-11-21 11:16:51,191] INFO django.server basehttp "GET /api/projects?lang=ru HTTP/1.1" 200 14783
+[2026-11-21 11:24:40,901] INFO django.server basehttp "GET /api/chat/session HTTP/1.1" 200 73
+[2026-11-21 11:24:40,994] INFO django.server basehttp "GET /api/chat/session HTTP/1.1" 200 73
+[2026-11-21 11:24:57,702] INFO django.server basehttp "GET /api/chat/session HTTP/1.1" 200 73
+[2026-11-21 11:24:57,750] INFO django.server basehttp "GET /api/chat/session HTTP/1.1" 200 73
+[2026-11-21 14:51:04,908] INFO django.utils.autoreload autoreload /app/apps/ai_agent/services/agent.py changed, reloading.
+[2026-11-21 14:51:07,966] INFO django.utils.autoreload autoreload Watching for file changes with StatReloader
+[2026-11-21 14:51:17,352] INFO django.utils.autoreload autoreload /app/apps/ai_agent/services/agent.py changed, reloading.
+[2026-11-21 14:51:19,450] INFO django.utils.autoreload autoreload Watching for file changes with StatReloader
+[2026-11-21 14:51:29,802] INFO django.utils.autoreload autoreload /app/apps/ai_agent/services/agent.py changed, reloading.
+[2026-11-21 14:51:31,853] INFO django.utils.autoreload autoreload Watching for file changes with StatReloader
+[2026-11-21 14:54:27,855] INFO django.server basehttp "POST /api/chat/session/ HTTP/1.1" 201 88
+[2026-11-21 14:54:59,112] INFO django.server basehttp "POST /api/chat/message/stream/ HTTP/1.1" 200 6126
+[2026-11-21 14:56:57,834] INFO django.server basehttp "GET /admin/ai_agent/legaldocument/ HTTP/1.1" 200 16057
+[2026-11-21 14:56:58,053] INFO django.server basehttp "GET /admin/jsi18n/ HTTP/1.1" 200 17546
+[2026-11-21 14:57:01,311] INFO django.server basehttp "GET /admin/projects/project/ HTTP/1.1" 200 40996
+[2026-11-21 14:57:01,432] INFO django.server basehttp "GET /admin/jsi18n/ HTTP/1.1" 200 17546
+[2026-11-21 14:57:05,852] INFO django.server basehttp "GET /admin/projects/project/1/change/ HTTP/1.1" 200 110991
+[2026-11-21 14:57:05,967] INFO django.server basehttp "GET /static/admin/js/collapse.js HTTP/1.1" 200 1803
+[2026-11-21 14:57:05,980] INFO django.server basehttp "GET /admin/jsi18n/ HTTP/1.1" 200 17546
+[2026-11-21 14:57:41,549] INFO django.server basehttp "POST /api/chat/session/ HTTP/1.1" 200 89
+[2026-11-21 14:57:48,310] INFO django.server basehttp "POST /api/chat/message/stream/ HTTP/1.1" 200 4428
+[2026-11-21 14:58:55,998] INFO django.server basehttp "POST /api/chat/session/ HTTP/1.1" 200 89
+[2026-11-21 14:59:05,467] INFO django.server basehttp "POST /api/chat/message/stream/ HTTP/1.1" 200 6157
+[2026-11-21 15:08:49,495] INFO django.server basehttp "GET /api/chat/session HTTP/1.1" 200 73
+[2026-11-21 15:08:49,531] INFO django.server basehttp "GET /api/chat/session HTTP/1.1" 200 73
+[2026-11-21 15:08:49,569] INFO django.server basehttp "GET /api/chat/session HTTP/1.1" 200 73
+[2026-11-21 15:08:49,594] INFO django.server basehttp "GET /api/chat/session HTTP/1.1" 200 73
+[2026-11-21 15:09:29,876] INFO django.server basehttp "GET /api/projects?lang=ru HTTP/1.1" 200 14783
+[2026-11-21 15:09:29,930] INFO django.server basehttp "GET /api/posts?lang=ru HTTP/1.1" 200 4754
+[2026-11-21 15:09:30,087] INFO django.server basehttp "GET /api/posts?lang=ru HTTP/1.1" 200 4754
+[2026-11-21 15:09:30,105] INFO django.server basehttp "GET /api/projects?lang=ru HTTP/1.1" 200 14783
+[2026-11-21 15:09:38,069] INFO django.server basehttp "GET /api/chat/session HTTP/1.1" 200 73
+[2026-11-21 15:09:38,111] INFO django.server basehttp "GET /api/posts?lang=ru HTTP/1.1" 200 4754
+[2026-11-21 15:09:38,178] INFO django.server basehttp "GET /api/chat/session HTTP/1.1" 200 73
+[2026-11-21 15:09:38,213] INFO django.server basehttp "GET /api/projects?lang=ru HTTP/1.1" 200 14783
+[2026-11-21 15:09:38,380] INFO django.server basehttp "GET /api/posts?lang=ru HTTP/1.1" 200 4754
+[2026-11-21 15:09:38,473] INFO django.server basehttp "GET /api/projects?lang=ru HTTP/1.1" 200 14783
+[2026-11-21 15:11:37,842] INFO django.server basehttp "DELETE /api/chat/session HTTP/1.1" 200 16
+[2026-11-21 15:11:37,899] INFO django.server basehttp "GET /api/chat/session HTTP/1.1" 200 73
+[2026-11-21 15:11:50,219] INFO django.server basehttp "POST /api/chat/message/stream HTTP/1.1" 200 7186
+[2026-11-21 15:11:50,460] INFO django.server basehttp "GET /api/chat/tts?text=%D0%92%20%D0%BF%D0%BE%D1%80%D1%82%D1%84%D0%BE%D0%BB%D0%B8%D0%BE%2036%20%D0%BF%D1%80%D0%BE%D0%B5%D0%BA%D1%82%D0%BE%D0%B2%2C%20%D0%BE%D1%85%D0%B2%D0%B0%D1%82%D1%8B%D0%B2%D0%B0%D1%8E%D1%89%D0%B8%D1%85%20%D1%87%D0%B5%D1%82%D1%8B%D1%80%D0%B5%20%D0%BA%D0%BB%D1%8E%D1%87%D0%B5%D0%B2%D1%8B%D1%85%20%D0%BD%D0%B0%D0%BF%D1%80%D0%B0%D0%B2%D0%BB%D0%B5%D0%BD%D0%B8%D1%8F%3A%20%D0%B3%D0%B5%D0%BE%D0%BF%D1%80%D0%BE%D1%81%D1%82%D1%80%D0%B0%D0%BD%D1%81%D1%82%D0%B2%D0%B5%D0%BD%D0%BD%D1%8B%D0%B9%20%D0%B0%D0%BD%D0%B0%D0%BB%D0%B8%D0%B7%20%D0%B8%20%D1%81%D0%BF%D1%83%D1%82%D0%BD%D0%B8%D0%BA%D0%BE%D0%B2%D1%8B%D0%B9%20%D0%BC%D0%BE%D0%BD%D0%B8%D1%82%D0%BE%D1%80%D0%B8%D0%BD%D0%B3%2C%20AI-%D0%B0%D0%B3%D0%B5%D0%BD%D1%82%D1%8B%20%D0%B8%20%D0%B0%D0%B2%D1%82%D0%BE%D0%BC%D0%B0%D1%82%D0%B8%D0%B7%D0%B0%D1%86%D0%B8%D1%8F%2C%20%D0%B2%D0%B5%D0%B1-%D1%80%D0%B0%D0%B7%D1%80%D0%B0%D0%B1%D0%BE%D1%82%D0%BA%D0%B0%2C%20%D0%B0%20%D1%82%D0%B0%D0%BA%D0%B6%D0%B5%20%D1%83%D1%82%D0%B8%D0%BB%D0%B8%D1%82%D1%8B%20%D0%B4%D0%BB%D1%8F%20%D1%80%D0%B0%D0%B1%D0%BE%D1%82%D1%8B%20%D1%81%20%D0%B4%D0%B0%D0%BD%D0%BD%D1%8B%D0%BC%D0%B8.&lang=ru&module_slug=prime-coordinator HTTP/1.1" 200 622108
+[2026-11-21 15:12:33,029] INFO django.server basehttp "POST /api/chat/message/stream HTTP/1.1" 200 5245
+[2026-11-21 15:14:41,856] INFO django.utils.autoreload autoreload Watching for file changes with StatReloader
+[2026-11-21 15:15:29,554] INFO django.server basehttp "GET /api/chat/session HTTP/1.1" 200 73
+[2026-11-21 15:15:29,657] INFO django.server basehttp "GET /api/chat/session HTTP/1.1" 200 73
+[2026-11-21 15:15:29,766] INFO django.server basehttp "GET /api/posts?lang=ru HTTP/1.1" 200 4755
+[2026-11-21 15:15:29,868] INFO django.server basehttp "GET /api/projects?lang=ru HTTP/1.1" 200 14784
+[2026-11-21 15:15:29,869] INFO django.server basehttp "GET /api/posts?lang=ru HTTP/1.1" 200 4755
+[2026-11-21 15:15:30,069] INFO django.server basehttp "GET /api/projects?lang=ru HTTP/1.1" 200 14784
+[2026-11-21 15:17:17,531] INFO django.server basehttp "DELETE /api/chat/session HTTP/1.1" 200 16
+[2026-11-21 15:17:17,581] INFO django.server basehttp "GET /api/chat/session HTTP/1.1" 200 73
+[2026-11-21 15:18:44,697] INFO django.utils.autoreload autoreload Watching for file changes with StatReloader
+[2026-11-21 15:19:30,451] INFO django.server basehttp "GET /api/chat/session HTTP/1.1" 200 73
+[2026-11-21 15:19:30,539] INFO django.server basehttp "GET /api/posts?lang=ru HTTP/1.1" 200 4755
+[2026-11-21 15:19:30,638] INFO django.server basehttp "GET /api/chat/session HTTP/1.1" 200 73
+[2026-11-21 15:19:30,763] INFO django.server basehttp "GET /api/posts?lang=ru HTTP/1.1" 200 4755
+[2026-11-21 15:19:30,847] INFO django.server basehttp "GET /api/projects?lang=ru HTTP/1.1" 200 14784
+[2026-11-21 15:19:31,126] INFO django.server basehttp "GET /api/projects?lang=ru HTTP/1.1" 200 14784
+[2026-11-21 15:29:54,439] INFO django.utils.autoreload autoreload Watching for file changes with StatReloader
+[2026-11-21 15:32:36,792] INFO django.server basehttp "GET /api/chat/session HTTP/1.1" 200 73
+[2026-11-21 15:32:36,837] INFO django.server basehttp "GET /api/chat/session HTTP/1.1" 200 73
+[2026-11-21 15:32:37,164] ERROR django.request log Internal Server Error: /api/projects/
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/site-packages/django/db/backends/utils.py", line 105, in _execute
+    return self.cursor.execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+psycopg2.errors.UndefinedTable: relation "projects_project" does not exist
+LINE 1: ...created_at", "projects_project"."updated_at" FROM "projects_...
+                                                             ^
+
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/django/core/handlers/base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/django/views/decorators/csrf.py", line 65, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/rest_framework/viewsets.py", line 125, in view
+    return self.dispatch(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/rest_framework/views.py", line 515, in dispatch
+    response = self.handle_exception(exc)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/rest_framework/views.py", line 475, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "/usr/local/lib/python3.12/site-packages/rest_framework/views.py", line 486, in raise_uncaught_exception
+    raise exc
+  File "/usr/local/lib/python3.12/site-packages/rest_framework/views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/rest_framework/mixins.py", line 46, in list
+    return Response(serializer.data)
+                    ^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/rest_framework/serializers.py", line 809, in data
+    ret = super().data
+          ^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/rest_framework/serializers.py", line 251, in data
+    self._data = self.to_representation(self.instance)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/rest_framework/serializers.py", line 728, in to_representation
+    self.child.to_representation(item) for item in iterable
+                                                   ^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/django/db/models/query.py", line 400, in __iter__
+    self._fetch_all()
+  File "/usr/local/lib/python3.12/site-packages/django/db/models/query.py", line 1928, in _fetch_all
+    self._result_cache = list(self._iterable_class(self))
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/django/db/models/query.py", line 91, in __iter__
+    results = compiler.execute_sql(
+              ^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/django/db/models/sql/compiler.py", line 1562, in execute_sql
+    cursor.execute(sql, params)
+  File "/usr/local/lib/python3.12/site-packages/django/db/backends/utils.py", line 122, in execute
+    return super().execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/django/db/backends/utils.py", line 79, in execute
+    return self._execute_with_wrappers(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/django/db/backends/utils.py", line 92, in _execute_with_wrappers
+    return executor(sql, params, many, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/django/db/backends/utils.py", line 100, in _execute
+    with self.db.wrap_database_errors:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/django/db/utils.py", line 91, in __exit__
+    raise dj_exc_value.with_traceback(traceback) from exc_value
+  File "/usr/local/lib/python3.12/site-packages/django/db/backends/utils.py", line 105, in _execute
+    return self.cursor.execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+django.db.utils.ProgrammingError: relation "projects_project" does not exist
+LINE 1: ...created_at", "projects_project"."updated_at" FROM "projects_...
+                                                             ^
+
+[2026-11-21 15:32:37,178] ERROR django.request log Internal Server Error: /api/posts/
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/site-packages/django/db/backends/utils.py", line 105, in _execute
+    return self.cursor.execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+psycopg2.errors.UndefinedTable: relation "blog_post" does not exist
+LINE 1: ...post"."created_at", "blog_post"."updated_at" FROM "blog_post...
+                                                             ^
+
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/django/core/handlers/base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/django/views/decorators/csrf.py", line 65, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/rest_framework/viewsets.py", line 125, in view
+    return self.dispatch(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/rest_framework/views.py", line 515, in dispatch
+    response = self.handle_exception(exc)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/rest_framework/views.py", line 475, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "/usr/local/lib/python3.12/site-packages/rest_framework/views.py", line 486, in raise_uncaught_exception
+    raise exc
+  File "/usr/local/lib/python3.12/site-packages/rest_framework/views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/rest_framework/mixins.py", line 46, in list
+    return Response(serializer.data)
+                    ^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/rest_framework/serializers.py", line 809, in data
+    ret = super().data
+          ^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/rest_framework/serializers.py", line 251, in data
+    self._data = self.to_representation(self.instance)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/rest_framework/serializers.py", line 728, in to_representation
+    self.child.to_representation(item) for item in iterable
+                                                   ^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/django/db/models/query.py", line 400, in __iter__
+    self._fetch_all()
+  File "/usr/local/lib/python3.12/site-packages/django/db/models/query.py", line 1928, in _fetch_all
+    self._result_cache = list(self._iterable_class(self))
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/django/db/models/query.py", line 91, in __iter__
+    results = compiler.execute_sql(
+              ^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/django/db/models/sql/compiler.py", line 1562, in execute_sql
+    cursor.execute(sql, params)
+  File "/usr/local/lib/python3.12/site-packages/django/db/backends/utils.py", line 122, in execute
+    return super().execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/django/db/backends/utils.py", line 79, in execute
+    return self._execute_with_wrappers(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/django/db/backends/utils.py", line 92, in _execute_with_wrappers
+    return executor(sql, params, many, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/django/db/backends/utils.py", line 100, in _execute
+    with self.db.wrap_database_errors:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/django/db/utils.py", line 91, in __exit__
+    raise dj_exc_value.with_traceback(traceback) from exc_value
+  File "/usr/local/lib/python3.12/site-packages/django/db/backends/utils.py", line 105, in _execute
+    return self.cursor.execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+django.db.utils.ProgrammingError: relation "blog_post" does not exist
+LINE 1: ...post"."created_at", "blog_post"."updated_at" FROM "blog_post...
+                                                             ^
+
+[2026-11-21 15:32:37,203] ERROR django.server basehttp "GET /api/posts?lang=ru HTTP/1.1" 500 174873
+[2026-11-21 15:32:37,206] ERROR django.server basehttp "GET /api/projects?lang=ru HTTP/1.1" 500 177994
+[2026-11-21 15:32:37,508] ERROR django.request log Internal Server Error: /api/projects/
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/site-packages/django/db/backends/utils.py", line 105, in _execute
+    return self.cursor.execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+psycopg2.errors.UndefinedTable: relation "projects_project" does not exist
+LINE 1: ...created_at", "projects_project"."updated_at" FROM "projects_...
+                                                             ^
+
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/django/core/handlers/base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/django/views/decorators/csrf.py", line 65, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/rest_framework/viewsets.py", line 125, in view
+    return self.dispatch(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/rest_framework/views.py", line 515, in dispatch
+    response = self.handle_exception(exc)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/rest_framework/views.py", line 475, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "/usr/local/lib/python3.12/site-packages/rest_framework/views.py", line 486, in raise_uncaught_exception
+    raise exc
+  File "/usr/local/lib/python3.12/site-packages/rest_framework/views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/rest_framework/mixins.py", line 46, in list
+    return Response(serializer.data)
+                    ^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/rest_framework/serializers.py", line 809, in data
+    ret = super().data
+          ^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/rest_framework/serializers.py", line 251, in data
+    self._data = self.to_representation(self.instance)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/rest_framework/serializers.py", line 728, in to_representation
+    self.child.to_representation(item) for item in iterable
+                                                   ^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/django/db/models/query.py", line 400, in __iter__
+    self._fetch_all()
+  File "/usr/local/lib/python3.12/site-packages/django/db/models/query.py", line 1928, in _fetch_all
+    self._result_cache = list(self._iterable_class(self))
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/django/db/models/query.py", line 91, in __iter__
+    results = compiler.execute_sql(
+              ^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/django/db/models/sql/compiler.py", line 1562, in execute_sql
+    cursor.execute(sql, params)
+  File "/usr/local/lib/python3.12/site-packages/django/db/backends/utils.py", line 122, in execute
+    return super().execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/django/db/backends/utils.py", line 79, in execute
+    return self._execute_with_wrappers(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/django/db/backends/utils.py", line 92, in _execute_with_wrappers
+    return executor(sql, params, many, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/django/db/backends/utils.py", line 100, in _execute
+    with self.db.wrap_database_errors:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/django/db/utils.py", line 91, in __exit__
+    raise dj_exc_value.with_traceback(traceback) from exc_value
+  File "/usr/local/lib/python3.12/site-packages/django/db/backends/utils.py", line 105, in _execute
+    return self.cursor.execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+django.db.utils.ProgrammingError: relation "projects_project" does not exist
+LINE 1: ...created_at", "projects_project"."updated_at" FROM "projects_...
+                                                             ^
+
+[2026-11-21 15:32:37,529] ERROR django.server basehttp "GET /api/projects?lang=ru HTTP/1.1" 500 177994
+[2026-11-21 15:32:37,561] ERROR django.request log Internal Server Error: /api/posts/
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/site-packages/django/db/backends/utils.py", line 105, in _execute
+    return self.cursor.execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+psycopg2.errors.UndefinedTable: relation "blog_post" does not exist
+LINE 1: ...post"."created_at", "blog_post"."updated_at" FROM "blog_post...
+                                                             ^
+
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/django/core/handlers/base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/django/views/decorators/csrf.py", line 65, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/rest_framework/viewsets.py", line 125, in view
+    return self.dispatch(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/rest_framework/views.py", line 515, in dispatch
+    response = self.handle_exception(exc)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/rest_framework/views.py", line 475, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "/usr/local/lib/python3.12/site-packages/rest_framework/views.py", line 486, in raise_uncaught_exception
+    raise exc
+  File "/usr/local/lib/python3.12/site-packages/rest_framework/views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/rest_framework/mixins.py", line 46, in list
+    return Response(serializer.data)
+                    ^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/rest_framework/serializers.py", line 809, in data
+    ret = super().data
+          ^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/rest_framework/serializers.py", line 251, in data
+    self._data = self.to_representation(self.instance)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/rest_framework/serializers.py", line 728, in to_representation
+    self.child.to_representation(item) for item in iterable
+                                                   ^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/django/db/models/query.py", line 400, in __iter__
+    self._fetch_all()
+  File "/usr/local/lib/python3.12/site-packages/django/db/models/query.py", line 1928, in _fetch_all
+    self._result_cache = list(self._iterable_class(self))
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/django/db/models/query.py", line 91, in __iter__
+    results = compiler.execute_sql(
+              ^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/django/db/models/sql/compiler.py", line 1562, in execute_sql
+    cursor.execute(sql, params)
+  File "/usr/local/lib/python3.12/site-packages/django/db/backends/utils.py", line 122, in execute
+    return super().execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/django/db/backends/utils.py", line 79, in execute
+    return self._execute_with_wrappers(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/django/db/backends/utils.py", line 92, in _execute_with_wrappers
+    return executor(sql, params, many, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/django/db/backends/utils.py", line 100, in _execute
+    with self.db.wrap_database_errors:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/django/db/utils.py", line 91, in __exit__
+    raise dj_exc_value.with_traceback(traceback) from exc_value
+  File "/usr/local/lib/python3.12/site-packages/django/db/backends/utils.py", line 105, in _execute
+    return self.cursor.execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+django.db.utils.ProgrammingError: relation "blog_post" does not exist
+LINE 1: ...post"."created_at", "blog_post"."updated_at" FROM "blog_post...
+                                                             ^
+
+[2026-11-21 15:32:37,569] ERROR django.server basehttp "GET /api/posts?lang=ru HTTP/1.1" 500 174873
+[2026-11-21 15:32:55,855] ERROR django.request log Internal Server Error: /api/chat/message/stream/
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/site-packages/django/db/backends/utils.py", line 105, in _execute
+    return self.cursor.execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+psycopg2.errors.UndefinedTable: relation "ai_agent_agentmodule" does not exist
+LINE 1: ...", "ai_agent_agentmodule"."routing_keywords" FROM "ai_agent_...
+                                                             ^
+
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/django/core/handlers/base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/django/views/decorators/csrf.py", line 65, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/django/views/generic/base.py", line 104, in view
+    return self.dispatch(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/rest_framework/views.py", line 515, in dispatch
+    response = self.handle_exception(exc)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/rest_framework/views.py", line 475, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "/usr/local/lib/python3.12/site-packages/rest_framework/views.py", line 486, in raise_uncaught_exception
+    raise exc
+  File "/usr/local/lib/python3.12/site-packages/rest_framework/views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/app/apps/ai_agent/views.py", line 235, in post
+    effective_slug = resolve_module_slug(user_message, module_slug)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/app/apps/ai_agent/services/routing.py", line 95, in resolve_module_slug
+    modules = list(
+              ^^^^^
+  File "/usr/local/lib/python3.12/site-packages/django/db/models/query.py", line 400, in __iter__
+    self._fetch_all()
+  File "/usr/local/lib/python3.12/site-packages/django/db/models/query.py", line 1928, in _fetch_all
+    self._result_cache = list(self._iterable_class(self))
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/django/db/models/query.py", line 248, in __iter__
+    return compiler.results_iter(
+           ^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/django/db/models/sql/compiler.py", line 1513, in results_iter
+    results = self.execute_sql(
+              ^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/django/db/models/sql/compiler.py", line 1562, in execute_sql
+    cursor.execute(sql, params)
+  File "/usr/local/lib/python3.12/site-packages/django/db/backends/utils.py", line 122, in execute
+    return super().execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/django/db/backends/utils.py", line 79, in execute
+    return self._execute_with_wrappers(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/django/db/backends/utils.py", line 92, in _execute_with_wrappers
+    return executor(sql, params, many, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/django/db/backends/utils.py", line 100, in _execute
+    with self.db.wrap_database_errors:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/django/db/utils.py", line 91, in __exit__
+    raise dj_exc_value.with_traceback(traceback) from exc_value
+  File "/usr/local/lib/python3.12/site-packages/django/db/backends/utils.py", line 105, in _execute
+    return self.cursor.execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+django.db.utils.ProgrammingError: relation "ai_agent_agentmodule" does not exist
+LINE 1: ...", "ai_agent_agentmodule"."routing_keywords" FROM "ai_agent_...
+                                                             ^
+
+[2026-11-21 15:32:55,861] ERROR django.server basehttp "POST /api/chat/message/stream HTTP/1.1" 500 21891
+[2026-11-21 15:33:06,869] INFO django.server basehttp "DELETE /api/chat/session HTTP/1.1" 200 16
+[2026-11-21 15:33:06,921] INFO django.server basehttp "GET /api/chat/session HTTP/1.1" 200 73
+[2026-11-21 15:33:08,819] ERROR django.request log Internal Server Error: /api/chat/message/stream/
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/site-packages/django/db/backends/utils.py", line 105, in _execute
+    return self.cursor.execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+psycopg2.errors.UndefinedTable: relation "ai_agent_agentmodule" does not exist
+LINE 1: ...", "ai_agent_agentmodule"."routing_keywords" FROM "ai_agent_...
+                                                             ^
+
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/django/core/handlers/base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/django/views/decorators/csrf.py", line 65, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/django/views/generic/base.py", line 104, in view
+    return self.dispatch(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/rest_framework/views.py", line 515, in dispatch
+    response = self.handle_exception(exc)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/rest_framework/views.py", line 475, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "/usr/local/lib/python3.12/site-packages/rest_framework/views.py", line 486, in raise_uncaught_exception
+    raise exc
+  File "/usr/local/lib/python3.12/site-packages/rest_framework/views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/app/apps/ai_agent/views.py", line 235, in post
+    effective_slug = resolve_module_slug(user_message, module_slug)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/app/apps/ai_agent/services/routing.py", line 95, in resolve_module_slug
+    modules = list(
+              ^^^^^
+  File "/usr/local/lib/python3.12/site-packages/django/db/models/query.py", line 400, in __iter__
+    self._fetch_all()
+  File "/usr/local/lib/python3.12/site-packages/django/db/models/query.py", line 1928, in _fetch_all
+    self._result_cache = list(self._iterable_class(self))
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/django/db/models/query.py", line 248, in __iter__
+    return compiler.results_iter(
+           ^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/django/db/models/sql/compiler.py", line 1513, in results_iter
+    results = self.execute_sql(
+              ^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/django/db/models/sql/compiler.py", line 1562, in execute_sql
+    cursor.execute(sql, params)
+  File "/usr/local/lib/python3.12/site-packages/django/db/backends/utils.py", line 122, in execute
+    return super().execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/django/db/backends/utils.py", line 79, in execute
+    return self._execute_with_wrappers(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/django/db/backends/utils.py", line 92, in _execute_with_wrappers
+    return executor(sql, params, many, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/django/db/backends/utils.py", line 100, in _execute
+    with self.db.wrap_database_errors:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/django/db/utils.py", line 91, in __exit__
+    raise dj_exc_value.with_traceback(traceback) from exc_value
+  File "/usr/local/lib/python3.12/site-packages/django/db/backends/utils.py", line 105, in _execute
+    return self.cursor.execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+django.db.utils.ProgrammingError: relation "ai_agent_agentmodule" does not exist
+LINE 1: ...", "ai_agent_agentmodule"."routing_keywords" FROM "ai_agent_...
+                                                             ^
+
+[2026-11-21 15:33:08,825] ERROR django.server basehttp "POST /api/chat/message/stream HTTP/1.1" 500 21891

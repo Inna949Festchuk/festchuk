@@ -10,6 +10,7 @@ The agent:
 """
 import json
 import logging
+import re
 import time
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any
@@ -533,6 +534,38 @@ TOOLS = [
     },
 ]
 
+# Coordinator: the only tool is activate_module (2026-11-21). Specialist
+# questions are handed to specialists (they keep the full tool set), and
+# portfolio-composition questions are answered from the "portfolio map"
+# block in the prompt (fresh from the DB each turn) — zero tool rounds.
+# Before that "расскажи про проекты" cost two LLM rounds over a 36-repo
+# tool_result, and a provider latency spike made it look like a hang.
+COORDINATOR_SLUG = 'prime-coordinator'
+COORDINATOR_TOOLS = [t for t in TOOLS if t['function']['name'] == 'activate_module']
+
+COORDINATOR_RULES = {
+    'ru': (
+        "Правило координатора: твой единственный инструмент — activate_module "
+        "(передача специалисту). На вопросы о составе портфолио (сколько и какие "
+        "проекты, направления, список статей) отвечай по блоку «Карта портфолио» "
+        "в твоём промпте: это свежие данные из базы, обновляются каждый ход; "
+        "метка ★ — избранные проекты (главная страница). Детали, которых нет в "
+        "карте (код, архитектура, статистика, текст статьи, технологии) — передай "
+        "профильному специалисту через activate_module: у него инструменты по "
+        "данным портфолио. НИКОГДА не выдумывай проекты и статьи, которых нет в карте."
+    ),
+    'en': (
+        "Coordinator rule: your only tool is activate_module (handoff to a specialist). "
+        "Answer portfolio-composition questions (how many and which projects, "
+        "directions, article list) from the 'Portfolio map' block in your prompt: "
+        "it is fresh database data, updated every turn; the ★ mark denotes featured "
+        "projects (front page). For details not in the map (code, architecture, "
+        "statistics, article text, technologies) hand off to the matching specialist "
+        "via activate_module — they have the portfolio data tools. NEVER invent "
+        "projects or articles that are not in the map."
+    ),
+}
+
 
 def _execute_tool(name: str, arguments: dict[str, Any], lang: str = 'ru') -> str:
     """Execute a tool function and return the result as a string."""
@@ -677,6 +710,56 @@ class AIAgent:
     def _get_history_key(self) -> str:
         return f"chat_history:{self.session.session_id}"
 
+    def _tools(self):
+        """Инструменты текущей персоны: у координатора — только activate_module
+        (состав портфолио — блок «Карта» в промпте, предметные вопросы — к
+        специалистам), у специалистов — полный набор."""
+        if self.module_slug == COORDINATOR_SLUG:
+            return COORDINATOR_TOOLS
+        return TOOLS
+
+    def _portfolio_map(self) -> str:
+        """Компактная карта портфолио для промпта координатора.
+
+        Собирается из БД каждый ход (два мелких SELECT'а, миллисекунды) — без
+        кэша и signals: после правок в Admin блок никогда не отстаёт от факта,
+        а LLM-раунд и так доминирует по латентности.
+        """
+        from apps.projects.models import Project
+        from apps.blog.models import Post
+
+        project_lines = []
+        projects = Project.objects.filter(
+            visibility=Project.Visibility.PUBLIC,
+        ).order_by('-is_featured', 'title_ru')
+        for p in projects:
+            title = p.get_field('title', self.lang)
+            summary = re.sub(r'\s+', ' ', p.get_field('summary', self.lang)).strip()[:150]
+            star = ' ★' if p.is_featured else ''
+            project_lines.append(f'- {title}{star} — {summary}' if summary else f'- {title}{star}')
+
+        post_lines = []
+        posts = Post.objects.filter(status=Post.Status.PUBLISHED).order_by('-published_at')
+        for post in posts:
+            date = post.published_at.strftime('%Y-%m') if post.published_at else ''
+            post_lines.append(
+                f'- {post.get_field("title", self.lang)} (статья, {date})' if date
+                else f'- {post.get_field("title", self.lang)} (статья)'
+            )
+
+        if not project_lines and not post_lines:
+            return ''
+
+        lines = [
+            'Карта портфолио (свежие данные из БД, обновляется каждый ход; '
+            '★ — избранные проекты на главной):',
+            f'Проекты ({len(project_lines)}):',
+            *project_lines,
+        ]
+        if post_lines:
+            lines += ['', f'Статьи ({len(post_lines)}):', *post_lines]
+        return '\n'.join(lines)
+
     def _load_history(self) -> list[dict]:
         """Load conversation history from Redis — the only dialogue copy.
 
@@ -812,8 +895,16 @@ class AIAgent:
         # persona this turn (see CONTEXT7_AWARENESS).
         system_prompt += "\n\n" + self._context7_awareness(context7_docs)
 
-        # Data guard: no invented projects/articles (applies to every persona).
-        system_prompt += "\n\n" + DATA_RULES[self.lang]
+        # Data guard: no invented projects/articles.
+        if self.module_slug == COORDINATOR_SLUG:
+            # Координатор: состав — из блока «Карта портфолио» (свежая БД),
+            # предметные детали — через activate_module к специалисту.
+            system_prompt += "\n\n" + COORDINATOR_RULES[self.lang]
+            portfolio_map = self._portfolio_map()
+            if portfolio_map:
+                system_prompt += "\n\n" + portfolio_map
+        else:
+            system_prompt += "\n\n" + DATA_RULES[self.lang]
         system_prompt += "\n\n" + PRIVACY_RULES[self.lang]
 
         # Naming guard: prevent conflating module names with the project name.
@@ -998,7 +1089,7 @@ class AIAgent:
         for _ in range(max_tool_rounds + 1):
             response = self.client.chat_completion_with_tools(
                 messages=messages,
-                tools=TOOLS,
+                tools=self._tools(),
             )
 
             choice = response.choices[0]
@@ -1090,7 +1181,7 @@ class AIAgent:
         assistant_text = ''
         try:
             for _round in range(max_tool_rounds + 1):
-                stream = self.client.chat_completion_stream(messages=messages, tools=TOOLS)
+                stream = self.client.chat_completion_stream(messages=messages, tools=self._tools())
                 content_parts: list[str] = []
                 tool_calls: dict[int, dict] = {}
                 for chunk in stream:
