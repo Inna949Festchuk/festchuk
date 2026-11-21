@@ -31,6 +31,7 @@ interface Project {
   cover_image: string | null;
   views_count: number;
   likes_count: number;
+  has_liked: boolean;
   created_at: string;
 }
 
@@ -95,7 +96,13 @@ export default function ProjectDetailPage() {
     fetch(`/api/projects/${slug}/?lang=${locale}`)
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
-        setProject(data && data.id ? data : null);
+        if (data && data.id) {
+          setProject(data);
+          setLiked(Boolean(data.has_liked));
+          // Просмотр страницы учитываем здесь: сервер дедуплицирует по IP
+          // в 24-часовом окне, повторные/двойные вызовы (StrictMode) безвредны.
+          fetch(`/api/projects/${slug}/view/`, {method: 'POST'}).catch(() => {});
+        }
         setLoading(false);
       })
       .catch(() => setLoading(false));
@@ -104,9 +111,13 @@ export default function ProjectDetailPage() {
   const handleLike = useCallback(async () => {
     if (!project || liked) return;
     try {
-      await fetch(`/api/projects/${slug}/like/`, {method: 'POST'});
+      const res = await fetch(`/api/projects/${slug}/like/`, {method: 'POST'});
+      // 200 — новый лайк (+1 к счётчику), 429 — уже лайкал в окне:
+      // только закрашиваем сердечко, счётчик не трогаем.
       setLiked(true);
-      setProject((prev) => (prev ? {...prev, likes_count: prev.likes_count + 1} : null));
+      if (res.status === 200) {
+        setProject((prev) => (prev ? {...prev, likes_count: prev.likes_count + 1} : null));
+      }
     } catch {}
   }, [project, liked, slug]);
 

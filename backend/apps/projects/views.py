@@ -74,9 +74,12 @@ class ProjectViewSet(viewsets.ModelViewSet):
         """Record a like for a project."""
         project = self.get_object()
         success, already_liked = AnalyticsService.record_like(request, project)
+        # F()-апдейт не обновляет экземпляр в памяти — без refresh счётчик
+        # в ответе отставал бы на +1 (в т.ч. при дубликате).
+        project.refresh_from_db()
         return Response({
             'success': success,
-            'likes_count': project.likes_count if success else project.likes_count + 1,
+            'likes_count': project.likes_count,
             'already_liked': already_liked,
         }, status=status.HTTP_200_OK if success else status.HTTP_429_TOO_MANY_REQUESTS)
 
@@ -85,5 +88,6 @@ class ProjectViewSet(viewsets.ModelViewSet):
         """Record a view for a project."""
         project = self.get_object()
         AnalyticsService.record_view(request, project)
+        project.refresh_from_db()
         return Response({'success': True, 'views_count': project.views_count})
 

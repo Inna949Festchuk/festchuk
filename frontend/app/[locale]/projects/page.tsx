@@ -17,6 +17,7 @@ interface Project {
   github_url: string;
   views_count: number;
   likes_count: number;
+  has_liked: boolean;
   is_featured: boolean;
 }
 
@@ -26,24 +27,33 @@ export default function ProjectsPage() {
 
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
+  const [likedIds, setLikedIds] = useState<Set<number>>(new Set());
 
   useEffect(() => {
     fetch(`/api/projects/?lang=${locale}`)
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
-        // pagination disabled: the API returns a plain array now.
-        setProjects(Array.isArray(data) ? data : (data?.results ?? []));
+        const list: Project[] = Array.isArray(data) ? data : (data?.results ?? []);
+        setProjects(list);
+        // Сердечко закрашено сразу при загрузке, если этот IP уже лайкал.
+        setLikedIds(new Set(list.filter((p) => p.has_liked).map((p) => p.id)));
         setLoading(false);
       })
       .catch(() => setLoading(false));
   }, [locale]);
 
   const handleLike = async (project: Project) => {
+    if (likedIds.has(project.id)) return;
     try {
-      await fetch(`/api/projects/${project.slug}/like/`, {method: 'POST'});
-      setProjects((prev) =>
-        prev.map((p) => (p.id === project.id ? {...p, likes_count: p.likes_count + 1} : p)),
-      );
+      const res = await fetch(`/api/projects/${project.slug}/like/`, {method: 'POST'});
+      // Сервер дедуплицирует: 200 — новый лайк (+1 к счётчику),
+      // 429 — уже лайкал в 24ч-окне (счётчик не трогаем).
+      setLikedIds((prev) => new Set(prev).add(project.id));
+      if (res.status === 200) {
+        setProjects((prev) =>
+          prev.map((p) => (p.id === project.id ? {...p, likes_count: p.likes_count + 1} : p)),
+        );
+      }
     } catch {}
   };
 
@@ -156,10 +166,17 @@ export default function ProjectsPage() {
                         <button
                           type="button"
                           onClick={() => handleLike(project)}
-                          className="flex items-center gap-1.5 hover:text-neon-magenta transition-colors"
+                          className={`flex items-center gap-1.5 transition-colors ${
+                            likedIds.has(project.id)
+                              ? 'text-neon-magenta'
+                              : 'hover:text-neon-magenta'
+                          }`}
                           title="like"
                         >
-                          <Heart className="w-4 h-4 text-neon-magenta" />
+                          <Heart
+                            className="w-4 h-4 text-neon-magenta"
+                            fill={likedIds.has(project.id) ? 'currentColor' : 'none'}
+                          />
                           {project.likes_count}
                         </button>
                         {project.github_url && (

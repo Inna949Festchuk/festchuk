@@ -24,6 +24,7 @@ from .serializers import (
     AgentModuleSerializer,
 )
 from .services.agent import AIAgent
+from .services.budget import DailyBudgetExceeded, check_daily_budget
 from .services.pii import mask_pii
 from .services.router_ai import RouterAIClient, tts_content_type
 from .services.routing import resolve_module_slug
@@ -48,6 +49,30 @@ def _pii_counters(types: list):
         except ValueError:
             # cache.incr требует существующего ключа — создаём первый раз
             cache.set(key, 1)
+
+
+# Глобальный суточный бюджет LLM (circuit breaker): троттлинг per-IP не
+# защищает от распределённого флуда с разных IP, который сливает баланс.
+BUDGET_ERROR_MESSAGES = {
+    'ru': 'Дневной лимит запросов к ИИ исчерпан — попробуйте позже.',
+    'en': 'Daily AI request limit reached — please try again later.',
+}
+
+
+def _budget_response(lang: str):
+    return Response(
+        {'error': BUDGET_ERROR_MESSAGES.get(lang, BUDGET_ERROR_MESSAGES['ru'])},
+        status=status.HTTP_429_TOO_MANY_REQUESTS,
+    )
+
+
+def _check_budget(lang: str):
+    """Пре-флайт-проверка бюджета: 429-ответ или None (продолжить)."""
+    try:
+        check_daily_budget()
+    except DailyBudgetExceeded:
+        return _budget_response(lang)
+    return None
 
 
 class ChatSessionView(APIView):
@@ -109,6 +134,11 @@ class ChatMessageView(APIView):
         user_message = serializer.validated_data['message']
         lang = serializer.validated_data.get('lang', 'ru')
         module_slug = serializer.validated_data.get('module_slug', '')
+
+        # Бюджет до сессии/PII/LLM: при исчерпании — сразу 429 без затрат
+        budget_response = _check_budget(lang)
+        if budget_response is not None:
+            return budget_response
 
         # Сессия привязана к IP: чужой/протухший session_id → 404
         session = verify_session(_hash_ip(_get_client_ip(request)), session_id)
@@ -183,6 +213,11 @@ class ChatMessageStreamView(APIView):
         user_message = serializer.validated_data['message']
         lang = serializer.validated_data.get('lang', 'ru')
         module_slug = serializer.validated_data.get('module_slug', '')
+
+        # Бюджет до сессии/PII/LLM: при исчерпании — сразу 429 без затрат
+        budget_response = _check_budget(lang)
+        if budget_response is not None:
+            return budget_response
 
         # Сессия привязана к IP: чужой/протухший session_id → 404
         session = verify_session(_hash_ip(_get_client_ip(request)), session_id)

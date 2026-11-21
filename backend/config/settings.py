@@ -257,6 +257,11 @@ MAX_CHAT_HISTORY = int(os.getenv('MAX_CHAT_HISTORY', '16'))
 RAG_TOP_K = int(os.getenv('RAG_TOP_K', '3'))
 # Upper bound on characters handed to the synthesizer per request.
 TTS_MAX_CHARS = int(os.getenv('TTS_MAX_CHARS', '4000'))
+# Глобальный суточный бюджет LLM (circuit breaker): троттлинг per-IP не
+# защищает от распределённого флуда (волна трафика с разных IP сливает баланс
+# RouterAI). Счётчики в Redis, ключи с датой, TTL 48ч.
+ROUTERAI_DAILY_MAX_REQUESTS = int(os.getenv('ROUTERAI_DAILY_MAX_REQUESTS', '1000'))
+ROUTERAI_DAILY_MAX_TOKENS = int(os.getenv('ROUTERAI_DAILY_MAX_TOKENS', '5000000'))
 
 # ============================================================
 # Context7 — live library documentation for module-specific AI

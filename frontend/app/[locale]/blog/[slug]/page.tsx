@@ -30,6 +30,7 @@ interface Post {
   published_at: string;
   views_count: number;
   likes_count: number;
+  has_liked: boolean;
   tts_audio_url: string;
   reading_time_minutes: number;
 }
@@ -52,7 +53,13 @@ export default function BlogPostPage() {
     fetch(`/api/posts/${slug}/?lang=${locale}`)
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
-        setPost(data && data.id ? data : null);
+        if (data && data.id) {
+          setPost(data);
+          setLiked(Boolean(data.has_liked));
+          // Просмотр страницы учитываем здесь: сервер дедуплицирует по IP
+          // в 24-часовом окне, повторные/двойные вызовы (StrictMode) безвредны.
+          fetch(`/api/posts/${slug}/view/`, {method: 'POST'}).catch(() => {});
+        }
         setLoading(false);
       })
       .catch(() => setLoading(false));
@@ -67,9 +74,13 @@ export default function BlogPostPage() {
   const handleLike = useCallback(async () => {
     if (!post || liked) return;
     try {
-      await fetch(`/api/posts/${post.slug}/like/`, {method: 'POST'});
+      const res = await fetch(`/api/posts/${post.slug}/like/`, {method: 'POST'});
+      // 200 — новый лайк (+1 к счётчику), 429 — уже лайкал в окне:
+      // только закрашиваем сердечко, счётчик не трогаем.
       setLiked(true);
-      setPost((prev) => (prev ? {...prev, likes_count: prev.likes_count + 1} : null));
+      if (res.status === 200) {
+        setPost((prev) => (prev ? {...prev, likes_count: prev.likes_count + 1} : null));
+      }
     } catch {}
   }, [post, liked]);
 

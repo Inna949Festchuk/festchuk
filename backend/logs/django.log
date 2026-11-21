@@ -3638,3 +3638,68 @@ requests.exceptions.ConnectionError: HTTPSConnectionPool(host='context7.com', po
 [2026-11-21 03:44:08,959] INFO django.server basehttp "GET /api/chat/session HTTP/1.1" 200 73
 [2026-11-21 03:44:08,989] INFO django.server basehttp "GET /api/chat/session HTTP/1.1" 200 73
 [2026-11-21 03:44:09,017] INFO django.server basehttp "GET /api/chat/session HTTP/1.1" 200 73
+[2026-11-21 04:31:18,500] INFO django.utils.autoreload autoreload /app/apps/projects/views.py changed, reloading.
+[2026-11-21 04:31:22,768] INFO django.utils.autoreload autoreload Watching for file changes with StatReloader
+[2026-11-21 04:31:27,311] INFO django.utils.autoreload autoreload /app/apps/projects/serializers.py changed, reloading.
+[2026-11-21 04:31:29,314] INFO django.utils.autoreload autoreload Watching for file changes with StatReloader
+[2026-11-21 04:31:33,312] INFO django.utils.autoreload autoreload /app/apps/projects/serializers.py changed, reloading.
+[2026-11-21 04:31:35,163] INFO django.utils.autoreload autoreload Watching for file changes with StatReloader
+[2026-11-21 04:31:39,196] INFO django.utils.autoreload autoreload /app/apps/projects/serializers.py changed, reloading.
+[2026-11-21 04:31:41,137] INFO django.utils.autoreload autoreload Watching for file changes with StatReloader
+[2026-11-21 04:31:46,318] INFO django.utils.autoreload autoreload /app/apps/blog/serializers.py changed, reloading.
+[2026-11-21 04:31:48,233] INFO django.utils.autoreload autoreload Watching for file changes with StatReloader
+[2026-11-21 04:31:52,381] INFO django.utils.autoreload autoreload /app/config/settings.py changed, reloading.
+[2026-11-21 04:31:54,231] INFO django.utils.autoreload autoreload Watching for file changes with StatReloader
+[2026-11-21 04:31:58,355] INFO django.utils.autoreload autoreload /app/config/settings.py changed, reloading.
+[2026-11-21 04:32:00,355] INFO django.utils.autoreload autoreload Watching for file changes with StatReloader
+[2026-11-21 04:32:18,323] INFO django.utils.autoreload autoreload /app/apps/ai_agent/services/agent.py changed, reloading.
+[2026-11-21 04:32:20,331] INFO django.utils.autoreload autoreload Watching for file changes with StatReloader
+[2026-11-21 04:32:25,435] INFO django.utils.autoreload autoreload /app/apps/ai_agent/services/agent.py changed, reloading.
+[2026-11-21 04:32:27,339] INFO django.utils.autoreload autoreload Watching for file changes with StatReloader
+[2026-11-21 04:32:37,827] INFO django.utils.autoreload autoreload /app/apps/ai_agent/views.py changed, reloading.
+[2026-11-21 04:32:39,878] INFO django.utils.autoreload autoreload Watching for file changes with StatReloader
+[2026-11-21 04:32:47,132] INFO django.utils.autoreload autoreload /app/apps/ai_agent/views.py changed, reloading.
+[2026-11-21 04:32:49,025] INFO django.utils.autoreload autoreload Watching for file changes with StatReloader
+[2026-11-21 04:33:56,916] INFO django.server basehttp "GET /api/chat/session HTTP/1.1" 200 73
+[2026-11-21 04:33:58,517] INFO django.server basehttp "GET /api/chat/session HTTP/1.1" 200 73
+[2026-11-21 04:35:35,373] INFO django.server basehttp "GET /api/projects/?lang=ru HTTP/1.1" 200 14784
+[2026-11-21 04:35:35,591] INFO django.server basehttp "GET /api/projects/?lang=ru HTTP/1.1" 200 14784
+[2026-11-21 04:35:35,738] INFO django.server basehttp "POST /api/projects/geoai-agent_fire_space/like/ HTTP/1.1" 200 54
+[2026-11-21 04:35:35,827] WARNING django.request log Too Many Requests: /api/projects/geoai-agent_fire_space/like/
+[2026-11-21 04:35:35,829] WARNING django.server basehttp "POST /api/projects/geoai-agent_fire_space/like/ HTTP/1.1" 429 54
+[2026-11-21 04:35:35,911] INFO django.server basehttp "POST /api/projects/geoai-agent_fire_space/view/ HTTP/1.1" 200 32
+[2026-11-21 04:35:35,993] INFO django.server basehttp "POST /api/projects/geoai-agent_fire_space/view/ HTTP/1.1" 200 32
+[2026-11-21 04:35:48,522] INFO django.server basehttp "GET /api/projects/geoai-agent_fire_space/?lang=ru HTTP/1.1" 200 84154
+[2026-11-21 04:35:49,230] WARNING django.request log Not Found: /api/chat/message/stream/
+[2026-11-21 04:35:49,231] WARNING django.server basehttp "POST /api/chat/message/stream/ HTTP/1.1" 404 29
+[2026-11-21 04:36:01,828] WARNING django.request log Too Many Requests: /api/chat/message/stream/
+[2026-11-21 04:36:01,829] WARNING django.server basehttp "POST /api/chat/message/stream/ HTTP/1.1" 429 116
+[2026-11-21 04:37:00,186] INFO django.server basehttp "POST /api/chat/session/ HTTP/1.1" 200 89
+[2026-11-21 04:37:09,576] INFO django.server basehttp "POST /api/chat/message/stream/ HTTP/1.1" 200 1381
+[2026-11-21 04:41:11,849] INFO django.server basehttp "GET /api/chat/session HTTP/1.1" 200 73
+[2026-11-21 04:41:11,873] INFO django.server basehttp "GET /api/modules/quantum-shield?lang=ru HTTP/1.1" 200 3602
+[2026-11-21 04:41:11,929] INFO django.server basehttp "GET /api/chat/session HTTP/1.1" 200 73
+[2026-11-21 04:41:12,000] INFO django.server basehttp "GET /api/modules/quantum-shield?lang=ru HTTP/1.1" 200 3602
+[2026-11-21 04:41:16,709] INFO django.server basehttp "GET /api/posts?lang=ru HTTP/1.1" 200 4754
+[2026-11-21 04:41:16,757] INFO django.server basehttp "GET /api/projects?lang=ru HTTP/1.1" 200 14783
+[2026-11-21 04:41:16,934] INFO django.server basehttp "GET /api/posts?lang=ru HTTP/1.1" 200 4754
+[2026-11-21 04:41:17,159] INFO django.server basehttp "GET /api/projects?lang=ru HTTP/1.1" 200 14783
+[2026-11-21 04:49:36,911] INFO django.server basehttp "GET /api/modules/?lang=ru HTTP/1.1" 200 15882
+[2026-11-21 04:52:26,151] INFO django.server basehttp "GET /api/chat/session HTTP/1.1" 200 73
+[2026-11-21 04:52:26,347] INFO django.server basehttp "GET /api/posts?lang=ru HTTP/1.1" 200 4754
+[2026-11-21 04:52:26,424] INFO django.server basehttp "GET /api/chat/session HTTP/1.1" 200 73
+[2026-11-21 04:52:26,588] INFO django.server basehttp "GET /api/projects?lang=ru HTTP/1.1" 200 14783
+[2026-11-21 04:52:26,640] INFO django.server basehttp "GET /api/posts?lang=ru HTTP/1.1" 200 4754
+[2026-11-21 04:52:26,772] INFO django.server basehttp "GET /api/projects?lang=ru HTTP/1.1" 200 14783
+[2026-11-21 04:53:42,457] INFO django.server basehttp "GET /api/chat/session HTTP/1.1" 200 73
+[2026-11-21 04:53:42,519] INFO django.server basehttp "GET /api/posts?lang=en HTTP/1.1" 200 4754
+[2026-11-21 04:53:42,568] INFO django.server basehttp "GET /api/projects?lang=en HTTP/1.1" 200 14783
+[2026-11-21 04:53:42,647] INFO django.server basehttp "GET /api/chat/session HTTP/1.1" 200 73
+[2026-11-21 04:53:42,710] INFO django.server basehttp "GET /api/posts?lang=en HTTP/1.1" 200 4754
+[2026-11-21 04:53:42,763] INFO django.server basehttp "GET /api/projects?lang=en HTTP/1.1" 200 14783
+[2026-11-21 04:53:52,165] INFO django.server basehttp "GET /api/chat/session HTTP/1.1" 200 73
+[2026-11-21 04:53:52,279] INFO django.server basehttp "GET /api/projects?lang=ru HTTP/1.1" 200 14783
+[2026-11-21 04:53:52,294] INFO django.server basehttp "GET /api/posts?lang=ru HTTP/1.1" 200 4754
+[2026-11-21 04:53:52,379] INFO django.server basehttp "GET /api/chat/session HTTP/1.1" 200 73
+[2026-11-21 04:53:52,455] INFO django.server basehttp "GET /api/posts?lang=ru HTTP/1.1" 200 4754
+[2026-11-21 04:53:52,489] INFO django.server basehttp "GET /api/projects?lang=ru HTTP/1.1" 200 14783

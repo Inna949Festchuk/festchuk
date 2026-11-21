@@ -7,6 +7,7 @@ with fallback to Russian when the requested language is empty.
 """
 from django.conf import settings
 from rest_framework import serializers
+from apps.analytics.services import AnalyticsService
 from .models import Project
 
 VALID_LANGS = ('ru', 'en')
@@ -56,6 +57,7 @@ class ProjectSerializer(serializers.ModelSerializer):
     summary = serializers.SerializerMethodField()
     description = serializers.SerializerMethodField()
     readme_content = serializers.SerializerMethodField()
+    has_liked = serializers.SerializerMethodField()
     image_preview = MediaUrlField('image_preview')
     cover_image = MediaUrlField('cover_image')
 
@@ -65,8 +67,8 @@ class ProjectSerializer(serializers.ModelSerializer):
             'id', 'title', 'slug', 'description', 'summary',
             'github_url', 'demo_url', 'technologies',
             'readme_content', 'image_preview', 'cover_image',
-            'views_count', 'likes_count', 'visibility',
-            'is_featured', 'created_at', 'updated_at',
+            'views_count', 'likes_count', 'has_liked',
+            'visibility', 'is_featured', 'created_at', 'updated_at',
         ]
         read_only_fields = ['id', 'slug', 'views_count', 'likes_count', 'created_at', 'updated_at']
 
@@ -82,12 +84,18 @@ class ProjectSerializer(serializers.ModelSerializer):
     def get_readme_content(self, obj):
         return obj.get_field('readme', _lang_from_context(self.context))
 
+    def get_has_liked(self, obj):
+        # Сердечко закрашено на клиенте, если этот IP уже лайкал в окно TTL.
+        request = self.context.get('request')
+        return bool(request) and AnalyticsService.has_liked(request, obj)
+
 
 class ProjectListSerializer(serializers.ModelSerializer):
     """Lightweight serializer for list view."""
     technologies = serializers.JSONField()
     title = serializers.SerializerMethodField()
     summary = serializers.SerializerMethodField()
+    has_liked = serializers.SerializerMethodField()
     image_preview = MediaUrlField('image_preview')
     cover_image = MediaUrlField('cover_image')
 
@@ -96,7 +104,7 @@ class ProjectListSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'title', 'slug', 'summary', 'technologies',
             'image_preview', 'cover_image', 'github_url',
-            'views_count', 'likes_count', 'is_featured', 'created_at',
+            'views_count', 'likes_count', 'has_liked', 'is_featured', 'created_at',
         ]
         read_only_fields = ['id', 'slug', 'views_count', 'likes_count', 'created_at']
 
@@ -105,6 +113,11 @@ class ProjectListSerializer(serializers.ModelSerializer):
 
     def get_summary(self, obj):
         return obj.get_field('summary', _lang_from_context(self.context))
+
+    def get_has_liked(self, obj):
+        # Сердечко закрашено на клиенте, если этот IP уже лайкал в окно TTL.
+        request = self.context.get('request')
+        return bool(request) and AnalyticsService.has_liked(request, obj)
 
 
 class ProjectCreateSerializer(serializers.ModelSerializer):

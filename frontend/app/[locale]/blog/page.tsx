@@ -16,6 +16,7 @@ interface Post {
   published_at: string;
   views_count: number;
   likes_count: number;
+  has_liked: boolean;
   reading_time_minutes: number;
 }
 
@@ -26,6 +27,7 @@ export default function BlogPage() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTag, setActiveTag] = useState<string | null>(null);
+  const [likedIds, setLikedIds] = useState<Set<number>>(new Set());
 
   const dateLocale = locale === 'ru' ? 'ru-RU' : 'en-US';
 
@@ -36,7 +38,10 @@ export default function BlogPage() {
     fetch(url)
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
-        setPosts(Array.isArray(data) ? data : (data?.results ?? []));
+        const list: Post[] = Array.isArray(data) ? data : (data?.results ?? []);
+        setPosts(list);
+        // Сердечко закрашено сразу при загрузке, если этот IP уже лайкал.
+        setLikedIds(new Set(list.filter((p) => p.has_liked).map((p) => p.id)));
         setLoading(false);
       })
       .catch(() => setLoading(false));
@@ -45,11 +50,17 @@ export default function BlogPage() {
   const allTags = Array.from(new Set(posts.flatMap((p) => p.tags || []))).sort();
 
   const handleLike = async (post: Post) => {
+    if (likedIds.has(post.id)) return;
     try {
-      await fetch(`/api/posts/${post.slug}/like/`, {method: 'POST'});
-      setPosts((prev) =>
-        prev.map((p) => (p.id === post.id ? {...p, likes_count: p.likes_count + 1} : p)),
-      );
+      const res = await fetch(`/api/posts/${post.slug}/like/`, {method: 'POST'});
+      // Сервер дедуплицирует: 200 — новый лайк (+1 к счётчику),
+      // 429 — уже лайкал в 24ч-окне (счётчик не трогаем).
+      setLikedIds((prev) => new Set(prev).add(post.id));
+      if (res.status === 200) {
+        setPosts((prev) =>
+          prev.map((p) => (p.id === post.id ? {...p, likes_count: p.likes_count + 1} : p)),
+        );
+      }
     } catch {}
   };
 
@@ -167,9 +178,16 @@ export default function BlogPage() {
                               e.preventDefault();
                               handleLike(post);
                             }}
-                            className="flex items-center gap-1 hover:text-neon-magenta transition-colors"
+                            className={`flex items-center gap-1 transition-colors ${
+                              likedIds.has(post.id)
+                                ? 'text-neon-magenta'
+                                : 'hover:text-neon-magenta'
+                            }`}
                           >
-                            <Heart className="w-3.5 h-3.5 text-neon-magenta" />
+                            <Heart
+                              className="w-3.5 h-3.5 text-neon-magenta"
+                              fill={likedIds.has(post.id) ? 'currentColor' : 'none'}
+                            />
                             {post.likes_count}
                           </button>
                         </div>

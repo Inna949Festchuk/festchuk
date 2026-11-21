@@ -602,7 +602,19 @@ export default function ChatWidget() {
           }),
           signal: controller.signal,
         });
-        if (!res.ok || !res.body) throw new Error('Failed');
+        if (!res.ok) {
+          // Бэкенд может вернуть структурированную ошибку (404 сессия, 429 —
+          // исчерпан дневной лимит LLM) — показываем её текст, а не «Failed».
+          let msg = 'Failed';
+          try {
+            const err = await res.json();
+            if (err && typeof err.error === 'string' && err.error) msg = err.error;
+          } catch {
+            /* тело не JSON — оставляем заглушку */
+          }
+          throw new Error(msg);
+        }
+        if (!res.body) throw new Error('Failed');
 
         const reader = res.body.getReader();
         const decoder = new TextDecoder();
@@ -685,17 +697,23 @@ export default function ChatWidget() {
           feedAllToChunks(ttsChunker, fullText);
           closeTTS();
         }
-      } catch {
+      } catch (e) {
         stopFlush();
         if (msgId && fullText) {
           flush();
         } else if (!controller.signal.aborted) {
+          // Текст ошибки бэкенда (например, 429 — исчерпан дневной лимит)
+          // показываем как есть; сетевые/прочие ошибки — общим сообщением.
+          const errMsg =
+            e instanceof Error && e.message && e.message !== 'Failed'
+              ? e.message
+              : t('errAi');
           setMessages((prev) => [
             ...prev,
             {
               id: crypto.randomUUID(),
               role: 'assistant',
-              content: t('errAi'),
+              content: errMsg,
               timestamp: new Date(),
             },
           ]);

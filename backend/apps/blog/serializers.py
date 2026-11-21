@@ -6,6 +6,7 @@ in the serializer context (query param ``?lang=ru|en``), with fallback to
 Russian when the requested language is empty.
 """
 from rest_framework import serializers
+from apps.analytics.services import AnalyticsService
 from apps.projects.serializers import MediaUrlField
 from .models import Post
 
@@ -23,6 +24,7 @@ class PostSerializer(serializers.ModelSerializer):
     title = serializers.SerializerMethodField()
     excerpt = serializers.SerializerMethodField()
     content = serializers.SerializerMethodField()
+    has_liked = serializers.SerializerMethodField()
     cover_image = MediaUrlField('cover_image')
 
     class Meta:
@@ -30,7 +32,7 @@ class PostSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'title', 'slug', 'excerpt', 'content',
             'cover_image', 'tags', 'status', 'published_at',
-            'views_count', 'likes_count', 'tts_audio_url',
+            'views_count', 'likes_count', 'has_liked', 'tts_audio_url',
             'reading_time_minutes', 'created_at', 'updated_at',
         ]
         read_only_fields = ['id', 'slug', 'views_count', 'likes_count', 'tts_audio_url', 'created_at', 'updated_at']
@@ -44,19 +46,25 @@ class PostSerializer(serializers.ModelSerializer):
     def get_content(self, obj):
         return obj.get_field('content', _lang_from_context(self.context))
 
+    def get_has_liked(self, obj):
+        # Сердечко закрашено на клиенте, если этот IP уже лайкал в окно TTL.
+        request = self.context.get('request')
+        return bool(request) and AnalyticsService.has_liked(request, obj)
+
 
 class PostListSerializer(serializers.ModelSerializer):
     """Lightweight serializer for list view."""
     reading_time_minutes = serializers.IntegerField(read_only=True)
     title = serializers.SerializerMethodField()
     excerpt = serializers.SerializerMethodField()
+    has_liked = serializers.SerializerMethodField()
     cover_image = MediaUrlField('cover_image')
 
     class Meta:
         model = Post
         fields = [
             'id', 'title', 'slug', 'excerpt', 'cover_image',
-            'tags', 'published_at', 'views_count', 'likes_count',
+            'tags', 'published_at', 'views_count', 'likes_count', 'has_liked',
             'reading_time_minutes',
         ]
         read_only_fields = fields
@@ -66,6 +74,11 @@ class PostListSerializer(serializers.ModelSerializer):
 
     def get_excerpt(self, obj):
         return obj.get_field('excerpt', _lang_from_context(self.context))
+
+    def get_has_liked(self, obj):
+        # Сердечко закрашено на клиенте, если этот IP уже лайкал в окно TTL.
+        request = self.context.get('request')
+        return bool(request) and AnalyticsService.has_liked(request, obj)
 
 
 class PostCreateSerializer(serializers.ModelSerializer):

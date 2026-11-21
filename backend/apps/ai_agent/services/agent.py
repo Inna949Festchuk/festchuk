@@ -20,6 +20,7 @@ from django.core.cache import cache
 from .router_ai import RouterAIClient
 from .rag import RAGService
 from .context7 import get_context7_client
+from .budget import claim_request, record_tokens
 
 logger = logging.getLogger(__name__)
 
@@ -986,6 +987,10 @@ class AIAgent:
         """
         messages, history, context, _docs = self._prepare(user_message)
 
+        # Глобальный суточный бюджет: зарезервировать запрос до LLM-вызова,
+        # токены — учесть в конце (check_daily_budget уже отработал в вьюхе).
+        claim_request()
+
         # Call LLM with tools (max 3 rounds of tool calling)
         total_tokens = 0
         max_tool_rounds = 3
@@ -1005,6 +1010,7 @@ class AIAgent:
                 history.append({'role': 'assistant', 'content': assistant_text})
                 self._save_history(history)
                 self._persist_active_module()
+                record_tokens(total_tokens)
                 return assistant_text, total_tokens
 
             # Process tool calls
@@ -1057,6 +1063,7 @@ class AIAgent:
         history.append({'role': 'assistant', 'content': final_text})
         self._save_history(history)
         self._persist_active_module()
+        record_tokens(total_tokens)
         return final_text, total_tokens
 
     def process_message_stream(self, user_message: str):
@@ -1068,6 +1075,9 @@ class AIAgent:
         streamed. History is persisted even on client disconnect
         (GeneratorExit runs the finally block).
         """
+        # Глобальный суточный бюджет: зарезервировать запрос до LLM-вызова
+        # (check_daily_budget уже отработал в вьюхе; токены — в finally).
+        claim_request()
         messages, history, context, _docs = self._prepare(user_message)
         # Сохраняем пользовательское сообщение сразу: при ошибке LLM диалог
         # не должен «терять» вопрос (раньше вьюха писала его в БД до
@@ -1187,3 +1197,6 @@ class AIAgent:
                 history.append({'role': 'assistant', 'content': assistant_text})
                 self._save_history(history)
             self._persist_active_module()
+            # Токены учитываем здесь: на успехе total_tokens — полный,
+            # на обрыве клиента/ошибке — накопленная часть (без дублей).
+            record_tokens(total_tokens)
