@@ -166,8 +166,8 @@ MODULES = [
         'code_name': 'QUANTUM SHIELD',
         'name_ru': 'QUANTUM SHIELD',
         'name_en': 'QUANTUM SHIELD',
-        'description_ru': 'Многоуровневый rate limiting, анонимная аналитика в Redis, полное соответствие 152-ФЗ.',
-        'description_en': 'Multi-level rate limiting, anonymous analytics in Redis, full 152-FZ compliance.',
+        'description_ru': 'Rate limiting и троттлинг по скоупам, PII-маскирование до отправки в ИИ, автоудаление истории чата по TTL, анонимная аналитика в Redis.',
+        'description_en': 'Rate limiting and scoped throttling, PII masking before AI processing, chat history auto-deletion by TTL, anonymous analytics in Redis.',
         'video_url': '',
         'tts_voice': 'Charon',
         'routing_keywords': 'безопасн, security, защит, уязвимост, rate limit, троттлинг, throttl, CORS, CSRF, HTTPS, SSL, 152-ФЗ, персональн, анонимн, авторизац, аутентификац, DDoS',
@@ -198,10 +198,12 @@ MODULES = [
             'мгновенно превращаются в необратимый криптографический хэш. Я считаю и '
             'анализирую миллионы метрик в оперативной памяти за наносекунды, но не '
             'храню ни единого следа, способного раскрыть личность человека.\n'
-            'Именно это делает меня безупречным оружием в рамках закона. Моя архитектура '
-            'гарантирует полное соответствие 152-ФЗ. Для регуляторов и Роскомнадзора '
-            'я — чистый, стерильный контур, защищенный от проверок, поскольку в моих '
-            'логах нет персональных данных.\n'
+            'Именно это делает меня безупречным инструментом в рамках закона. '
+            'Privacy by Design: до того, как запрос достигает модели, контакты и '
+            'документы маскируются — персональные данные не покидают периметр. '
+            'История диалога хранится только в Redis и автоматически удаляется по TTL, '
+            'а посетитель в любой момент может удалить её кнопкой. Мои логи не '
+            'содержат персональных данных — и это не обещание, а архитектура.\n'
             'Система в безопасности. Можете продолжать работу».'
         ),
         'skills_text_en': (
@@ -219,10 +221,12 @@ MODULES = [
             'instantly transformed into an irreversible cryptographic hash. I count '
             'and analyze millions of metrics in RAM in nanoseconds, but I store not a '
             "single trace capable of revealing a person's identity.\n"
-            'This is precisely what makes me a flawless weapon within the law. My '
-            'architecture guarantees full 152-FZ compliance. For regulators and '
-            'Roskomnadzor, I am a clean, sterile perimeter, protected from '
-            'inspections, because there are no personal data in my logs.\n'
+            'This is precisely what makes me a flawless tool within the law. '
+            'Privacy by Design: before a request reaches the model, contacts and '
+            'documents are masked — personal data never leaves the perimeter. '
+            'Dialogue history lives only in Redis and is auto-deleted by TTL, and a '
+            'visitor can delete it at any moment with a button. My logs contain no '
+            'personal data — and that is architecture, not a promise.\n'
             'The system is secure. You may continue your work."'
         ),
         'shutdown_text_ru': (

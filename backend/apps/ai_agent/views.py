@@ -4,11 +4,12 @@ AI Agent views for REST API.
 import hashlib
 import json
 import logging
+import uuid
 
 from django.conf import settings
 from django.core.cache import cache
-from django.db import IntegrityError
 from django.http import HttpResponse, StreamingHttpResponse
+from django.utils import timezone
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.renderers import JSONRenderer
@@ -17,16 +18,16 @@ from rest_framework.permissions import AllowAny
 
 from config.throttling import ClientIPScopedRateThrottle
 
-from .models import ChatSession, ChatMessage, AgentModule
+from .models import AgentModule
 from .serializers import (
     ChatMessageSendSerializer,
-    ChatMessageSerializer,
-    ChatHistorySerializer,
     AgentModuleSerializer,
 )
 from .services.agent import AIAgent
+from .services.pii import mask_pii
 from .services.router_ai import RouterAIClient, tts_content_type
 from .services.routing import resolve_module_slug
+from .services.session import resolve_session, verify_session, delete_session
 from apps.analytics.services import _get_client_ip, _hash_ip
 
 logger = logging.getLogger(__name__)
@@ -34,45 +35,63 @@ logger = logging.getLogger(__name__)
 TTS_CACHE_TTL = 3600  # repeated greetings/questions should not re-bill the API
 
 
-def _resolve_session(ip_hash: str) -> tuple[ChatSession, bool]:
-    """Return ``(session, created)`` for a visitor, creating it exactly once.
+def _pii_counters(types: list):
+    """Анонимные счётчики срабатываний PII-маскера (без ПДн — только тип).
 
-    `get_or_create` is only race-free when the lookup key is unique at the
-    database level. React 18 StrictMode mounts effects twice in dev, so two
-    concurrent requests used to insert two rows for one IP and every later
-    lookup then died with MultipleObjectsReturned. The unique constraint from
-    migration 0003 makes the create-or-refetch below safe.
+    Замена просмотра диалогов в Django Admin после перевода истории в Redis:
+    читаются через redis-cli (GET stats:pii_masked:*).
     """
-    existing = ChatSession.objects.filter(ip_hash=ip_hash).first()
-    if existing is not None:
-        return existing, False
-
-    try:
-        return ChatSession.objects.create(ip_hash=ip_hash), True
-    except IntegrityError:
-        # Lost the race with a concurrent request; theirs is committed.
-        return ChatSession.objects.get(ip_hash=ip_hash), False
+    for t in set(types):
+        key = f'stats:pii_masked:{t.upper()}'
+        try:
+            cache.incr(key)
+        except ValueError:
+            # cache.incr требует существующего ключа — создаём первый раз
+            cache.set(key, 1)
 
 
 class ChatSessionView(APIView):
-    """Create or get a chat session."""
+    """Create, get or delete a chat session (Redis-only storage)."""
     permission_classes = [AllowAny]
+    throttle_classes = [ClientIPScopedRateThrottle]
+
+    def get_throttle_scope(self, obj=None):
+        # DELETE («право на удаление») — в chat-бакет. POST/GET не троттлятся:
+        # их вызывает каждое открытие чата (в dev StrictMode монтирует
+        # эффект дважды), и лимит бы резал обычный сценарий.
+        return 'chat' if self.request.method == 'DELETE' else None
 
     def post(self, request):
         """Create a new chat session."""
-        session, created = _resolve_session(_hash_ip(_get_client_ip(request)))
+        session, created = resolve_session(_hash_ip(_get_client_ip(request)))
         session.touch()
 
         return Response({
-            'session_id': str(session.session_id),
+            'session_id': session.session_id,
             'created': created,
+            # UI подставляет срок в уведомлении о хранении — число берём
+            # из конфига, чтобы заявление не дрифтнуло от фактического TTL.
+            'retention_hours': settings.CHAT_RETENTION_HOURS,
         }, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
 
     def get(self, request):
         """Get or create a session for the current IP."""
-        session, _ = _resolve_session(_hash_ip(_get_client_ip(request)))
+        session, _ = resolve_session(_hash_ip(_get_client_ip(request)))
         session.touch()
-        return Response({'session_id': str(session.session_id)})
+        return Response({
+            'session_id': session.session_id,
+            'retention_hours': settings.CHAT_RETENTION_HOURS,
+        })
+
+    def delete(self, request):
+        """«Право на удаление» (152-ФЗ): сессия и история диалога.
+
+        Идентификация строго по IP запроса (тот же путь, что при создании):
+        клиент не передаёт идентификаторы, чужие сессии удалить нельзя.
+        Throttle 'chat' (30/час) защищает от злоупотребления.
+        """
+        deleted = delete_session(_hash_ip(_get_client_ip(request)))
+        return Response({'deleted': deleted})
 
 
 class ChatMessageView(APIView):
@@ -91,20 +110,18 @@ class ChatMessageView(APIView):
         lang = serializer.validated_data.get('lang', 'ru')
         module_slug = serializer.validated_data.get('module_slug', '')
 
-        try:
-            session = ChatSession.objects.get(session_id=session_id)
-        except ChatSession.DoesNotExist:
+        # Сессия привязана к IP: чужой/протухший session_id → 404
+        session = verify_session(_hash_ip(_get_client_ip(request)), session_id)
+        if session is None:
             return Response(
                 {'error': 'Session not found'},
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        # Save user message
-        user_msg = ChatMessage.objects.create(
-            session=session,
-            role=ChatMessage.Role.USER,
-            content=user_message,
-        )
+        # PII-маскировка (152-ФЗ): до сохранения в Redis и до отправки в
+        # LLM/эмбеддинги провайдера — персональные данные не покидают периметр
+        user_message, pii_types = mask_pii(user_message)
+        _pii_counters(pii_types)
 
         # The UI pins module_slug to the module the chat was opened from.
         # The deterministic routing layer may override it (a named module,
@@ -120,17 +137,17 @@ class ChatMessageView(APIView):
                 status=status.HTTP_503_SERVICE_UNAVAILABLE,
             )
 
-        # Save assistant message
-        assistant_msg = ChatMessage.objects.create(
-            session=session,
-            role=ChatMessage.Role.ASSISTANT,
-            content=response_text,
-            tokens_used=tokens_used,
-        )
         session.touch()
 
         return Response({
-            'message': ChatMessageSerializer(assistant_msg).data,
+            # История живёт в Redis: id генерируется, а не берётся из БД
+            'message': {
+                'id': str(uuid.uuid4()),
+                'role': 'assistant',
+                'content': response_text,
+                'audio_url': None,
+                'created_at': timezone.now().isoformat(),
+            },
             'tokens_used': tokens_used,
             # Final slug: the agent may have switched persona mid-reply via
             # the activate_module tool — the frontend syncs its TTS voice
@@ -167,63 +184,32 @@ class ChatMessageStreamView(APIView):
         lang = serializer.validated_data.get('lang', 'ru')
         module_slug = serializer.validated_data.get('module_slug', '')
 
-        try:
-            session = ChatSession.objects.get(session_id=session_id)
-        except ChatSession.DoesNotExist:
+        # Сессия привязана к IP: чужой/протухший session_id → 404
+        session = verify_session(_hash_ip(_get_client_ip(request)), session_id)
+        if session is None:
             return Response(
                 {'error': 'Session not found'},
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        ChatMessage.objects.create(
-            session=session,
-            role=ChatMessage.Role.USER,
-            content=user_message,
-        )
+        # PII-маскировка (152-ФЗ): до сохранения в Redis и до отправки в
+        # LLM/эмбеддинги провайдера — персональные данные не покидают периметр
+        user_message, pii_types = mask_pii(user_message)
+        _pii_counters(pii_types)
 
         effective_slug = resolve_module_slug(user_message, module_slug)
         agent = AIAgent(session, lang=lang, module_slug=effective_slug)
 
         def event_stream():
-            accumulated = ''
-            persisted = False
-            try:
-                for event, data in agent.process_message_stream(user_message):
-                    if event == 'delta':
-                        accumulated += data.get('text', '')
-                    elif event == 'done':
-                        text = data.get('text') or accumulated
-                        assistant_msg = ChatMessage.objects.create(
-                            session=session,
-                            role=ChatMessage.Role.ASSISTANT,
-                            content=text,
-                            tokens_used=data.get('tokens_used', 0),
-                        )
-                        session.touch()
-                        data['message_id'] = str(assistant_msg.pk)
-                        persisted = True
-                    elif event == 'error' and accumulated:
-                        # Keep whatever the visitor already saw on screen
-                        ChatMessage.objects.create(
-                            session=session,
-                            role=ChatMessage.Role.ASSISTANT,
-                            content=accumulated,
-                            tokens_used=0,
-                        )
-                        session.touch()
-                        persisted = True
-                    yield f'event: {event}\ndata: {json.dumps(data, ensure_ascii=False)}\n\n'
-            finally:
-                # Client disconnect mid-stream: persist the partial answer so
-                # DB history matches what the visitor saw.
-                if not persisted and accumulated:
-                    ChatMessage.objects.create(
-                        session=session,
-                        role=ChatMessage.Role.ASSISTANT,
-                        content=accumulated,
-                        tokens_used=0,
-                    )
+            # Персистентность истории — в finally самого генератора агента
+            # (потоковый _save_history в Redis); при обрыве клиента
+            # GeneratorExit пробрасывается и туда. Здесь остаётся только
+            # продление TTL сессии и авторитетный message_id.
+            for event, data in agent.process_message_stream(user_message):
+                if event == 'done':
                     session.touch()
+                    data['message_id'] = str(uuid.uuid4())
+                yield f'event: {event}\ndata: {json.dumps(data, ensure_ascii=False)}\n\n'
 
         response = StreamingHttpResponse(
             event_stream(), content_type='text/event-stream; charset=utf-8'
@@ -288,29 +274,6 @@ class ChatTTSView(APIView):
         return HttpResponse(audio, content_type=tts_content_type())
 
 
-class ChatHistoryView(APIView):
-    """Get chat history for a session."""
-    permission_classes = [AllowAny]
-
-    def get(self, request, session_id):
-        try:
-            session = ChatSession.objects.get(session_id=session_id)
-        except ChatSession.DoesNotExist:
-            return Response(
-                {'error': 'Session not found'},
-                status=status.HTTP_404_NOT_FOUND,
-            )
-
-        # Get last N messages
-        limit = min(int(request.query_params.get('limit', 50)), 100)
-        messages = session.messages.all()[:limit]
-
-        return Response(ChatHistorySerializer({
-            'session_id': session.session_id,
-            'messages': list(messages),
-        }).data)
-
-
 class ChatSTTView(APIView):
     """Speech-to-Text endpoint."""
     permission_classes = [AllowAny]
@@ -324,6 +287,15 @@ class ChatSTTView(APIView):
             return Response(
                 {'error': 'session_id required'},
                 status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Сессия должна принадлежать этому IP (история в Redis, привязка по
+        # IP-hash): чужой/протухший ID → 404, как у чата.
+        session = verify_session(_hash_ip(_get_client_ip(request)), session_id)
+        if session is None:
+            return Response(
+                {'error': 'Session not found'},
+                status=status.HTTP_404_NOT_FOUND,
             )
 
         audio_file = request.FILES.get('audio')

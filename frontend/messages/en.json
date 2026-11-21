@@ -15,7 +15,8 @@
     "rights": "© {year} FESHCHUK CORP. ALL RIGHTS RESERVED.",
     "projects": "PROJECTS",
     "blog": "BLOG",
-    "contact": "CONTACT"
+    "contact": "CONTACT",
+    "privacy": "PRIVACY"
   },
   "home": {
     "heroBadge": "AI-DRIVEN FULLSTACK ARCHITECT // NODE 44-A",
@@ -33,7 +34,7 @@
     "moduleAiDesc": "Vector retrieval over projects and articles, Function Calling, voice input and speech synthesis (STT/TTS).",
     "moduleSecCode": "SECURITY",
     "moduleSecName": "QUANTUM SHIELD",
-    "moduleSecDesc": "Multi-layer rate limiting, anonymous analytics in Redis, full privacy compliance (152-FZ).",
+    "moduleSecDesc": "Privacy by Design: automatic masking of contacts and documents before AI processing, no registration, and auto-deletion of dialogue history after 4 hours. Requests are processed through the RouterAI API gateway using external language models.",
     "moduleFrontCode": "FRONTEND / UX",
     "moduleFrontName": "OMNI VISION",
     "moduleFrontDesc": "Next.js 14 App Router, holographic HUD interface, Framer Motion and full responsiveness.",
@@ -150,7 +151,31 @@
     "errStt": "⚠️ Speech recognition failed. Please try again.",
     "errStt2": "⚠️ Speech recognition error.",
     "errMic": "⚠️ No microphone access in the browser.",
-    "errSession": "⚠️ Could not connect to the assistant. Please try again."
+    "errSession": "⚠️ Could not connect to the assistant. Please try again.",
+    "privacyNotice": "Not for personal data (contacts and IDs are masked). Messages are processed by external LLMs and auto-deleted after {hours} h. <a>Privacy Policy</a>."
+  },
+  "privacy": {
+    "headerCode": "POLICY // 152-FZ",
+    "title1": "PRIVACY",
+    "title2": "POLICY",
+    "headerDesc": "How this site processes visitor data. Short and to the point.",
+    "sOperator": "OPERATOR",
+    "operatorText": "Konstantin Feshchuk, self-employed (NPD taxpayer). Contacts: festchuk@yandex.ru, Telegram @Dilmah949.",
+    "sProcessing": "WHAT IS PROCESSED",
+    "processing1": "Anonymous analytics: likes and views — salted IP hash (the raw address is not stored), Redis, 24-hour TTL.",
+    "processing2": "Chat: a salted IP hash identifying the dialogue. No registration, no identification cookies, and no forms collecting personal data.",
+    "processing3": "Chat content: the text of your messages and speech-recognition (STT) results.",
+    "sStorage": "STORAGE",
+    "storageText": "Dialogue history is stored only in Redis: up to {hours} hours after your last action, after which it is deleted automatically by the storage engine itself. Chat history is not written to the database.",
+    "sPii": "PERSONAL DATA",
+    "piiText": "Automatic masking (Privacy by Design): before your text reaches the model and storage, phone numbers, email addresses, passport numbers, SNILS, INN and card numbers are replaced with placeholders ([PHONE], [EMAIL], [PASSPORT], [SNILS], [INN], [CARD]). Personal data never leaves the server perimeter. The assistant does not ask for personal data — please do not send it voluntarily.",
+    "sExternal": "EXTERNAL AI",
+    "externalText": "Requests are processed through the RouterAI API gateway using external language models (LLM, embeddings, STT, TTS). Only masked text is sent. The API operator's data-processing terms are set by RouterAI.",
+    "sDeletion": "DELETION",
+    "deletionText": "The \"Clear the conversation\" button in the chat deletes the session and history on the server side (DELETE /api/chat/session/). You can also contact the operator at festchuk@yandex.ru with a deletion request.",
+    "sContacts": "OPERATOR CONTACTS",
+    "contactEmail": "Email: festchuk@yandex.ru",
+    "contactTelegram": "Telegram: @Dilmah949"
   },
   "player": {
     "aria": "Background cyberpunk player",

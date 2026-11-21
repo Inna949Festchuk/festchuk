@@ -1,10 +1,12 @@
 """
 AI Agent models for Feshchuk portfolio.
-"""
-import uuid
 
+Chat sessions and messages intentionally do NOT live here: since 2026-11-21
+the dialogue history is stored in Redis only (TTL = retention period), so
+visitor personal data never rests in PostgreSQL (152-FZ minimization).
+See apps/ai_agent/services/session.py.
+"""
 from django.db import models
-from django.utils import timezone
 from pgvector.django import VectorField
 
 
@@ -71,68 +73,6 @@ class AgentModule(models.Model):
         if not value and lang != 'ru':
             value = getattr(self, f'{field}_ru', '')
         return value
-
-
-class ChatSession(models.Model):
-    """AI chat session for a user (identified by IP hash)."""
-
-    session_id = models.UUIDField(
-        'Session ID',
-        primary_key=True,
-        default=uuid.uuid4,
-        editable=False,
-    )
-    ip_hash = models.CharField('IP Hash', max_length=64, unique=True, db_index=True)
-    active_module_slug = models.CharField(
-        'Активный модуль', max_length=50, blank=True, default='',
-        help_text='Slug модуля, отвечавшего в прошлом ходу (маркер смены персоны в истории)',
-    )
-    created_at = models.DateTimeField('Создан', auto_now_add=True)
-    last_active_at = models.DateTimeField('Активность', default=timezone.now)
-
-    class Meta:
-        verbose_name = 'Сессия чата'
-        verbose_name_plural = 'Сессии чата'
-        ordering = ['-last_active_at']
-
-    def __str__(self):
-        return f"Session {str(self.session_id)[:8]}..."
-
-    def touch(self):
-        """Update last activity timestamp."""
-        self.last_active_at = timezone.now()
-        self.save(update_fields=['last_active_at'])
-
-
-class ChatMessage(models.Model):
-    """Individual message in a chat session."""
-
-    class Role(models.TextChoices):
-        USER = 'user', 'User'
-        ASSISTANT = 'assistant', 'Assistant'
-        SYSTEM = 'system', 'System'
-
-    session = models.ForeignKey(
-        ChatSession,
-        on_delete=models.CASCADE,
-        related_name='messages',
-    )
-    role = models.CharField('Роль', max_length=10, choices=Role.choices)
-    content = models.TextField('Контент')
-    audio_url = models.URLField('Аудио URL', blank=True, null=True)
-    tokens_used = models.PositiveIntegerField('Токены', default=0)
-    created_at = models.DateTimeField('Создан', auto_now_add=True)
-
-    class Meta:
-        verbose_name = 'Сообщение'
-        verbose_name_plural = 'Сообщения'
-        ordering = ['created_at']
-        indexes = [
-            models.Index(fields=['session', 'created_at']),
-        ]
-
-    def __str__(self):
-        return f"{self.role}: {self.content[:50]}..."
 
 
 class DocumentEmbedding(models.Model):

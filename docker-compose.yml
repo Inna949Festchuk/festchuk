@@ -26,7 +26,11 @@ services:
     image: redis:7-alpine
     container_name: feshchuk-redis
     restart: unless-stopped
-    command: redis-server --appendonly yes
+    # volatile-lru (НЕ allkeys-lru): вытесняются только ключи с TTL — сессии чата,
+    # TTS-кэш, лайки/просмотры. Ключи брокера Celery (DB1) не имеют TTL: при
+    # allkeys-lru они вытеснялись бы молча, и очереди задач терялись бы.
+    # maxmemory ограничивает RAM, не диск: AOF продолжает жить в томе redis_data.
+    command: redis-server --appendonly yes --maxmemory ${REDIS_MAXMEMORY:-256mb} --maxmemory-policy volatile-lru
     volumes:
       - redis_data:/data
     healthcheck:

@@ -30,13 +30,15 @@ festchuk/
 │   │   ├── blog/        # Post, Markdown, TTS статей, Хабр-синк
 │   │   ├── analytics/   # анонимные лайки/просмотры (Redis, IP-hash, TTL 24ч)
 │   │   └── ai_agent/    # RAG, чат, STT/TTS, модули агентов, Celery tasks
-│   │       ├── services/  # agent.py, routing.py, rag.py, router_ai.py, context7.py
-│   │       └── skills/    # SKILL_*.md — персоны-промпты модулей (seed_modules → БД)
+│   │       ├── services/  # agent.py, routing.py, rag.py, router_ai.py, context7.py,
+│   │       │              # session.py (Redis-сессии), pii.py (PII-маскер)
+│   │       ├── skills/    # SKILL_*.md — персоны-промпты модулей (seed_modules → БД)
+│   │       └── tests/     # unit-тесты PII-маскера (pytest, без БД)
 │   ├── config/          # settings, urls, celery, middleware, throttling, wsgi/asgi
 │   ├── logs/django.log  # файловый лог (рантайм-артефакт)
 │   └── requirements.txt
 ├── frontend/
-│   ├── app/[locale]/    # страницы: главная, projects, blog, contacts, modules/[slug]
+│   ├── app/[locale]/    # страницы: главная, projects, blog, contacts, privacy, modules/[slug]
 │   ├── components/      # Header, Footer, ChatWidget, CyberMusicPlayer, Cityscape,
 │   │                    # AgentVideoCard, HudBottomGuard, LanguageSwitcher, …
 │   ├── lib/             # ttsText.ts — чистые функции постобработки TTS-текста
@@ -91,11 +93,14 @@ Prod: `docker compose up -d --build` (backend сам делает `migrate` + `c
 
 Осторожно: StatReloader прерывает in-flight запросы при правке Python-файлов — не редактировать backend во время долгих запросов (чат, seed).
 
-### Проверка изменений (тестов нет)
+### Проверка изменений
 
-Автотестов в репозитории сейчас нет (pytest/pytest-django в requirements, но test-файлов не существует). Верификация:
+Первые автотесты в репозитории — PII-маскер (`backend/apps/ai_agent/tests/test_pii.py`, чистые функции, без БД и сети). Верификация:
 
 ```bash
+# ПИИ-маскер и будущие тесты (pytest.ini в backend/ задаёт DJANGO_SETTINGS_MODULE)
+docker compose -f docker-compose.dev.yml exec backend python -m pytest apps/ai_agent/tests/ -q
+
 # TypeScript — ТОЛЬКО внутри контейнера (на хосте EACCES/зависание из-за root-owned tsconfig.tsbuildinfo)
 docker compose -f docker-compose.dev.yml exec -T frontend npx tsc --noEmit
 
@@ -125,7 +130,7 @@ curl -s http://localhost:8000/api/projects/
 
 ### AI-ассистент: модули и маршрутизация
 
-PRIME COORDINATOR (slug `prime-coordinator`) — дирижёр по умолчанию; четыре модуля: HYPER DRIVE (бэкенд), QUANTUM SHIELD (безопасность), NEURAL SYNC (AI), OMNI VISION (фронтенд). Персоны, SKILL-промпты, голоса TTS, приветствия и ключевые слова роутинга хранятся в БД (`AgentModule`) и редактируются в Django Admin — не хардкодить в Python. Исходные SKILL-файлы — `backend/apps/ai_agent/skills/SKILL_*.md`, они попадают в `system_prompt_ru/en` при `seed_modules` (идемпотентно: не затирает отредактированные в Admin записи; после правки .md — пересинхронизировать вручную через Admin или снять защиту записи).
+PRIME COORDINATOR (slug `prime-coordinator`) — дирижёр по умолчанию; четыре модуля: HYPER DRIVE (бэкенд), QUANTUM SHIELD (безопасность), NEURAL SYNC (AI), OMNI VISION (фронтенд). Персоны, SKILL-промпты, голоса TTS, приветствия и ключевые слова роутинга хранятся в БД (`AgentModule`) и редактируются в Django Admin — не хардкодить в Python. Исходные SKILL-файлы — `backend/apps/ai_agent/skills/SKILL_*.md`, они попадают в `system_prompt_ru/en` при `seed_modules`. **`seed_modules` — `update_or_create`: каждый прогон затирает ВСЕ поля модулей, включая Admin-правки (проверено 2026-11-21).** Точечная синхронизация (только нужные поля одной записи) — через `manage.py shell` (паттерн от 2026-11-21), не полным re-seed.
 
 Два слоя роутинга:
 1. Детерминированный (`services/routing.py`): имя модуля в тексте → ключевые слова стека (`routing_keywords`, фолбэк `DEFAULT_ROUTING_KEYWORDS`) → триггеры возврата («пока»/«bye»/«помощник» — отдельное слово, «покажи» не переключает) → закреплённый slug сессии.
@@ -133,9 +138,9 @@ PRIME COORDINATOR (slug `prime-coordinator`) — дирижёр по умолч�
 
 Смена персоны обязательна к анонсу (решение 2026-11-20): `_handoff_marker` (system-сообщение в истории при смене slug с прошлого хода) требует первым предложением объявить передачу («вопрос в моей компетенции, координатор передал диалог — я …») или возврат к дирижёру; на ходах с tool-раундами напоминание дописывается к каждому tool-результату (`_handoff_reminder` — recency-бустер, без него анонс проигрывал tool-раундам и молча пропускался). Та же инструкция в result `activate_module`.
 
-`ChatSession.active_module_slug` — маркер персоны прошлого хода. Сессии по IP-hash (unique), TTL 4ч, история в `ChatMessage` (до 16 сообщений в контексте, `MAX_CHAT_HISTORY`). Состав каталога (наличие/отсутствие/полные списки/сопоставления) модель подтверждает ТОЛЬКО инструментами (`list_projects`, `list_blog_posts`, …); RAG-контекст — детали, не основание для выводов о составе. Правило `DATA_RULES` добавляется в коде к каждой персоне (глобальный SYSTEM_PROMPT с «не выдумывай» НЕ действует при наличии SKILL в БД; версия «или из контекста» давала пропуск инструментов и выдуманные списки).
+Сессии и история — **только Redis** (решение 2026-11-21, 152-ФЗ; модели `ChatSession`/`ChatMessage` удалены миграцией 0009): `chat_session:{ip_hash}` (запись: session_id, `active_module_slug` — маркер персоны прошлого хода, created) и `chat_history:{session_id}` (до 16 сообщений, `MAX_CHAT_HISTORY`). TTL — слайдующий, `CHAT_RETENTION_HOURS` (дефолт 4 ч, `CHAT_SESSION_TTL = N*3600`): продлевается каждым действием (`session.touch()` / `_save_history`), удаление гарантирует движок Redis, а не периодическая задача. Гонка создания сессии — `cache.add()` (атомарный SETNX, замена unique-констрейнту БД; React 18 StrictMode дублирует mount в dev). Идентификация по запросам: `verify_session(ip_hash, session_id)` — чужой/протухший ID → 404. В Django Admin диалоги не видны (намеренно); вместо этого — анонимные счётчики `stats:pii_masked:{TYPE}` в Redis. PII-маскирование — в вьюхах ДО сохранения и ДО LLM/эмбеддингов (см. «Хранение чата и PII»). Состав каталога (наличие/отсутствие/полные списки/сопоставления) модель подтверждает ТОЛЬКО инструментами (`list_projects`, `list_blog_posts`, …); RAG-контекст — детали, не основание для выводов о составе. Правило `DATA_RULES` добавляется в коде к каждой персоне (глобальный SYSTEM_PROMPT с «не выдумывай» НЕ действует при наличии SKILL в БД; версия «или из контекста» давала пропуск инструментов и выдуманные списки).
 
-Кодовые правила промпта (agent.py, применяются ко ВСЕМ персонам, не редактируются в Admin): `CONTEXT7_AWARENESS` — честное самосознание доступа к Context7 по фактической подгрузке + приоритет источников (общие технические вопросы — доки Context7 + память; RAG — только «как устроено в этом портфолио»); `STACK_FACTS` — проверенные факты стека проекта (AI-строки берутся из settings, чтобы не дрейфовали от `.env`); языковые правила — язык ответа закреплён за UI-локалью, английский только как имена/термины внутри русских предложений.
+Кодовые правила промпта (agent.py, применяются ко ВСЕМ персонам, не редактируются в Admin): `CONTEXT7_AWARENESS` — честное самосознание доступа к Context7 по фактической подгрузке + приоритет источников (общие технические вопросы — доки Context7 + память; RAG — только «как устроено в этом портфолио»); `STACK_FACTS` — проверенные факты стека проекта (AI-строки берутся из settings, чтобы не дрейфовали от `.env`; срок хранения чата — `CHAT_RETENTION_HOURS`, не хардкодить); `PRIVACY_RULES` (2026-11-21) — не запрашивать ПДн, не восстанавливать плейсхолдеры ([PHONE], [EMAIL], …), факты о хранении — только из блока стека; языковые правила — язык ответа закреплён за UI-локалью, английский только как имена/термины внутри русских предложений.
 
 ### RAG и RouterAI
 
@@ -149,6 +154,15 @@ PRIME COORDINATOR (slug `prime-coordinator`) — дирижёр по умолч�
 ### Стриминг ответа (SSE)
 
 Чат стримится через `POST /api/chat/message/stream/` (обычный JSON-эндпоинт сохранён для совместимости). События: `meta` (slug активной персоны; повторяется после `activate_module`) → `delta` (фрагменты текста) → `done` (авторитетный итоговый текст, slug, токены, message_id); `error` при сбое. Генератор `AIAgent.process_message_stream` стримит только текст финального раунда — tool-раунды копятся молча; история и сообщение сохраняются даже при обрыве клиента (finally). `ChatWidget` парсит SSE вручную (fetch + ReadableStream, EventSource не умеет POST), батчит рендер ~60мс. TTS потоковый: `createTTSChunker` на лету вырезает законченные предложения (150–450 знаков; лимит эндпоинта — 500/запрос), очередь синтезирует и играет их с prefetch следующего во время воспроизведения — голос сопровождает текст, не дожидаясь `done`; markdown очищается, код-блоки не режутся посередине; модель и голоса не менять. Обязательные детали: заголовки `Cache-Control: no-cache, no-transform` (обход compression-мидлвари Next) + `X-Accel-Buffering: no`; nginx `/api/chat/` — `proxy_buffering off`; в DRF-вьюхе override `perform_content_negotiation` (иначе `Accept: text/event-stream` → 406). **`stream_options.include_usage` не ставить** — RouterAI с ним буферизует весь ответ (TTFT 15,8с против ~1с); usage приходит в финальном чанке по умолчанию.
+
+### Хранение чата и PII (152-ФЗ, решение 2026-11-21)
+
+- **Хранение — только Redis.** Модели `ChatSession`/`ChatMessage` (PostgreSQL) удалены миграцией 0009. Диалоги: до 16 сообщений, слайдующий TTL `CHAT_RETENTION_HOURS` (дефолт 4 ч) — удаление гарантирует движок Redis, а не периодическая задача. В Django Admin диалоги не видны — намеренно.
+- **PII-маскирование — на входе.** `services/pii.py` (чистые функции, unit-тесты `tests/test_pii.py`): email, карты (13–19 цифр + Luhn), паспорта РФ (серия + номер, по контексту «серия/номер» или 4+6 цифрам), СНИЛС и ИНН (с контрольными цифрами), телефоны РФ-мобильные (+7/8/7, третья цифра 9; 8-800 и случайные 11-значные не маскируются). Обе message-вьюхи применяют `mask_pii()` ДО сохранения и ДО LLM/эмбеддингов — ПДн не покидают периметр сервера. Плейсхолдеры: `[PHONE]`, `[EMAIL]`, `[PASSPORT]`, `[SNILS]`, `[INN]`, `[CARD]`. Путь STT закрыт: распознанный текст идёт в UI и в чат как обычное сообщение.
+- **Право на удаление.** `DELETE /api/chat/session/` — идентификация строго по IP запроса (клиент не передаёт идентификаторов), chat-throttle (30/ч). Кнопка «Очистить диалог» в виджете реально удаляет данные на сервере и затем создаёт новую сессию.
+- **Уведомления посетителю.** Строка под полем ввода («Диалог хранится до {N} ч, контакты и документы маскируются» + ссылка) — N приходит из API (`retention_hours`, из конфига; не хардкодить). Страница `/privacy` (RU/EN, namespace `privacy`) — честное описание обработки: маскирование перед внешней моделью, только RouterAI API-шлюз, без регистрации, IP-хэш.
+- **Анонимные счётчики.** `stats:pii_masked:{TYPE}` в Redis (без ПДн) — замена удалённому admin-просмотру диалогов; читаются `redis-cli`.
+- **Промпт.** `STACK_FACTS` сообщает персам реальные факты о хранении и маскировании (числа из settings). `PRIVACY_RULES` (code-level, все персоны) запрещают запрашивать ПДн и восстанавливать плейсхолдеры.
 
 ### Язык речи: TTS и STT
 
@@ -203,3 +217,5 @@ next-intl, URL-префиксы `/ru` `/en` (localePrefix always, default ru). �
 12. SSE в DRF: `Accept: text/event-stream` → 406 без override `perform_content_negotiation`; без `no-transform` в Cache-Control Next-прокси буферизует стрим.
 13. Gemini TTS читает кусок по плотности английского → без `language=ru` (extra_body) и frontend-нормализации (`lib/ttsText.ts`) смешанные RU/EN ответы звучат по-английски.
 14. TTS-чанкер не режет куски длиннее 450 знаков — бэкенд жёстко обрубает текст в 500 символов на запрос (`ChatTTSView`).
+15. `seed_modules` затирает Admin-правки: `update_or_create` заменяет ВСЕ поля ВСЕХ модулей на каждый прогон (голоса, тексты, промпты). Точечные правки — через `manage.py shell` (паттерн 2026-11-21). Старое утверждение «не затирает» относилось к `seed_portfolio` (флаг `sync_from_source`), не к `seed_modules`.
+16. Redis — критичное хранилище чата: вытеснение только `volatile-lru` (ключи с TTL). Не переключать на `allkeys-lru`: ключи брокера Celery (DB1) без TTL вытеснялись бы молча — потеря задач. `maxmemory` (`REDIS_MAXMEMORY`, дефолт 256mb) ограничивает RAM, а не диск: AOF живёт в томе `redis_data`, disk-full (инцидент 2026-11-19) всё так же рвёт записи.

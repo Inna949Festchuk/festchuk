@@ -22,6 +22,7 @@ import {
   Terminal,
 } from 'lucide-react';
 import {normalizeTtsLanguage} from '../lib/ttsText';
+import {Link} from '@/i18n/navigation';
 
 interface Message {
   id: string;
@@ -316,6 +317,9 @@ export default function ChatWidget() {
   const [ttsEnabled, setTtsEnabled] = useState(true);
   const [sessionError, setSessionError] = useState(false);
   const [activeModuleSlug, setActiveModuleSlug] = useState<string | null>(null);
+  // Срок хранения диалога (из API, из конфига бэкенда) — для уведомления
+  // о приватности: число не хардкодим, чтобы заявление не дрифтнуло от TTL
+  const [retentionHours, setRetentionHours] = useState<number | null>(null);
   // Id of the assistant message currently being streamed (null when idle).
   const [streamingId, setStreamingId] = useState<string | null>(null);
 
@@ -342,6 +346,7 @@ export default function ChatWidget() {
       if (!res.ok) throw new Error('session failed');
       const data = await res.json();
       setSessionId(data.session_id);
+      if (typeof data.retention_hours === 'number') setRetentionHours(data.retention_hours);
       setSessionError(false);
     } catch {
       setSessionError(true);
@@ -787,11 +792,19 @@ export default function ChatWidget() {
     mediaRecorderRef.current?.stop();
   }, []);
 
-  const clearHistory = () => {
+  const clearHistory = async () => {
     stopSpeaking();
     abortRef.current?.abort();
     setStreamingId(null);
     setMessages([]);
+    // 152-ФЗ, право на удаление: диалог удаляется на сервере
+    // (сессия + история в Redis), затем создаётся новая.
+    try {
+      await fetch('/api/chat/session/', {method: 'DELETE'});
+      await initSession();
+    } catch {
+      // Сбой сети: история всё равно удалится автоматически по TTL
+    }
   };
 
   return (
@@ -1068,6 +1081,20 @@ export default function ChatWidget() {
                     <Send className="w-4 h-4" />
                   </button>
                 </div>
+                <p className="mt-1.5 px-0.5 text-[9px] font-mono tracking-wide text-zinc-500 leading-snug">
+                  {t.rich('privacyNotice', {
+                    hours: retentionHours ?? 4,
+                    a: (chunks) => (
+                      <Link
+                        href="/privacy"
+                        target="_blank"
+                        className="hover:text-neon-cyan transition-colors"
+                      >
+                        {chunks}
+                      </Link>
+                    ),
+                  })}
+                </p>
               </div>
             </div>
             </div>

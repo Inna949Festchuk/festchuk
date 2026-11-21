@@ -29,6 +29,9 @@ export default function Footer() {
           <Link href="/contacts" className="hover:text-neon-cyan transition-colors">
             {t('contact')}
           </Link>
+          <Link href="/privacy" className="hover:text-neon-cyan transition-colors">
+            {t('privacy')}
+          </Link>
         </div>
         <div className="flex gap-3 items-center">
           <Hexagon className="w-4 h-4 text-neon-cyan" />

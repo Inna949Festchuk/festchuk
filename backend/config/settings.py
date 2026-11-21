@@ -244,7 +244,11 @@ ROUTERAI_STT_MODEL = os.getenv('ROUTERAI_STT_MODEL', 'openai/whisper-large-v3-tu
 # AI Agent
 # ============================================================
 
-CHAT_SESSION_TTL = 4 * 3600  # 4 hours
+# Срок жизни сессий и истории чата в Redis (часов) с последнего действия.
+# Хранилище — только Redis (152-ФЗ: ПДн не держим в PostgreSQL), удаление
+# гарантирует сам движок (TTL), а не периодическая задача.
+CHAT_RETENTION_HOURS = int(os.getenv('CHAT_RETENTION_HOURS', '4'))
+CHAT_SESSION_TTL = CHAT_RETENTION_HOURS * 3600
 # Every history message is re-sent as input tokens on each turn; 50 messages of
 # long markdown answers made long dialogues expensive. 16 keeps enough context.
 MAX_CHAT_HISTORY = int(os.getenv('MAX_CHAT_HISTORY', '16'))

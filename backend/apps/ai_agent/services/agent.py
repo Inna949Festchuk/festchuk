@@ -142,6 +142,31 @@ DATA_RULES = {
     ),
 }
 
+# Privacy guard (152-FZ): visitor PII is masked in the views before it reaches
+# storage and the LLM, so the model only ever sees placeholders. The rule is
+# in code (like DATA_RULES) because it must apply to every persona, including
+# the global SYSTEM_PROMPT path.
+PRIVACY_RULES = {
+    'ru': (
+        "Правило приватности: не запрашивай у посетителя персональные данные "
+        "(телефон, email, паспорт, СНИЛС, ИНН, номера карт) — их передавать "
+        "не нужно. Если посетитель всё же назовёт их, текст дойдёт до тебя "
+        "с плейсхолдерами ([PHONE], [EMAIL], [PASSPORT], [SNILS], [INN], [CARD]); "
+        "не пытайся восстановить или угадать скрытые значения — используй "
+        "плейсхолдер как есть или попроси переформулировать без ПДн. "
+        "На вопрос о хранении диалога отвечай только фактами из блока о стеке."
+    ),
+    'en': (
+        "PRIVACY RULE: never ask the visitor for personal data (phone, email, "
+        "passport, SNILS, INN, card numbers) — you do not need them. If the "
+        "visitor still shares them, the text reaches you with placeholders "
+        "([PHONE], [EMAIL], [PASSPORT], [SNILS], [INN], [CARD]); do not try to "
+        "restore or guess the hidden values — use the placeholder as-is or ask "
+        "to rephrase without personal data. When asked how the dialogue is "
+        "stored, answer only with the facts from the stack block."
+    ),
+}
+
 # Markdown formatting rules appended to every response (global assistant and
 # module SKILLs). The frontend renders chat answers as GFM markdown, so the
 # model should structure answers that way (same convention as the geoscan
@@ -652,18 +677,18 @@ class AIAgent:
         return f"chat_history:{self.session.session_id}"
 
     def _load_history(self) -> list[dict]:
-        """Load conversation history from Redis."""
+        """Load conversation history from Redis — the only dialogue copy.
+
+        Раньше был фолбэк в PostgreSQL: после протухания TTL бот «помнил»
+        диалог из БД вечно. Это противоречило заявленному сроку хранения и
+        минимизации 152-ФЗ, поэтому фолбэк убран: протухшая история =
+        чистое начало.
+        """
         key = self._get_history_key()
         history = cache.get(key)
-        if history is None:
-            # Fall back to database
-            from apps.ai_agent.models import ChatMessage
-            messages = self.session.messages.order_by('created_at')[:settings.MAX_CHAT_HISTORY]
-            history = [
-                {'role': m.role, 'content': m.content}
-                for m in messages
-            ]
-        return history
+        if not history:
+            return []
+        return history[-settings.MAX_CHAT_HISTORY:]
 
     def _save_history(self, history: list[dict]):
         """Save conversation history to Redis with TTL."""
@@ -725,8 +750,9 @@ class AIAgent:
                 f"voice — {settings.ROUTERAI_TTS_VOICE}.",
                 f"- STT (speech recognition): {settings.ROUTERAI_STT_MODEL}.",
                 f"- RAG: ~800-character chunks, top-{settings.RAG_TOP_K} by relevance; "
-                f"chat history — up to {settings.MAX_CHAT_HISTORY} messages, sessions "
-                f"by IP hash (TTL 4 hours).",
+                f"chat history — up to {settings.MAX_CHAT_HISTORY} messages, stored in "
+                f"Redis and auto-deleted within {settings.CHAT_RETENTION_HOURS} hours; "
+                f"visitor personal data is masked before it reaches the model.",
             ]
             if self.module and self.module.tts_voice:
                 ai_lines.append(
@@ -742,8 +768,9 @@ class AIAgent:
                 f"ассистента — {settings.ROUTERAI_TTS_VOICE}.",
                 f"- STT (распознавание речи): {settings.ROUTERAI_STT_MODEL}.",
                 f"- RAG: чанки ~800 символов, top-{settings.RAG_TOP_K} по релевантности; "
-                f"история чата — до {settings.MAX_CHAT_HISTORY} сообщений, сессии "
-                f"по IP-hash (TTL 4 часа).",
+                f"история чата — до {settings.MAX_CHAT_HISTORY} сообщений, хранится в "
+                f"Redis и автоматически удаляется в пределах {settings.CHAT_RETENTION_HOURS} "
+                f"часов; персональные данные посетителей маскируются до отправки в модель.",
             ]
             if self.module and self.module.tts_voice:
                 ai_lines.append(
@@ -786,6 +813,7 @@ class AIAgent:
 
         # Data guard: no invented projects/articles (applies to every persona).
         system_prompt += "\n\n" + DATA_RULES[self.lang]
+        system_prompt += "\n\n" + PRIVACY_RULES[self.lang]
 
         # Naming guard: prevent conflating module names with the project name.
         system_prompt += "\n\n" + NAMING_RULES[self.lang]
@@ -1041,6 +1069,10 @@ class AIAgent:
         (GeneratorExit runs the finally block).
         """
         messages, history, context, _docs = self._prepare(user_message)
+        # Сохраняем пользовательское сообщение сразу: при ошибке LLM диалог
+        # не должен «терять» вопрос (раньше вьюха писала его в БД до
+        # обработки, теперь история живёт только в Redis).
+        self._save_history(history)
         yield 'meta', {'module_slug': self.module_slug or ''}
 
         total_tokens = 0
