@@ -76,10 +76,34 @@ feshchuk/
    docker compose -f docker-compose.dev.yml exec backend python manage.py createsuperuser
    ```
 
-5. Открыть:
+5. Загрузить README проектов с Github и статей с Хабр:
+   ```bash
+   docker compose -f docker-compose.dev.yml exec backend python manage.py seed_portfolio
+   ```
+
+6. Загрузить агентов (видео агентов загрузить отдельно через админ. панель):
+   ```bash
+   docker compose -f docker-compose.dev.yml exec backend python manage.py seed_modules
+   ```
+
+7. Загрузить нормативку для агента безопасника:
+   ```bash
+   docker compose -f docker-compose.dev.yml exec backend python manage.py seed_legal_docs
+   ```
+8. После migrate таблицы появились, но сам процесс об этом не узнает — рестарт заставляет его перечитать расписание из БД и переустановить соединения. Воркеры celery, в отличие от runserver, не имеют автореload, поэтому рестарт для них — штатный способ подхватить изменения. 
+   ```bash
+   docker compose restart celery celery-beat
+   ```
+   
+9.  Открыть:
    - Frontend: http://localhost:3000
    - Backend API: http://localhost:8000/api/
    - Админка: http://localhost:8000/admin/
+
+10.  baseline-дамп: резервная копия
+      ```bash
+      docker compose exec -T postgres sh -c 'pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB"' > backup_$(date +%F_%H%M).sql
+      ```
 
 ## 📡 Основные API-эндпоинты
 
