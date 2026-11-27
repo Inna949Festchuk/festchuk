@@ -140,7 +140,9 @@
       "Bash(eof)",
       "Bash(docker cp *)",
       "Bash(time *)",
-      "Bash(git diff *)"
+      "Bash(git diff *)",
+      "Bash(а *)",
+      "Bash(msgs)"
     ]
   },
   "$version": 4

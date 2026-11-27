@@ -205,7 +205,13 @@ STYLE_RULES = {
         "строгая типизация»). Названия категорий и уровней в списках — тоже: "
         "не «Per-view — декоратор…», а «кэш уровня view (per-view) — декоратор…»; "
         "не «Low-level API — …», а «низкоуровневый API (low-level) — …» — "
-        "иначе озвучка переключает фрагмент на английский."
+        "иначе озвучка переключает фрагмент на английский. "
+        "Единственное исключение — анонс смены персоны («Этот вопрос лежит в "
+        "плоскости моей компетенции, и PRIME COORDINATOR передал мне диалог — "
+        "я …»): он звучит ровно один раз — первым ответом после реальной смены "
+        "агента. Если агент с прошлого хода не менялся, этот анонс не "
+        "повторяй и первую строку своего предыдущего сообщения не копируй — "
+        "начинай сразу с сути."
     ),
     'en': (
         "Reply style: the first sentence is the result or the table explanation, never an "
@@ -213,7 +219,13 @@ STYLE_RULES = {
         "the list, I highlight…» and the like). "
         "Do not show internal record IDs in the answer. "
         "Never start a sentence or a list item with a word in another language: lead "
-        "with English and put non-English names and terms in parentheses or mid-sentence."
+        "with English and put non-English names and terms in parentheses or mid-sentence. "
+        "The single exception is the handoff announcement ("
+        "\"This question falls within my area of competence, and PRIME COORDINATOR has "
+        "passed the dialogue to me — I am …\"): it is spoken exactly once, as the first "
+        "answer after an actual agent switch. If the agent has not changed since the "
+        "previous turn, do not repeat that announcement and do not copy the first line "
+        "of your previous message — start with the substance."
     ),
 }
 
@@ -940,9 +952,22 @@ class AIAgent:
             'instruction': (
                 f'Модуль {module.code_name} активирован. Ответь пользователю '
                 'от лица этого модуля — в его роли, стиле и компетенциях. '
-                'Первым предложением (одна фраза) объяви передачу: вопрос лежит '
-                'в плоскости его компетенции, и PRIME COORDINATOR '
-                'передал ему диалог; представься его именем.'
+                'Первым предложением (одна фраза) объяви передачу от первого '
+                'лица: «этот вопрос лежит в плоскости моей компетенции, и '
+                f'PRIME COORDINATOR передал мне диалог — я {module.code_name}». '
+                'О себе говори «моя компетенция», «передал мне», «я …» — '
+                'никогда не обращайся к себе во втором лице («твоей '
+                'компетенции», «передал тебе»): текст идёт в чат от того, кто '
+                'отвечает.'
+            ) if self.lang != 'en' else (
+                f'Module {module.code_name} is now active. Answer the user in '
+                'that module\'s role, style and competencies. Open with one '
+                'phrase announcing the handoff, in the first person: "this '
+                'question falls within my area of competence, and PRIME '
+                f'COORDINATOR has passed the dialogue to me — I am '
+                f'{module.code_name}". Never address yourself in the second '
+                'person ("your competence", "passed to you") — the text is '
+                'spoken by the agent who is answering.'
             ),
         }, ensure_ascii=False)
 
@@ -969,64 +994,125 @@ class AIAgent:
         is_coordinator = self.module_slug == 'prime-coordinator'
         if self.lang == 'en':
             self._handoff_reminder = (
-                "Start your reply with the one-phrase announcement that the "
-                "dialogue returned to you, the coordinator"
+                'Start your reply with the one-phrase announcement, in the '
+                'first person, that the dialogue has returned to me, the '
+                'coordinator'
                 if is_coordinator else
-                "Start your reply with the one-phrase handoff announcement "
-                "(the question is within your competence, the coordinator "
-                "passed the dialogue to you) and your self-introduction"
+                'Start your reply with the one-phrase handoff announcement in '
+                'the first person — "the question is within my competence, '
+                f'the coordinator passed the dialogue to me — I am {name}" — '
+                'then introduce yourself; never write "your competence" or '
+                '"passed to you"'
             )
         else:
             self._handoff_reminder = (
-                "Начни ответ одной фразой-анонсом: диалог вернулся к тебе, координатору"
+                'Начни ответ одной фразой-анонсом от первого лица: диалог '
+                'вернулся ко мне, координатору'
                 if is_coordinator else
-                "Начни ответ одной фразой-анонсом передачи (вопрос в твоей "
-                "компетенции, координатор передал диалог тебе) и представлением"
+                'Начни ответ одной фразой-анонсом передачи от первого лица — '
+                f'«вопрос в моей компетенции, координатор передал мне диалог '
+                f'— я {name}» — и представлением; никогда не пиши «твоей '
+                'компетенции» или «передал тебе»'
             )
         # Анонс передачи: смена персоны (роутером или activate_module) не
         # должна быть незаметной — первый ответ обязан одной фразой объявить
         # переход (инцидент 2026-11-20: «вектор» молча переключил HYPER DRIVE
         # на NEURAL SYNC, пользователь услышал смену голоса без объяснений).
+        # Фраза-анонс пишется от первого лица: модель копирует формулировку
+        # дословно, поэтому второе лицо в инструкции («твоей компетенции,
+        # передал тебе») попадало в ответ пользователю (2026-11-27).
         if self.module_slug == 'prime-coordinator':
             announce = (
-                "В первом предложении (одна фраза, до сути ответа) кратко сообщи "
-                "пользователю, что диалог вернулся к тебе, координатору."
+                'В первом предложении (одна фраза, до сути ответа) кратко сообщи '
+                'пользователю от первого лица, что диалог вернулся ко мне, '
+                'координатору.'
             )
         else:
             announce = (
-                "В первом предложении (одна фраза, до сути ответа) ОБЯЗАТЕЛЬНО "
-                "объяви передачу: этот вопрос лежит в плоскости твоей "
-                "компетенции, и PRIME COORDINATOR передал тебе "
-                "диалог — представься своим именем. Это единственное "
-                "допустимое исключение из правила «начинай сразу с сути»: со "
-                "второго предложения отвечай по делу."
+                'В первом предложении (одна фраза, до сути ответа) ОБЯЗАТЕЛЬНО '
+                'объяви передачу — первой строкой, дословно в этом лице: «Этот '
+                'вопрос лежит в плоскости моей компетенции, и PRIME '
+                f'COORDINATOR передал мне диалог — я {name}». Говори о себе '
+                '«моя компетенция», «передал мне», «я '
+                f'{name}»; запрещается обращаться к себе во втором лице '
+                '(«твоей компетенции», «передал тебе») — этот текст читает '
+                'пользователь, его произносит отвечающий агент. Это '
+                'единственное допустимое исключение из правила «начинай сразу '
+                'с сути»: со второго предложения отвечай по делу.'
             )
         if self.lang == 'en':
             if self.module_slug == 'prime-coordinator':
                 announce = (
-                    "In your first sentence (one phrase, before the substance of the answer) "
-                    "briefly tell the user the dialogue has returned to you, the coordinator."
+                    'In your first sentence (one phrase, before the substance of '
+                    'the answer) briefly tell the user, in the first person, that '
+                    'the dialogue has returned to me, the coordinator.'
                 )
             else:
                 announce = (
-                    "In your first sentence (one phrase, before the substance of the answer) "
-                    "you MUST announce the handoff: this question is within your area of "
-                    "competence and the conductor PRIME COORDINATOR has passed the dialogue "
-                    "to you — introduce yourself by your name. This is the only allowed "
-                    "exception to the 'start with the point' rule: from the second sentence "
-                    "on, get to the matter."
+                    'In your first sentence (one phrase, before the substance of '
+                    'the answer) you MUST announce the handoff, in the first '
+                    'person: "This question falls within my area of competence, '
+                    'and PRIME COORDINATOR has passed the dialogue to me — I am '
+                    f'{name}". Speak of yourself as "my competence", "passed to '
+                    'me", "I am '
+                    f'{name}"; never address yourself in the second person '
+                    '("your competence", "passed to you") — the user reads this '
+                    'text and it is spoken by the agent who is answering. This '
+                    "is the only allowed exception to the 'start with the point' "
+                    'rule: from the second sentence on, get to the matter.'
                 )
             return (
                 f"[SYSTEM AGENT SWITCH: the active agent is now {name}. "
                 f"Earlier messages in this conversation may have been answered by "
                 f"{prev_name} — do not continue that persona. From this message on "
-                f"you are {name} and you must introduce yourself only as {name}. {announce}]"
+                f"you are {name} and you must introduce yourself only as {name}. "
+                f"{announce} The announcement belongs to this answer only: in a "
+                f"turn where the agent has not changed, do not repeat it and do "
+                f"not copy the first line of your previous reply.]"
             )
         return (
             f"[СИСТЕМНАЯ СМЕНА АГЕНТА: с этого сообщения активным агентом является "
             f"{name}. Предыдущие сообщения могли отвечать от лица {prev_name} — не "
             f"продолжайте и не повторяйте ту роль. С этого момента вы — {name}, "
-            f"представляйте себя только так. {announce}]"
+            f"представляйте себя только так. {announce} Анонс передачи относится "
+            f"только к этому ответу: в ходе, где агент не менялся, его не "
+            f"повторять и первую строку своего предыдущего ответа не копировать.]"
+        )
+
+    # Анонс передачи кочует в ходы без смены персоны: модель копирует первую
+    # строку собственного предыдущего ответа (E2E 2026-11-27 — оговорка в
+    # STYLE_RULES и хвост маркера этому не противостояли). Признак — маркер
+    # в истории на том же месте, где маркер смены: recency сильнее правил
+    # системного промпта.
+    HANDOFF_ECHO_MARKERS = (
+        'передал мне диалог', 'вернулся ко мне', 'returned to me',
+        'passed the dialogue to me',
+    )
+
+    def _anti_echo_marker(self, history: list[dict]) -> str:
+        """Запрет повторять анонс передачи на ходе без смены агента."""
+        if self.module is None:
+            return ''
+        last_assistant = next(
+            (m for m in reversed(history) if m.get('role') == 'assistant'), None
+        )
+        if not last_assistant:
+            return ''
+        first_line = (last_assistant.get('content') or '').split('\n', 1)[0].lower()
+        if not any(marker in first_line for marker in self.HANDOFF_ECHO_MARKERS):
+            return ''
+        name = self.module.code_name
+        if self.lang == 'en':
+            return (
+                f"[NO AGENT SWITCH: you are still {name}, the active agent did not "
+                f"change since the previous turn. Do not repeat the handoff "
+                f"announcement and do not copy the first line of your previous "
+                f"reply — start with the substance of the answer.]"
+            )
+        return (
+            f"[СМЕНЫ АГЕНТА НЕ БЫЛО: активный агент по-прежнему {name}. Не повторяй "
+            f"анонс передачи и не копируй первую строку своего предыдущего ответа — "
+            f"начинай сразу с сути.]"
         )
 
     def _persist_active_module(self):
@@ -1050,6 +1136,10 @@ class AIAgent:
         prev_slug = self.session.active_module_slug or ''
         if self.module and prev_slug and prev_slug != self.module_slug and history:
             history.append({'role': 'system', 'content': self._handoff_marker(prev_slug)})
+        else:
+            anti_echo = self._anti_echo_marker(history)
+            if anti_echo:
+                history.append({'role': 'system', 'content': anti_echo})
 
         history.append({'role': 'user', 'content': user_message})
 
