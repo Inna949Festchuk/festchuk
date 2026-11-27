@@ -1055,6 +1055,9 @@ class AIAgent:
 
         # RAG retrieval and Context7 docs in parallel — both depend only on
         # the user message / active module; uncached Context7 adds ~2s.
+        # Тайминг prepare — диагностика задержек: RAG-эмбеддинг/Context7 здесь,
+        # всё остальное — в LLM-раундах ниже (строки «prepare:» и «LLM round:»).
+        t_prepare = time.time()
         with ThreadPoolExecutor(max_workers=2) as pool:
             rag_future = pool.submit(self.rag.search_similar, user_message)
             docs_future = pool.submit(self._fetch_context7_docs)
@@ -1067,6 +1070,10 @@ class AIAgent:
         messages = [
             {'role': 'system', 'content': self._build_system_prompt(user_message, context, context7_docs)}
         ] + history
+        logger.info(
+            f"prepare: {time.time() - t_prepare:.1f}s "
+            f"(system prompt ~{len(messages[0]['content'])} chars, history {len(history) - 1} msgs)"
+        )
         return messages, history, context, context7_docs
 
     def process_message(self, user_message: str) -> tuple[str, int]:
@@ -1087,6 +1094,7 @@ class AIAgent:
         max_tool_rounds = 3
 
         for _ in range(max_tool_rounds + 1):
+            t_round = time.time()
             response = self.client.chat_completion_with_tools(
                 messages=messages,
                 tools=self._tools(),
@@ -1094,6 +1102,11 @@ class AIAgent:
 
             choice = response.choices[0]
             total_tokens += response.usage.total_tokens if response.usage else 0
+            prompt_tokens = response.usage.prompt_tokens if response.usage else 0
+            logger.info(
+                f"LLM round: {time.time() - t_round:.1f}s "
+                f"(prompt ~{prompt_tokens} tokens, tool_calls={len(choice.message.tool_calls or [])})"
+            )
 
             # If no tool calls, we have the final answer
             if not choice.message.tool_calls:
@@ -1179,17 +1192,30 @@ class AIAgent:
         total_tokens = 0
         max_tool_rounds = 3
         assistant_text = ''
+        # Диагностика задержек (та же, что «prepare:» и «LLM round:» в sync-пути):
+        # UI ходит только здесь, поэтому без этих строк лог слепой.
+        # TTFT — от запуска запроса до первого чанка с контентом/tool-вызовом:
+        # именно он показывает, ждём ли мы в очереди провайдера или генерируем.
+        t_stream_total = time.time()
         try:
             for _round in range(max_tool_rounds + 1):
+                t_round = time.time()
                 stream = self.client.chat_completion_stream(messages=messages, tools=self._tools())
                 content_parts: list[str] = []
                 tool_calls: dict[int, dict] = {}
+                t_first = None
+                round_tokens = 0
                 for chunk in stream:
                     usage = getattr(chunk, 'usage', None)
                     if usage:
                         total_tokens += usage.total_tokens or 0
+                        round_tokens = usage.total_tokens or 0
                     if not chunk.choices:
                         continue
+                    if t_first is None:
+                        d0 = chunk.choices[0].delta
+                        if d0 is not None and (d0.content or d0.tool_calls):
+                            t_first = time.time()
                     delta = chunk.choices[0].delta
                     if delta is None:
                         continue
@@ -1207,6 +1233,12 @@ class AIAgent:
                                 slot['arguments'] += tc.function.arguments
 
                 assistant_text = ''.join(content_parts)
+                ttft = (t_first or time.time()) - t_round
+                logger.info(
+                    f"LLM round (stream {_round}): TTFT {ttft:.1f}s, "
+                    f"round {time.time() - t_round:.1f}s "
+                    f"(~{round_tokens} tokens, tool_calls={len(tool_calls)})"
+                )
                 if not tool_calls:
                     break
 
@@ -1275,13 +1307,20 @@ class AIAgent:
                         yield 'delta', {'text': chunk.choices[0].delta.content}
                 assistant_text = ''.join(content_parts)
 
+            logger.info(
+                f"stream done: {time.time() - t_stream_total:.1f}s total, {total_tokens} tokens"
+            )
             yield 'done', {
                 'text': assistant_text,
                 'module_slug': self.module_slug or '',
                 'tokens_used': total_tokens,
             }
         except Exception as e:
-            logger.error(f"AI agent stream error: {e}")
+            # Время до сбоя — чтобы таймаут/обрыв провайдера было видно так же
+            # явно, как медленные раунды (инцидент 2026-11-21: висели минуты).
+            logger.error(
+                f"AI agent stream error after {time.time() - t_stream_total:.1f}s: {e}"
+            )
             yield 'error', {'error': 'AI service temporarily unavailable'}
         finally:
             if assistant_text:

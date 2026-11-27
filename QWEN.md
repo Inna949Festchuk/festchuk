@@ -1,6 +1,7 @@
 # QWEN.md — festchuk (Feshchuk Portfolio)
 
-Инструкционный контекст для работы с репозиторием. Документация проекта ведётся на русском языке.
+Инструкционный контекст для работы с репозиторием. Документация и комментарии в коде ведутся на русском языке.
+*(Объединённый стандарт для Qwen Code CLI, AGENTS.md и IDE-агентов в контекстном окне 120k).*
 
 ## Обзор проекта
 
@@ -19,6 +20,19 @@
 | AI | RouterAI (`https://routerai.ru/api/v1`, OpenAI-совместимый): LLM qwen3.7-plus (reasoning off), эмбеддинги bge-m3, TTS google/gemini-*-tts (голос Puck), STT whisper-large-v3-turbo; Context7 REST v1 для актуальной документации библиотек |
 | Инфра | Docker Compose (dev и prod), Nginx (prod: reverse proxy, rate limiting, static/media) |
 
+## Протокол работы агента (оптимизация под контекст 120k)
+
+Чтобы не переполнять контекстное окно и сохранять высокую скорость работы (prefill):
+1. **Точечное чтение файлов:** Не загружай крупные файлы целиком. Сначала ищи нужные символы/строки через поиск (`grep` / `rg`) и читай только релевантные диапазоны строк.
+2. **Жёсткие исключения при сканировании:** Никогда не читай и не индексируй:
+   - `backup_*.sql` (дампы БД)
+   - `backend/logs/django.log` целиком (читай только последние `tail -n 50` строк при отладке)
+   - `backend/media/`, `backend/static/`, `backend/celerybeat-schedule`, `nginx/ssl/`
+   - `frontend/node_modules/`, `frontend/.next/`, `frontend/tsconfig.tsbuildinfo`, `frontend/package-lock.json`
+3. **План перед правкой:** Если задача затрагивает >2 файлов или связку Backend + Frontend + БД, сначала сформулируй краткий план изменений, затем вноси правки пошагово.
+4. **Синхронизация Fullstack-контрактов:** При изменении полей в Django-моделях (`models.py`) или DRF-сериализаторах (`serializers.py`) обязательно проверь и обнови соответствующие TypeScript-интерфейсы и вызовы API во `frontend/`.
+5. **Автономная верификация:** После каждой кодовой правки прогоняй профильные проверки (`manage.py check`, `pytest`, `npx tsc --noEmit` в контейнере) и убирай временный отладочный мусор.
+
 ## Структура
 
 ```
@@ -31,7 +45,7 @@ festchuk/
 │   │   ├── analytics/   # анонимные лайки/просмотры (Redis, IP-hash, TTL 24ч)
 │   │   └── ai_agent/    # RAG, чат, STT/TTS, модули агентов, Celery tasks
 │   │       ├── services/  # agent.py, routing.py, rag.py, router_ai.py, context7.py,
-│   │       │              # session.py (Redis-сессии), pii.py (PII-маскер)
+│   │       │              # session.py (Redis-сессии), pii.py (PII-маскер), budget.py
 │   │       ├── skills/    # SKILL_*.md — персоны-промпты модулей (seed_modules → БД)
 │   │       ├── legal/     # fz_152_2026.txt — исходный текст 152-ФЗ; bootstrap LegalDocument (Admin), seed_legal_docs
 │   │       ├── management/ # seed_legal_docs — эмбеддинги 152-ФЗ в pgvector
@@ -42,7 +56,7 @@ festchuk/
 ├── frontend/
 │   ├── app/[locale]/    # страницы: главная, projects, blog, contacts, privacy, modules/[slug]
 │   ├── components/      # Header, Footer, ChatWidget, CyberMusicPlayer, Cityscape,
-│   │                    # AgentVideoCard, HudBottomGuard, LanguageSwitcher, …
+│   │                    # AgentVideoCard, HudBottomGuard, LanguageSwitcher, Hologram, Odometer
 │   ├── lib/             # ttsText.ts — чистые функции постобработки TTS-текста
 │   ├── i18n/            # routing/request/navigation (next-intl)
 │   ├── messages/        # ru.json, en.json — ВСЕ пользовательские строки
@@ -109,15 +123,16 @@ docker compose -f docker-compose.dev.yml exec -T frontend npx tsc --noEmit
 
 # ESLint в репозитории не настроен (next lint спрашивает конфиг интерактивно) — основной чек tsc
 
-# Django-проверки
+# Django-проверки и проверка несозданных миграций
 docker compose -f docker-compose.dev.yml exec backend python manage.py check
+docker compose -f docker-compose.dev.yml exec backend python manage.py makemigrations --check --dry-run
 
 # Смоук API
 curl -s http://localhost:8000/api/health/
 curl -s http://localhost:8000/api/projects/
 ```
 
-Плюс ручная проверка в браузере (http://localhost:3000) и чтение логов (`backend/logs/django.log`, `docker compose logs`). EACCES на `tsconfig.tsbuildinfo` при хостовом tsc — не ошибка типов, а права; гнать tsc в контейнер.
+Плюс ручная проверка в браузере (http://localhost:3000) и чтение последних строк логов (`tail -n 50 backend/logs/django.log`, `docker compose -f docker-compose.dev.yml logs --tail=50`). EACCES на `tsconfig.tsbuildinfo` при хостовом tsc — не ошибка типов, а права; гнать tsc в контейнер.
 
 ## Архитектура и ключевые механизмы
 
@@ -218,7 +233,7 @@ next-intl, URL-префиксы `/ru` `/en` (localePrefix always, default ru). �
 8. Media-URL без `API_BASE_URL` указывают на `backend:8000` — браузер не открывает.
 9. RAG молча не работает без миграции pgvector (`CREATE EXTENSION vector`, колонка embedding 1024d) и пересоздания контейнеров после правок `.env` (`env_file` читается только при create).
 10. Правки SKILL-файлов `.md` не действуют, пока не синхронизированы в БД (источник истины — `AgentModule` в Admin).
-11. `stream_options.include_usage` в стриме RouterAI → буферизация всего ответа (TTFT 15,8с); usage и так приходит в финальном чанке.
+11. `stream_options.include_usage` в стриме RouterAI → буферизация всего ответа (TTFT 15,8с против ~1с); usage и так приходит в финальном чанке.
 12. SSE в DRF: `Accept: text/event-stream` → 406 без override `perform_content_negotiation`; без `no-transform` в Cache-Control Next-прокси буферизует стрим.
 13. Gemini TTS читает кусок по плотности английского → без `language=ru` (extra_body) и frontend-нормализации (`lib/ttsText.ts`) смешанные RU/EN ответы звучат по-английски.
 14. TTS-чанкер не режет куски длиннее 450 знаков — бэкенд жёстко обрубает текст в 500 символов на запрос (`ChatTTSView`).
