@@ -142,7 +142,13 @@
       "Bash(time *)",
       "Bash(git diff *)",
       "Bash(а *)",
-      "Bash(msgs)"
+      "Bash(msgs)",
+      "Bash(p *)",
+      "Bash(lines *)",
+      "Bash(p, *)",
+      "Bash(assert *)",
+      "Bash(repr)",
+      "Bash(del *)"
     ]
   },
   "$version": 4

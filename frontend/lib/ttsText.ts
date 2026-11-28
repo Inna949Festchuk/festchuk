@@ -65,3 +65,52 @@ export function normalizeTtsLanguage(text: string, en = false): string {
   if (en || !text) return text;
   return applyConnectives(stripEnglishGlosses(text));
 }
+
+// Идентификаторы с подчёркиваниями синтезатор читает слитно: markdown-стриппер
+// снимает «_» как курсив, и «search_fires» звучит как «searchfires» (замер
+// 2026-11-28). Разбиваем такие токены пробелами, чтобы голос произнёс части
+// отдельно. Дефис трогаем только внутри токена с подчёркиванием
+// («GeoAi-agent_fire_space»): в обычной речи дефис произносится корректно, а
+// «по-русски»/«FastAPI-based» разбивание сломало бы.
+export function spellIdentifiers(text: string): string {
+  if (!text || !text.includes('_')) return text;
+  return text.replace(/[A-Za-z0-9]+(?:[-_]+[A-Za-z0-9]+)+/g, (token) =>
+    token.includes('_') ? token.replace(/[-_]+/g, ' ') : token,
+  );
+}
+
+// Плотность латиницы в окне текста. Синтезатор выбирает язык на уровне всего
+// запроса-куска: латинский пробег («FastMCP», «search_fires», «JSON-схемы»)
+// переводит в английский ВЕСЬ кусок, включая идущую после него кириллицу
+// (замер 2026-11-27: кусок 396 зн при 28% латиницы читался по-английски).
+// Чанкер режет кусок по координатам этого пробега, чтобы плотная латиница
+// ушла в отдельный короткий запрос, а русские куски остались русскими.
+const DENSE_WINDOW = 150;
+const DENSE_MIN_CYRILLIC = 0.62;
+
+// Служебные окна без букв (код-фенс, таблица, «(DB0)») плотными не считаем.
+const windowCyrillic = (s: string): number => {
+  const letters = s.match(/[A-Za-zА-Яа-я]/g);
+  if (!letters || letters.length < 8) return 1;
+  return letters.filter((c) => /[А-Яа-я]/.test(c)).length / letters.length;
+};
+
+// Координаты первого плотного латинского пробега (окно 150 зн, шаг 20) или
+// null, если текст в основном кириллический.
+export function findDenseLatinSpan(text: string): { start: number; end: number } | null {
+  if (!text) return null;
+  let start = -1;
+  for (let i = 0; i + 40 <= text.length; i += 20) {
+    if (windowCyrillic(text.slice(i, i + DENSE_WINDOW)) < DENSE_MIN_CYRILLIC) {
+      start = i;
+      break;
+    }
+  }
+  if (start < 0) return null;
+  let end = Math.min(start + DENSE_WINDOW, text.length);
+  for (let i = start + 20; i + 40 <= text.length; i += 20) {
+    if (windowCyrillic(text.slice(i, i + DENSE_WINDOW)) >= DENSE_MIN_CYRILLIC) break;
+    end = Math.min(i + DENSE_WINDOW, text.length);
+  }
+  return { start, end };
+}

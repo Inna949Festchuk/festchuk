@@ -57,7 +57,8 @@ festchuk/
 │   ├── app/[locale]/    # страницы: главная, projects, blog, contacts, privacy, modules/[slug]
 │   ├── components/      # Header, Footer, ChatWidget, CyberMusicPlayer, Cityscape,
 │   │                    # AgentVideoCard, HudBottomGuard, LanguageSwitcher, Hologram, Odometer
-│   ├── lib/             # ttsText.ts — чистые функции постобработки TTS-текста
+│   ├── lib/             # ttsText.ts, ttsChunker.ts — чистые функции TTS (текст,
+│   │                    # нарезка кусков); гоняются в node через tsc → require
 │   ├── i18n/            # routing/request/navigation (next-intl)
 │   ├── messages/        # ru.json, en.json — ВСЕ пользовательские строки
 │   ├── middleware.ts    # locale-редиректы
@@ -186,10 +187,13 @@ PRIME COORDINATOR (slug `prime-coordinator`) — дирижёр по умолч�
 
 ### Язык речи: TTS и STT
 
-Речь должна держаться в языке интерфейса (RU по умолчанию). Две защиты:
+Речь должна держаться в языке интерфейса (RU по умолчанию). Защиты по слоям:
 
 - **Backend-пинга языка.** UI шлёт локаль: чат — поле `lang` в body, TTS/STT-эндпоинты — `?lang=ru|en`. TTS-вьюха (`ChatTTSView`) передаёт `lang` в `RouterAIClient.tts(language=...)`, где он уходит в `extra_body={'language': 'ru'}` (OpenAI SDK не типизирует `language` для audio.speech; RouterAI принимает, проверено 2026-11-20). Кэш TTS-ключа включает lang. STT шлёт `language` в whisper, иначе autodetect ошибается на коротких репликах.
 - **Frontend-нормализация текста.** Синтезатор (Gemini) выбирает язык по плотности английского в куске: фразы, насыщенные терминами, он читает по-английски. `frontend/lib/ttsText.ts` (`normalizeTtsLanguage(text, en)`) — чистые функции без React/DOM (тестируются в node): убирает почти-английские скобки-глоссы (короткие теги ≤6 символов и русские глоссы остаются, включая осиротевшие скобки на границах чанка), заменяет английские связки русскими эквивалентами (`for example` → «например» и т.д.). Вызывается в `createTTSChunker` перед отправкой куска; `en=true` — pass-through (продукт русскоязычный). Перенос лейблов («Label — описание») из модуля удалён 2026-11-20: ломал грамматику в середине фразы и склеивал буллеты. Английские начала предложений режутся на уровне промпта (правила в agent.py).
+- **Density-cut в чанкере (2026-11-28).** Язык выбирается на уровне ВСЕГО куска-запроса, поэтому латинский пробег в СЕРЕДИНЕ куска (`FastMCP`, `search_fires`, «JSON-схемы») переводит в английский и всю кириллицу после него: голос читает по-английски до конца куска, возврат только на границе запроса (замер 2026-11-27: кусок 240 зн при 53% кириллицы). Language-guard в чанкере берег только НАЧАЛО куска. `findDenseLatinSpan` (`lib/ttsText.ts`: окно 150 зн, шаг 20, порог кириллица-доли 0.62; окна без букв — код-фенс/таблица — плотными не считаются) даёт координаты пробега, чанкер режет по концу предложения перед ним или сразу после его начала; кандидаты короче 20 букв отброшены (иначе озвучивался маркер списка «1.» отдельным запросом). Цена: dense-ответ даёт 8 кусков вместо 5 → чаще расходуется `tts`-троттлинг (120/ч).
+- **Идентификаторы с подчёркиваниями (2026-11-28).** `stripMarkdownForTTS` снимает `_` как курсив, поэтому голос читал `search_fires` слитно («searchfires»), а `GeoAi-agent_fire_space` — «agentfirespace». `spellIdentifiers` (`lib/ttsText.ts`) разбивает токены с `_` пробелами («search fires», «GeoAi agent fire space»); вызывается в стриппере ДО снятия `[*_~]` (иначе имена уже склеены) и в сборке значений интро таблицы. Дефис заменяется только внутри токена, содержащего `_`: в обычной речи («по-моему», «онлайн-курсы», «FastAPI-based») он произносится корректно и разбивание сломало бы его. Текст без `_` проходит побайтово без изменений.
+- Чанкер (`stripMarkdownForTTS`, `createTTSChunker`, `feedAllToChunks`) вынесен из `ChatWidget.tsx` в `frontend/lib/ttsChunker.ts` — чистые функции без React/DOM, чтобы реальный код гонялся в node (в контейнере frontend node 20, из трансформеров только tsc): `npx tsc lib/ttsChunker.ts lib/ttsText.ts --outDir /tmp/tt --module commonjs --skipLibCheck` и `require('/tmp/tt/ttsChunker.js')`.
 
 ### Контент: seed_portfolio
 
@@ -235,7 +239,7 @@ next-intl, URL-префиксы `/ru` `/en` (localePrefix always, default ru). �
 10. Правки SKILL-файлов `.md` не действуют, пока не синхронизированы в БД (источник истины — `AgentModule` в Admin).
 11. `stream_options.include_usage` в стриме RouterAI → буферизация всего ответа (TTFT 15,8с против ~1с); usage и так приходит в финальном чанке.
 12. SSE в DRF: `Accept: text/event-stream` → 406 без override `perform_content_negotiation`; без `no-transform` в Cache-Control Next-прокси буферизует стрим.
-13. Gemini TTS читает кусок по плотности английского → без `language=ru` (extra_body) и frontend-нормализации (`lib/ttsText.ts`) смешанные RU/EN ответы звучат по-английски.
+13. Gemini TTS читает кусок по плотности английского → без `language=ru` (extra_body) и frontend-нормализации (`lib/ttsText.ts`) смешанные RU/EN ответы звучат по-английски. Язык выбирается по ВСЕМУ куску, поэтому латинский пробег в его середине утянет в английский и кириллицу после него — середину спасают только density-cut (`findDenseLatinSpan`) в `lib/ttsChunker.ts`, language-guard держит лишь начало куска.
 14. TTS-чанкер не режет куски длиннее 450 знаков — бэкенд жёстко обрубает текст в 500 символов на запрос (`ChatTTSView`).
 15. `seed_modules` затирает Admin-правки: `update_or_create` заменяет ВСЕ поля ВСЕХ модулей на каждый прогон (голоса, тексты, промпты). Точечные правки — через `manage.py shell` (паттерн 2026-11-21). Старое утверждение «не затирает» относилось к `seed_portfolio` (флаг `sync_from_source`), не к `seed_modules`.
 16. Redis — критичное хранилище чата: вытеснение только `volatile-lru` (ключи с TTL). Не переключать на `allkeys-lru`: ключи брокера Celery (DB1) без TTL вытеснялись бы молча — потеря задач. `maxmemory` (`REDIS_MAXMEMORY`, дефолт 256mb) ограничивает RAM, а не диск: AOF живёт в томе `redis_data`, disk-full (инцидент 2026-11-19) всё так же рвёт записи.
